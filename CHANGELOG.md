@@ -4,6 +4,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [1.0.0-rc.5] — 2026-11-24
+
+### Adicionado
+- **Tocar/pausar rápido** (pedido #068): botão de 48 px ao lado do botão da roda (do lado de dentro da tela; no
+  Canhoto, do outro lado), só com a roda fechada. Um toque toca ou pausa, sem abrir a roda; mostra ▶ (parado) ou ❚❚
+  (tocando). Com a roda aberta, o centro continua fazendo o mesmo. O tour ganhou um passo para ele (18 passos).
+
+### Mudado
+- A leitura rápida perto do botão da roda ("3/8", "Desfeito") ficou um pouco mais para dentro, para não cobrir o botão.
+- Teste de lógica: 295 verificações.
+
 ## [1.0.0-rc.4] — 2026-11-24
 
 Pedidos do Raphael depois do 3º teste no tablet (pedido #067).

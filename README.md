@@ -3,7 +3,7 @@
 **Caderno de animação em loop com cara de impressão risográfica**, feito para desenhar com caneta num tablet
 Android. Você desenha dentro de um loop que nunca para; o grão da impressão ferve no ritmo da animação.
 
-> **Versão:** `1.0.0-rc.4`, candidata a 1.0 (24/11/2026). Todos os recursos do plano até a 1.0 estão no app;
+> **Versão:** `1.0.0-rc.5`, candidata a 1.0 (24/11/2026). Todos os recursos do plano até a 1.0 estão no app;
 > **falta o teste no tablet** para virar 1.0.0. Relatório: [docs/relatorio-v1.0.md](docs/relatorio-v1.0.md) ·
 > Lista de testes: [docs/15-lista-de-testes.md](docs/15-lista-de-testes.md).
 
@@ -23,7 +23,7 @@ Aparelho-alvo: **XPPen Magic Drawing Pad (MDP1221)**, Android 15, caneta X3 Pro 
 
 - **Desenhar no loop:** Pincel, Lápis, Marcador, Giz, Borracha, Balde (respeita linhas de outras camadas), Laço,
   linha reta, suavização opcional, zoom até 400%.
-- **Tempo na mão livre:** roda de canto com prato (gira no tempo), velocidade, desfazer/refazer; arrastar 2 dedos
+- **Tempo na mão livre:** botão de tocar/pausar ao lado da roda; roda de canto com prato (gira no tempo), velocidade, desfazer/refazer; arrastar 2 dedos
   anda no tempo; tira de frames com miniaturas, exposição, inserir/duplicar/mover frame, papel-cebola.
 - **Riso de verdade:** 4 tintas (tambores) entre 9 cores riso, até 8 camadas, retícula estocástica ou reticulada
   (ponto redondo, linha, elipse), sobreimpressão na ordem de impressão, desalinhamento até 3 mm, trapping, papéis,

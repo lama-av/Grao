@@ -1329,7 +1329,7 @@ for (const code of [4]) {
 // ---------- rc.4: tour ----------
 {
   const { TOUR_STEPS } = await import('../src/ui/tour.js');
-  check('tour completo: 17 passos, todos com título e texto', TOUR_STEPS.length === 17 && TOUR_STEPS.every((s) => s.title && s.text.length > 40));
+  check('tour completo: 18 passos, todos com título e texto', TOUR_STEPS.length === 18 && TOUR_STEPS.every((s) => s.title && s.text.length > 40));
   const topics = TOUR_STEPS.map((s) => s.title).join(' ');
   check('tour cobre roda, ferramentas, camadas, tempo, menu, gestos, seleção e exportação', ['roda', 'Ferramentas', 'Camadas', 'Tempo', 'Menu', 'Gestos', 'Seleção', 'exportar'].every((w) => topics.includes(w)));
   const { app } = makeApp();
@@ -1341,6 +1341,22 @@ for (const code of [4]) {
   check('todos os alvos do tour existem', true);
   app.ui.tour({ open: false });
   check('o tour fecha a roda no fim', !app.ui.isOpen && app.ui.petal === null);
+}
+
+// ---------- rc.5: tocar/pausar rápido ----------
+{
+  const { app, wet } = makeApp();
+  const pc = [48 + 32 + 12 + 24, H - 48];
+  app.clock.paused = false;
+  tap(wet, ...pc);
+  check('botão ao lado da roda pausa com um toque', app.clock.paused === true && !app.ui.isOpen);
+  tap(wet, ...pc);
+  check('e toca de novo', app.clock.paused === false && !app.ui.isOpen);
+  check('não risca no papel', all(app).length === 0);
+  app.project.settings.lefty = true;
+  tap(wet, W - 48 - 32 - 12 - 24, H - 48);
+  check('no modo Canhoto ele fica do lado esquerdo do botão da roda', app.clock.paused === true);
+  check('o tour aponta o botão de tocar/pausar', Number.isFinite(app.ui.geometry().play.x));
 }
 
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);

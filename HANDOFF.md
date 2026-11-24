@@ -54,7 +54,7 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 > **Novo roteiro até a v1.0** (decidido no chat em 24/11, conselho de design): `docs/13-conselho-v0.3.md`.
 > Ele substitui a ordem de versões do doc 10. Arquitetura dos gestos: `docs/adr/ADR-003-gestos-de-dois-dedos.md`.
 >
-> **Estado (24/11, fim do dia):** **1.0.0-rc.4 publicada** (pedidos #022–#067; #065–#067 vêm dos testes no tablet). Nada testado no tablet desde
+> **Estado (24/11, fim do dia):** **1.0.0-rc.5 publicada** (pedidos #022–#068; #065–#068 vêm dos testes no tablet). Nada testado no tablet desde
 > a 0.2.0. Próximo passo: o Raphael passa pela lista `docs/15-lista-de-testes.md` e leva o resultado ao chat.
 >
 > **Atualização (24/11, Raphael no VS Code):** "execute os pedidos até a versão 1.0, sem pausas". A v0.4 foi feita
@@ -635,6 +635,16 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - Tour (`src/ui/tour.js`): 17 passos, holofote pela geometria da roda (`wheel.geometry()`), roda e pétalas abertas
     pelo tour (`wheel.tour()`), cartão do lado oposto, Voltar/Próximo/Sair. Primeira vez no aparelho e Menu → Tour.
   - **Testar no tablet:** tour do começo ao fim; 3 dedos refazem; pinça; dedo e caneta alternando.
+
+### #068 — Tocar/pausar mais rápido
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 1.0.0-rc.5 · **Origem:** pedido do Raphael (24/11)
+- **Opções pesadas pelo VS Code:** toque duplo no botão da roda (atrasa abrir a roda e o projeto evita toque duplo);
+  segurar o botão (já move a roda de canto); gesto no papel (escondido, mais chance de acionar sem querer); **botão
+  próprio ao lado (escolhido):** um toque, à vista, no canto da mão livre, mostra o estado.
+- **Resposta do VS Code (build b22):** botão de 48 px na mesma borda do botão da roda, para dentro da tela, só com a
+  roda fechada; usa a mesma ação do centro da roda. Passo novo no tour. Leitura passageira deslocada para não cobrir.
+  **Testar no tablet:** tocar/pausar desenhando quadro a quadro; conferir se o polegar não acerta o botão da roda sem
+  querer (os dois ficam a 12 px um do outro).
 
 ### Pedidos já feitos (v0.2.0 a v0.3.1)
 

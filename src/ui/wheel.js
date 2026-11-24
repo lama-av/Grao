@@ -91,6 +91,13 @@ export function setupWheel(app, canvas) {
     return { x: c[1] === 'l' ? off : W - off, y: c[0] === 't' ? off : H - off };
   }
   const btnCenter = () => anchor(corner(), MARGIN + BTN_R);
+  // Tocar/pausar rápido (rc.5): botão de 48 px ao lado do botão da roda, na borda de baixo (ou de cima), só com a
+  // roda fechada. Um toque, sem abrir a roda.
+  const PLAY_R = 24;
+  function playCenter() {
+    const b = btnCenter();
+    return { x: b.x + (corner()[1] === 'l' ? 1 : -1) * (BTN_R + 12 + PLAY_R), y: b.y };
+  }
   const wheelCenter = () => anchor(corner(), MARGIN + R_PLATE);
   function local(e) {
     const r = canvas.getBoundingClientRect();
@@ -196,7 +203,9 @@ export function setupWheel(app, canvas) {
     if (pr && inRect(p, pr)) return { kind: 'chip', id: 'paste' };
     if (!open) {
       const b = btnCenter();
-      return Math.hypot(p.x - b.x, p.y - b.y) <= BTN_R + 10 ? { kind: 'btn' } : null;
+      if (Math.hypot(p.x - b.x, p.y - b.y) <= BTN_R + 6) return { kind: 'btn' };
+      const pc = playCenter();
+      return Math.hypot(p.x - pc.x, p.y - pc.y) <= PLAY_R + 6 ? { kind: 'center' } : null;   // mesmo efeito do centro
     }
     const c = wheelCenter(), base = BASE[corner()];
     const { d, a } = polar(p, c);
@@ -718,7 +727,7 @@ export function setupWheel(app, canvas) {
     if (!h.draw) card('Desenhe com a caneta. O dedo não risca.', W / 2, 64);
     if (!h.wheel) {
       const b = btnCenter(), dir = BASE[corner()] * RAD;
-      card('Toque aqui: a roda tem tempo, tintas e ferramentas.', b.x + Math.cos(dir) * 60 + (corner()[1] === 'l' ? 150 : -150), b.y + Math.sin(dir) * 60);
+      card('Toque aqui: a roda tem tempo, tintas e ferramentas.', b.x + Math.cos(dir) * 60 + (corner()[1] === 'l' ? 150 : -150), b.y + Math.sin(dir) * 60 + (corner()[0] === 'b' ? -28 : 28));
     }
     if (!h.time && performance.now() >= rulerUntil) card('Arraste 2 dedos para os lados: o tempo anda.', W / 2, H - 52);
   }
@@ -754,9 +763,24 @@ export function setupWheel(app, canvas) {
     ctx.stroke();
   }
 
+  function drawPlay() {
+    const p = playCenter();
+    disc(p.x, p.y, PLAY_R);
+    ctx.fillStyle = 'rgba(27,26,24,0.92)'; ctx.fill();
+    ctx.lineWidth = 1; ctx.strokeStyle = C.line; ctx.stroke();
+    ctx.fillStyle = C.text;
+    if (app.clock.paused) {                   // parado: triângulo (tocar)
+      ctx.beginPath();
+      ctx.moveTo(p.x - 6, p.y - 9); ctx.lineTo(p.x + 10, p.y); ctx.lineTo(p.x - 6, p.y + 9);
+      ctx.closePath(); ctx.fill();
+    } else {                                  // tocando: duas barras (pausar)
+      ctx.fillRect(p.x - 8, p.y - 9, 5, 18); ctx.fillRect(p.x + 3, p.y - 9, 5, 18);
+    }
+  }
+
   function drawReadoutNearButton(c) {
     const dir = BASE[corner()] * RAD;
-    const x = c.x + Math.cos(dir) * 70, y = c.y + Math.sin(dir) * 70;
+    const x = c.x + Math.cos(dir) * 100, y = c.y + Math.sin(dir) * 100;
     ctx.font = '600 13px system-ui, sans-serif';
     const w = ctx.measureText(readText).width + 20;
     ctx.beginPath();
@@ -820,6 +844,7 @@ export function setupWheel(app, canvas) {
         }
       }
       if (!animating || dragPos) drawButton(c);
+      if (!animating && !dragPos) drawPlay();
       if (now < readUntil && !dragPos) drawReadoutNearButton(c);
     }
 
@@ -851,6 +876,7 @@ export function setupWheel(app, canvas) {
     const polarAt = (deg, radius, rad) => at({ x: c.x + Math.cos(deg * RAD) * radius, y: c.y + Math.sin(deg * RAD) * radius }, rad);
     return {
       btn: at(btnCenter(), BTN_R),
+      play: at(playCenter(), PLAY_R),
       center: at(c, R_CENTER),
       plate: at(c, R_PLATE),
       speed: at({ x: c.x + Math.cos(base) * ((R_SPEED0 + R_SPEED1) / 2), y: c.y + Math.sin(base) * ((R_SPEED0 + R_SPEED1) / 2) }, 30),

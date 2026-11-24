@@ -1,6 +1,6 @@
 GRÃO — INSTRUÇÕES DE USO
 ========================
-Versão descrita: 1.0.0-rc.4 (candidata a 1.0)
+Versão descrita: 1.0.0-rc.5 (candidata a 1.0)
 Atualizado em: 24/11/2026
 Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
 
@@ -31,7 +31,7 @@ SUMÁRIO
 - No tablet (Chrome): https://lama-av.github.io/Grao/
 - Para instalar como app: menu do Chrome > "Adicionar à tela inicial". Depois de
   aberto uma vez com internet, o Grão abre SEM INTERNET.
-- Ao abrir, aparece a versão (ex.: "Grão 1.0.0-rc.4-b21"). A versão também
+- Ao abrir, aparece a versão (ex.: "Grão 1.0.0-rc.5-b22"). A versão também
   aparece no fim do Menu.
 - Versão nova publicada: aparece junto do botão da roda "Nova versão. Toque
   para atualizar." (e no Menu, "Atualizar agora"). Tocar salva e atualiza. O app
@@ -87,6 +87,8 @@ Recolhida: um botão redondo no canto inferior esquerdo (direito no Canhoto).
 - Anel de pontos: o frame atual aceso. Contorno fino: loop parado.
 - Ponto vermelho: gravando ou exportando.
 - Tocar: abre a roda. Segurar 0,4 s e arrastar: leva o botão para outro canto.
+- TOCAR/PAUSAR RÁPIDO: o botão pequeno ao lado (▶ / ❚❚) toca e pausa o loop num
+  toque só, sem abrir a roda.
 
 Roda aberta, de dentro para fora:
 - CENTRO: toca / pausa. Leituras rápidas aparecem aqui ("3/8", "1,5×").
