@@ -272,7 +272,7 @@ GIF/MP4/MOV, transformar a seleção, balde, linha, caneta Bézier, opacidade e 
 | Pedido | No plano? | Onde | Recomendação do VS Code |
 | --- | --- | --- | --- |
 | Menu de arquivo (novo, salvar, abrir) | Sim | v0.6 T-050 galeria, T-051 arquivo `.grao` | **Antecipar o T-051** (Salvar cópia `.grao` / Abrir `.grao` na folha Mais): é pequeno e protege o desenho, que hoje só vive no navegador. "Novo projeto" já existe. Galeria fica na v0.6. |
-| Tintas riso oficiais | Em parte | MVP: 4 tintas; "paletas próprias" = Grão 2 | Valores já corretos (ver `docs/12-tintas-riso.md`, fonte Stencil Wiki; não há hex oficial da Riso). **Ampliar a troca de cor de 8 para as 81 tintas, agrupadas em Padrão, Edição especial e Sob encomenda,** numa folha com grade (só com a caneta parada). Paletas próprias continuam para depois. |
+| Tintas riso oficiais | Em parte | MVP: 4 tintas; "paletas próprias" = Grão 2 | Valores já corretos (ver `docs/12-tintas-riso.md`, fonte Stencil Wiki; não há hex oficial da Riso). **Raphael (24/11): "não há necessidade de tantas cores"** — manter as 8 atuais; a lista completa fica só como referência, numa folha com grade (só com a caneta parada). Paletas próprias continuam para depois. |
 | Camadas confusas | Sim | v0.4 T-030–T-034 | Hoje camada = tinta e a folha "Camadas" só tem tempo (FPS e frames), como a v0.2 pediu. Sugestão barata até a v0.4: **renomear o setor para "Tempo"** (decisão de texto, doc 11). |
 | Exportar GIF e MP4 | Sim | MVP essencial; v0.6 T-052 | Manter na v0.6 ou antecipar o GIF. **MOV: não recomendo** (o navegador não grava MOV; MP4 via WebCodecs e WebM funcionam no Chrome). |
 | Laço só seleciona? | Sim | MVP | Sim, Laço é só seleção. |
