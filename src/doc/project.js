@@ -1,9 +1,31 @@
-// Documento: projeto, tintas (camadas), frames e traços.
+// Documento: projeto, tintas (tambores), camadas, frames e traços.
 // Só traços são salvos; máscaras são cache (ver docs/04-design-sistema-v0.1.md).
+//
+// Desde a v0.4 (ADR-004): o projeto tem 4 TINTAS (`inks`, os tambores da riso, cada uma com uma das 9 cores de
+// INKS) e de 1 a 8 CAMADAS. Cada camada imprime com um tambor (`layer.ink` = 0..3), tem o próprio loop (fps,
+// frames), visível, travada e retícula (`screen`). `layer.id` é fixo: as máscaras são guardadas por ele.
+// Projetos da versão 1 (camada = tinta) abrem com 4 camadas, cada uma no seu tambor, sem mudança visual.
 
-import { DEFAULT_FRAMES, DEFAULT_INKS, INKS, PAPERS, FPS_OPTIONS, MAX_FRAMES } from '../config.js';
+import { DEFAULT_FRAMES, DEFAULT_INKS, INKS, PAPERS, FPS_OPTIONS, MAX_FRAMES, LPI_OPTIONS } from '../config.js';
 
-const LAYERS = 4;                         // o compositor riso mistura exatamente 4 tintas
+export const DRUMS = 4;                   // a riso imprime com 4 tambores por projeto
+export const MAX_LAYERS = 8;
+export const SCREEN_TYPES = ['stochastic', 'am'];   // retícula estocástica (padrão) ou reticulada
+export const DENSITY_MIN = 0.05;
+const defaultScreen = () => ({ type: 'stochastic', density: 1 });
+
+// Camada nova no tambor `ink`.
+export function newLayer(project, ink = 0, fps = 8, nframes = DEFAULT_FRAMES) {
+  return {
+    id: project.nextLayerId++,
+    ink, fps,
+    frames: Array.from({ length: nframes }, () => []),
+    visible: true, locked: false, screen: defaultScreen(),
+  };
+}
+
+// Cor (entrada de INKS) com que a camada imprime.
+export const inkOf = (project, layer) => INKS[project.inks[layer.ink]] || INKS[0];
 
 // Ferramentas com tamanho próprio (unidades do documento) e o intervalo do arco de Tamanho.
 export const DEFAULT_SIZES = { brush: 10, pencil: 6, marker: 16, chalk: 14, eraser: 20 };
@@ -11,26 +33,27 @@ export const SIZE_MIN = 2, SIZE_MAX = 40;
 const INK_BRUSHES = ['pencil', 'marker', 'chalk'];
 
 export function newProject(paper = 'natural') {
-  return {
+  const p = {
     format: 'grao-projeto',
-    version: 1,
+    version: 2,
     created: new Date().toISOString(),
     name: 'Sem título',
     paper,
     nextId: 1,
+    nextLayerId: 1,
     activeLayer: 0,
-    layers: DEFAULT_INKS.map((ink) => ({
-      ink,
-      fps: 8,
-      frames: Array.from({ length: DEFAULT_FRAMES }, () => []),
-    })),
+    inks: DEFAULT_INKS.slice(),
+    layers: [],
     // wheelCorner: null = automático (inferior esquerdo; inferior direito no modo Canhoto)
     // sizes: tamanho de cada ferramenta (T-021). smooth: suavização do traço, 0 = desligada (decisão 6, T-025).
     settings: {
       grain: 0.6, mis: 0.5, ferver: true, auto: true, lefty: false, wheelCorner: null, pinWheel: false,
       sizes: { ...DEFAULT_SIZES }, smooth: 0,
+      lpi: 60, trapping: true,            // lineatura da retícula reticulada (#030) e trapping do balde (#033)
     },
   };
+  for (let d = 0; d < DRUMS; d++) p.layers.push(newLayer(p, d));
+  return p;
 }
 
 export function newStroke(project, kind, w, brush) {
@@ -98,36 +121,67 @@ export function boundsOf(strokes) {
 
 // Garante que um projeto carregado (do navegador ou de um arquivo .grao) tem todos os campos e só valores
 // válidos. Traço estragado é descartado; o resto do projeto é aproveitado. Nunca lança erro.
+// Versão 1 (até a 0.3.x): 4 camadas, e layer.ink era a cor (índice de INKS). Vira: inks = essas cores, layer.ink = 0..3.
 export function sanitize(p) {
   const base = newProject();
   if (!p || typeof p !== 'object' || p.format !== 'grao-projeto' || !Array.isArray(p.layers)) return base;
   const num = (v, a, b, d) => (Number.isFinite(v) ? Math.min(b, Math.max(a, v)) : d);
+  const v1 = !Array.isArray(p.inks);
   const out = {
     format: 'grao-projeto',
-    version: 1,
+    version: 2,
     created: typeof p.created === 'string' ? p.created : base.created,
     name: typeof p.name === 'string' && p.name.trim() ? p.name.trim().slice(0, 60) : base.name,
     paper: PAPERS[p.paper] ? p.paper : 'natural',
     nextId: 1,
+    nextLayerId: 1,
     activeLayer: 0,
+    inks: DEFAULT_INKS.slice(),
     layers: [],
     settings: { ...base.settings },
   };
+  const validInk = (i) => Number.isInteger(i) && i >= 0 && i < INKS.length;
+  if (!v1) for (let d = 0; d < DRUMS; d++) if (validInk(p.inks[d])) out.inks[d] = p.inks[d];
+
   let maxId = 0;
-  for (let l = 0; l < LAYERS; l++) {
+  const count = v1 ? DRUMS : Math.min(MAX_LAYERS, p.layers.length);
+  const usedIds = new Set();
+  for (let l = 0; l < count; l++) {
     const src = p.layers[l];
-    const def = base.layers[l];
-    if (!src || typeof src !== 'object' || !Array.isArray(src.frames) || !src.frames.length) { out.layers.push(def); continue; }
-    const frames = src.frames.slice(0, MAX_FRAMES).map((fr) => (Array.isArray(fr) ? fr : []).map(cleanStroke).filter(Boolean));
-    for (const fr of frames) for (const s of fr) maxId = Math.max(maxId, s.id);
-    out.layers.push({
-      ink: Number.isInteger(src.ink) && src.ink >= 0 && src.ink < INKS.length ? src.ink : def.ink,
-      fps: FPS_OPTIONS.includes(src.fps) ? src.fps : def.fps,
-      frames,
-    });
+    const ok = src && typeof src === 'object' && Array.isArray(src.frames) && src.frames.length;
+    if (v1 && validInk(src?.ink)) out.inks[l] = src.ink;           // versão 1: a cor da camada vira a do tambor
+    const drum = v1 ? l : (Number.isInteger(src?.ink) && src.ink >= 0 && src.ink < DRUMS ? src.ink : l % DRUMS);
+    const layer = newLayer(out, drum);
+    if (ok) {
+      layer.frames = src.frames.slice(0, MAX_FRAMES).map((fr) => (Array.isArray(fr) ? fr : []).map(cleanStroke).filter(Boolean));
+      for (const fr of layer.frames) for (const st of fr) maxId = Math.max(maxId, st.id);
+      if (FPS_OPTIONS.includes(src.fps)) layer.fps = src.fps;
+    }
+    if (!v1 && src && typeof src === 'object') {
+      if (Number.isInteger(src.id) && src.id > 0 && !usedIds.has(src.id)) layer.id = src.id;
+      if (typeof src.visible === 'boolean') layer.visible = src.visible;
+      if (typeof src.locked === 'boolean') layer.locked = src.locked;
+      if (typeof src.name === 'string' && src.name.trim()) layer.name = src.name.trim().slice(0, 30);
+      const sc = src.screen;
+      if (sc && typeof sc === 'object') {
+        layer.screen = {
+          type: SCREEN_TYPES.includes(sc.type) ? sc.type : 'stochastic',
+          density: num(sc.density, DENSITY_MIN, 1, 1),
+        };
+      }
+    }
+    usedIds.add(layer.id);
+    out.layers.push(layer);
   }
+  if (!out.layers.length) out.layers.push(newLayer(out, 0));
+  // ids únicos (um id automático pode ter repetido um id escrito no arquivo)
+  let topId = Math.max(0, ...out.layers.map((L) => L.id));
+  const seen = new Set();
+  for (const L of out.layers) { if (seen.has(L.id)) L.id = ++topId; seen.add(L.id); }
+  out.nextLayerId = Math.max(out.nextLayerId, ...out.layers.map((L) => L.id + 1),
+    Number.isInteger(p.nextLayerId) ? p.nextLayerId : 1);
   out.nextId = Math.max(Number.isInteger(p.nextId) ? p.nextId : 1, maxId + 1);
-  out.activeLayer = Number.isInteger(p.activeLayer) && p.activeLayer >= 0 && p.activeLayer < LAYERS ? p.activeLayer : 0;
+  out.activeLayer = Number.isInteger(p.activeLayer) && p.activeLayer >= 0 && p.activeLayer < out.layers.length ? p.activeLayer : 0;
   const s = p.settings && typeof p.settings === 'object' ? p.settings : {};
   const set = out.settings;
   set.grain = num(s.grain, 0, 1, set.grain);
@@ -141,8 +195,9 @@ export function sanitize(p) {
     set.sizes[k] = Math.round(num(sz[k], SIZE_MIN, SIZE_MAX, num(set.sizes[k], SIZE_MIN, SIZE_MAX, DEFAULT_SIZES[k])));
   }
   set.smooth = num(s.smooth, 0, 1, 0);
-  for (const k of ['ferver', 'auto', 'lefty', 'pinWheel']) if (typeof s[k] === 'boolean') set[k] = s[k];
+  for (const k of ['ferver', 'auto', 'lefty', 'pinWheel', 'trapping']) if (typeof s[k] === 'boolean') set[k] = s[k];
   set.wheelCorner = ['bl', 'br', 'tl', 'tr'].includes(s.wheelCorner) ? s.wheelCorner : null;
+  set.lpi = LPI_OPTIONS.includes(s.lpi) ? s.lpi : 60;
   return out;
 }
 

@@ -17,7 +17,8 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
-- **v0.3.1 (24/11/2026):** zoom, pincéis (Lápis, Marcador, Giz), suavização. **v0.3.0:** balde, linha reta, vídeo. **v0.2.1:** Menu com arquivo `.grao`, cores à
+- **v0.4.0 (24/11/2026):** camadas separadas das tintas (ADR-004), retícula, trapping, abrir sem internet (`sw.js`).
+  **v0.3.x:** gestos de 2 dedos, Vermelho vivo, zoom, pincéis, balde, linha reta, vídeo. **v0.2.1:** Menu com arquivo `.grao`, cores à
   vista, setor Tempo. A v0.2.0 (papel em tela cheia e roda de canto) foi testada pelo Raphael no tablet; a 0.2.1
   e a 0.3.0 ainda não.
   Relatório: `docs/relatorio-v0.2.md`. A Fase 0 completa (`docs/08-testes-fase-0.md`) ainda decide o ADR-001.
@@ -59,6 +60,7 @@ index.html, styles.css, manifest.webmanifest, assets/icon.svg
 src/
   main.js              cria o objeto app, liga tudo, loop requestAnimationFrame
   view.js              zoom e posição do papel (uv da tela), pinça, encaixe em 100%
+sw.js                  service worker: guarda o app para abrir sem internet; aviso de versão nova
   actions.js           ações do app (desfazer, seleção, duplicar, apagar, trocar/novo projeto); usado pelo teste
   schedule.js          quando refazer máscaras: ~8 ms por quadro, dependências do balde entre tintas
   config.js            constantes (documento 1200×800, tintas, papéis, FPS, passo da roda…)
@@ -159,7 +161,9 @@ Regras de fluxo:
 - Código e nomes em inglês curto; comentários e documentação em português.
 - Um módulo por responsabilidade; `render/` não conhece a interface; `ui/` não conhece WebGL.
 - Decisão de arquitetura nova → novo ADR em `docs/adr/` (copie `ADR-000-template.md`).
-- Toda mudança visível → linha no `CHANGELOG.md`; versão em `src/config.js` (`VERSION`).
+- Toda mudança visível → linha no `CHANGELOG.md`; versão em `src/config.js` (`VERSION`, `BUILD`).
+- **A cada publicação:** `BUILD` no `config.js` **e** `VERSION` no `sw.js` (= `VERSION-BUILD`); arquivo novo em `src/`
+  entra na lista `FILES` do `sw.js`. O teste de lógica confere as duas coisas (senão o tablet não atualiza).
 - **Documentação de todas as versões:** a cada versão nova (0.2.0…), gerar
   `docs/versoes/Grao_Documentacao_vX.Y.Z.docx` com todos os docs atualizados (pandoc). Nunca sobrescrever
   um .docx de versão anterior.

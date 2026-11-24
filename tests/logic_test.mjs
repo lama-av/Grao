@@ -53,7 +53,7 @@ function makeApp() {
   app.requestSave = () => {};
   app.saveNow = () => {};
   app.toast = (m) => toasts.push(m);
-  app.masks = { clear() {}, rebuildAll() {}, drop() {}, rebuild() {} };
+  app.masks = { clear() {}, rebuildAll() {}, drop() {}, rebuild() {}, prune() {}, empty: null };
   installActions(app);
   app.sheet = { mode: null, open(m) { this.mode = m; }, close() { this.mode = null; } };
   app.debug = { pointer() {}, frame() {}, box: { dataset: {} } };
@@ -203,27 +203,27 @@ for (const code of [4]) {
   check('Refazer pela roda', all(app).length === 1);
   // pétala Tinta por arrastar e soltar (setor em 180°)
   const base = -45, step = 17;
-  const inkAt = (k, n = 4) => at(206, base - (step * (n - 1)) / 2 + step * k);
+  const inkAt = (k, n = 5) => at(206, base - (step * (n - 1)) / 2 + step * k);   // 4 camadas + "+"
   const d = pointer(wet, 'touch');
   d.down(...at(58, 180));
-  check('encostar em Tinta abre a pétala', app.ui.petal === 'ink');
+  check('encostar em Camadas abre a pétala', app.ui.petal === 'ink');
   d.move(...at(120, 200)); d.move(...inkAt(2)); d.up(...inkAt(2));
-  check('arrastar e soltar escolhe a tinta', app.project.activeLayer === 2);
+  check('arrastar e soltar escolhe a camada', app.project.activeLayer === 2);
   check('a pétala fecha ao escolher', app.ui.petal === null);
   // tocar e tocar continua funcionando
   tap(wet, ...at(58, 180));
   tap(wet, ...inkAt(1));
-  check('tocar e tocar escolhe a tinta', app.project.activeLayer === 1);
-  // toque longo numa tinta abre as cores; arrastar até a cor e soltar troca a cor
+  check('tocar e tocar escolhe a camada', app.project.activeLayer === 1);
+  // toque longo numa camada abre a folha da camada
   tap(wet, ...at(58, 180));
   const lp = pointer(wet, 'touch');
   lp.down(...inkAt(0));
   await sleep(600);
-  check('toque longo abre as cores', app.ui.petal === 'inkcolor');
-  const colorAt = (j) => at(206, base - (step * 8) / 2 + step * j);   // 9 cores
-  lp.move(...colorAt(5)); lp.up(...colorAt(5));
-  check('arrastar até a cor troca a cor da tinta', app.project.layers[0].ink === 5, app.project.layers[0].ink);
+  check('toque longo numa camada abre a folha da camada', app.sheet.mode === 'layer');
+  lp.up(...inkAt(0));
+  check('soltar depois do toque longo não troca a camada ativa', app.project.activeLayer === 1);
   // pétala Ferramenta: Borracha
+  app.ui.collapse(); tap(wet, ...BTN);
   tap(wet, ...at(58, 0));
   tap(wet, ...at(270, base - step));   // arco Mexer (fora): Borracha, Balde, Laço
   check('escolher Borracha na pétala', app.tool === 'eraser');
@@ -260,11 +260,11 @@ for (const code of [4]) {
   check('pétala Tinta aberta', app.ui.petal === 'ink');
   const colorArc = (j) => at(270, -45 - (14 * 8) / 2 + 14 * j);      // 9 cores
   tap(wet, ...colorArc(6));
-  check('tocar numa cor do arco troca a cor da tinta ativa', app.project.layers[0].ink === 6, app.project.layers[0].ink);
+  check('tocar numa cor do arco troca a cor da tinta (tambor) da camada ativa', app.project.inks[0] === 6, app.project.inks[0]);
   check('a pétala continua aberta depois de trocar a cor', app.ui.petal === 'ink');
   const d = pointer(wet, 'touch');
   d.down(...colorArc(4)); d.move(...colorArc(5)); d.move(...colorArc(7)); d.up(...colorArc(7));
-  check('arrastar no arco e soltar troca a cor', app.project.layers[0].ink === 7);
+  check('arrastar no arco e soltar troca a cor', app.project.inks[0] === 7);
 }
 
 // ---------- arquivo .grao ----------
@@ -273,7 +273,7 @@ for (const code of [4]) {
   const { app, wet } = makeApp();
   stroke(wet, 300, 200);
   app.project.name = 'Meu loop: ação!';
-  app.project.layers[2].ink = 6;
+  app.project.inks[2] = 6;
   const back = projectFromText(projectToText(app.project));
   check('salvar e abrir devolve os mesmos traços', JSON.stringify(back.layers) === JSON.stringify(app.project.layers));
   check('salvar e abrir devolve nome e papel', back.name === 'Meu loop: ação!' && back.paper === app.project.paper);
@@ -287,14 +287,14 @@ for (const code of [4]) {
   bad.layers[0].frames[0].push({ id: 901, kind: 'tinta', w: 5, pts: [1, 2, 3] });      // tipo desconhecido
   bad.layers[0].frames[0].push({ id: 902, kind: 'ink', w: 5, pts: [1, 2, 0.5] });      // válido
   bad.layers[1].ink = 99; bad.layers[1].fps = 7;
-  bad.layers.length = 2;                                                                 // faltam 2 tintas
+  bad.layers.length = 2;                                                                 // só 2 camadas
   bad.nextId = 3; bad.activeLayer = 9; bad.paper = 'papelão';
   bad.settings.sizes = { brush: 9999 }; bad.settings.wheelCorner = 'meio';
   const fixed = projectFromText(JSON.stringify(bad));
   const f0 = fixed.layers[0].frames[0];
   check('arquivo estragado: só os traços bons ficam', f0.length === 2 && f0[1].id === 902, f0.map((s) => s.id).join(','));
   check('arquivo estragado: tinta e FPS inválidos voltam ao padrão', fixed.layers[1].ink === 1 && fixed.layers[1].fps === 8);
-  check('arquivo estragado: sempre 4 tintas', fixed.layers.length === 4);
+  check('arquivo estragado: mantém as 2 camadas e sempre 4 tintas', fixed.layers.length === 2 && fixed.inks.length === 4);
   check('arquivo estragado: próximo id passa do maior id', fixed.nextId === 903, fixed.nextId);
   check('arquivo estragado: tinta ativa, papel e ajustes conferidos',
     fixed.activeLayer === 0 && fixed.paper === 'natural' && fixed.settings.sizes.brush === 40 && fixed.settings.wheelCorner === null);
@@ -813,11 +813,135 @@ for (const code of [4]) {
   check('paleta com 9 tintas, Vermelho vivo no fim', INKS.length === 9 && INKS[8].name === 'Vermelho vivo' && INKS[8].hex === '#F15060');
   app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 180));
   tap(wet, ...at(270, -45 - (14 * 8) / 2 + 14 * 8));
-  check('Vermelho vivo escolhível no arco de cores', app.project.layers[0].ink === 8);
+  check('Vermelho vivo escolhível no arco de cores', app.project.inks[0] === 8);
   const { projectToText, projectFromText } = await import('../src/io/file.js');
-  check('Vermelho vivo (índice 8) salva e abre no .grao', projectFromText(projectToText(app.project)).layers[0].ink === 8);
-  const bad = JSON.parse(projectToText(app.project)); bad.layers[0].ink = 9;
-  check('índice 9 não existe: volta ao padrão', projectFromText(JSON.stringify(bad)).layers[0].ink === 0);
+  check('Vermelho vivo (índice 8) salva e abre no .grao', projectFromText(projectToText(app.project)).inks[0] === 8);
+  const bad = JSON.parse(projectToText(app.project)); bad.inks[0] = 9;
+  check('índice 9 não existe: volta ao padrão', projectFromText(JSON.stringify(bad)).inks[0] === 0);
+}
+
+// ---------- v0.4: camadas e tintas (#028–#031) ----------
+{
+  const { sanitize, newProject: np, MAX_LAYERS } = await import('../src/doc/project.js');
+  // migração da versão 1 (camada = tinta, layer.ink era a cor)
+  const v1 = { format: 'grao-projeto', version: 1, paper: 'kraft', nextId: 5, activeLayer: 2,
+    layers: [0, 1, 6, 3].map((ink, l) => ({ ink, fps: 8, frames: [[{ id: l + 1, kind: 'ink', w: 5, pts: [1, 2, 0.5] }], []] })),
+    settings: { grain: 0.4 } };
+  const m = sanitize(v1);
+  check('migração: projeto antigo vira 4 camadas, uma por tambor', m.version === 2 && m.layers.length === 4 && m.layers.map((L) => L.ink).join() === '0,1,2,3');
+  check('migração: as cores vão para os tambores (sem mudança visual)', m.inks.join() === '0,1,6,3');
+  check('migração: traços, ativa e ajustes preservados', m.layers[2].frames[0][0].id === 3 && m.activeLayer === 2 && m.settings.grain === 0.4);
+  check('migração: camadas visíveis, destravadas, retícula estocástica 100%',
+    m.layers.every((L) => L.visible && !L.locked && L.screen.type === 'stochastic' && L.screen.density === 1));
+  check('migração: cada camada tem id único', new Set(m.layers.map((L) => L.id)).size === 4);
+  // limites
+  const many = np(); many.layers = Array.from({ length: 11 }, (_, i) => ({ ...many.layers[0], id: i + 1, ink: 7 }));
+  const lim = sanitize(JSON.parse(JSON.stringify(many)));
+  check('arquivo com 11 camadas abre com 8; tambor inválido volta a um válido', lim.layers.length === MAX_LAYERS && lim.layers.every((L) => L.ink >= 0 && L.ink < 4));
+  const dupIds = np(); dupIds.layers[1].id = dupIds.layers[0].id;
+  check('ids repetidos no arquivo são corrigidos', new Set(sanitize(JSON.parse(JSON.stringify(dupIds))).layers.map((L) => L.id)).size === 4);
+  const scr = np(); scr.layers[0].screen = { type: 'am', density: 0.01 }; scr.layers[1].screen = { type: 'xadrez', density: 9 };
+  const sc = sanitize(JSON.parse(JSON.stringify(scr)));
+  check('retícula: densidade mínima 5% e tipo inválido vira estocástica', sc.layers[0].screen.type === 'am' && sc.layers[0].screen.density === 0.05 && sc.layers[1].screen.type === 'stochastic' && sc.layers[1].screen.density === 1);
+}
+{
+  const { app, wet } = makeApp();
+  const P = () => app.project;
+  stroke(wet, 300, 300);
+  // criar camada: acima da ativa, mesma tinta e tempo
+  app.addLayer();
+  check('criar camada: fica acima da ativa e vira a ativa', P().layers.length === 5 && P().activeLayer === 1 && P().layers[1].ink === P().layers[0].ink);
+  stroke(wet, 400, 200);
+  check('a camada nova recebe o traço', P().layers[1].frames.flat().length === 1);
+  check('desfazer o traço não desfaz a camada', app.undo() && P().layers.length === 5 && P().layers[1].frames.flat().length === 0);
+  check('desfazer de novo apaga a camada criada', app.undo() && P().layers.length === 4);
+  check('refazer recria a camada', app.redo() && P().layers.length === 5);
+  for (let i = 0; i < 5; i++) app.addLayer();
+  check('máximo de 8 camadas', P().layers.length === 8 && toasts.at(-1) === 'Máximo de 8 camadas.');
+  // reordenar
+  const id0 = P().layers[0].id;
+  P().activeLayer = 0;
+  app.moveLayer(0, +1);
+  check('subir a camada troca a ordem e a ativa acompanha', P().layers[1].id === id0 && P().activeLayer === 1);
+  app.undo();
+  check('desfazer volta a ordem', P().layers[0].id === id0);
+  // visível, travar, tinta, retícula
+  app.toggleLayerVisible(0);
+  check('esconder camada', P().layers[0].visible === false);
+  app.toggleLayerLock(0); P().activeLayer = 0;
+  const n0 = all(app).length;
+  stroke(wet, 500, 300);
+  check('camada travada não aceita traço', all(app).length === n0);
+  app.tool = 'bucket'; tap(wet, 500, 300, 'pen'); app.tool = 'brush';
+  check('camada travada não aceita balde', all(app).length === n0);
+  app.setLayerInk(0, 3);
+  check('trocar o tambor da camada', P().layers[0].ink === 3);
+  app.setLayerScreen(0, { type: 'am', density: 0.3 });
+  check('retícula reticulada 30%', P().layers[0].screen.type === 'am' && P().layers[0].screen.density === 0.3);
+  app.undo(); app.undo(); app.undo(); app.undo();
+  check('desfazer volta retícula, tambor, trava e visível', P().layers[0].screen.type === 'stochastic' && P().layers[0].ink === 0 && !P().layers[0].locked && P().layers[0].visible);
+  // duplicar e apagar
+  P().activeLayer = 0;
+  while (P().layers.length > 4) app.deleteLayer(P().layers.length - 1);
+  app.duplicateLayer(0);
+  const dup = P().layers[1];
+  check('duplicar camada copia os traços com ids novos', dup.frames.flat().length === P().layers[0].frames.flat().length && dup.frames.flat()[0].id !== P().layers[0].frames.flat()[0].id && dup.id !== P().layers[0].id);
+  app.deleteLayer(1);
+  check('apagar camada', P().layers.length === 4 && P().layers.every((L) => L.id !== dup.id));
+  while (P().layers.length > 1) app.deleteLayer(0);
+  app.deleteLayer(0);
+  check('a última camada não pode ser apagada', P().layers.length === 1 && toasts.at(-1) === 'A última camada não pode ser apagada.');
+}
+{
+  // cor do tambor e tintas prontas
+  const { app } = makeApp();
+  const { FALSE_CMYK } = await import('../src/actions.js');
+  app.setDrumColor(2, 5);
+  check('cor do tambor muda para todas as camadas dele', app.project.inks[2] === 5);
+  const before = app.project.inks.slice();
+  app.applyFalseCmyk();
+  check('Falso CMYK: Azul, Vermelho vivo, Amarelo, Preto', app.project.inks.join() === FALSE_CMYK.join() && FALSE_CMYK.join() === '1,8,2,3');
+  app.restoreProjectInks();
+  check('"Do projeto" volta às tintas de antes', app.project.inks.join() === before.join());
+  app.applyFalseCmyk(); app.undo();
+  check('Falso CMYK entra no desfazer', app.project.inks.join() === before.join());
+  // leitura com mais de 4 camadas
+  app.clock.t = 0;
+  check('leitura com 4 camadas: 1/8', app.frameLabel() === '1/8');
+  app.addLayer();
+  check('leitura com mais de 4 camadas: C2 · 1/8', app.frameLabel() === 'C2 · 1/8', app.frameLabel());
+}
+{
+  // máscaras guardadas pelo id da camada; trapping no balde
+  const { floodFill } = await import('../src/render/fill.js');
+  const w = 40, h = 20;
+  const img = new Uint8ClampedArray(w * h * 4);
+  const wall = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) for (const x of [10, 11, 12, 13, 14, 15]) wall[y * w + x] = 1;     // linha grossa de outra camada
+  const a = img.slice(); floodFill(a, w, h, 3, 10, 2, wall, 0);
+  const b = img.slice(); floodFill(b, w, h, 3, 10, 2, wall, 2);
+  const px = (d, x) => d[(10 * w + x) * 4];
+  check('trapping: sem ele o balde entra 1 px na linha; com ele, mais 2 px (0,5 mm)', px(a, 10) === 255 && px(a, 11) === 0 && px(b, 12) === 255 && px(b, 13) === 0);
+  check('trapping: nunca passa para o outro lado da linha', px(b, 17) === 0 && px(b, 25) === 0);
+}
+
+// ---------- abrir sem internet (#035) ----------
+{
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  const { VERSION, BUILD } = await import('../src/config.js');
+  const ver = /const VERSION = '([^']+)'/.exec(sw)?.[1];
+  check('sw.js tem a mesma versão do app (senão o tablet não recebe a atualização)', ver === `${VERSION}-${BUILD}`, `${ver} vs ${VERSION}-${BUILD}`);
+  const listed = new Set([...sw.matchAll(/^\s*'([^']+)',$/gm)].map((m) => m[1]));
+  const walk = (d) => fs.readdirSync(path.join(root, d), { withFileTypes: true }).flatMap((f) =>
+    f.isDirectory() ? walk(`${d}/${f.name}`) : /\.(js|vert|frag)$/.test(f.name) ? [`${d}/${f.name}`] : []);
+  const missing = walk('src').filter((f) => !listed.has(f));
+  check('sw.js guarda todos os arquivos do app', !missing.length && ['index.html', 'styles.css', 'manifest.webmanifest'].every((f) => listed.has(f)), missing.join(', '));
+  const extra = [...listed].filter((f) => f !== './' && !fs.existsSync(path.join(root, f)));
+  check('sw.js não lista arquivo que não existe (a instalação falharia inteira)', !extra.length, extra.join(', '));
 }
 
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);

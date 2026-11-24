@@ -21,7 +21,7 @@ Como usar o app: [`INSTRUCOES.txt`](../INSTRUCOES.txt) na raiz.
 
 | [13 — Conselho sobre a v0.3 e roteiro até a v1.0](13-conselho-v0.3.md) | Avaliação das 5 lentes, gesto de tempo, camadas, retícula estocástica e reticulada, nova ordem das versões |
 
-Relatórios de versão (resposta ao HANDOFF, para a auditoria no chat): [v0.2](relatorio-v0.2.md).
+Relatórios de versão (resposta ao HANDOFF, para a auditoria no chat): [v0.2](relatorio-v0.2.md) · [v0.3](relatorio-v0.3.md) · [v0.4](relatorio-v0.4.md).
 
 ## Decisões de arquitetura (ADRs)
 
@@ -31,6 +31,7 @@ Relatórios de versão (resposta ao HANDOFF, para a auditoria no chat): [v0.2](r
 | [001](adr/ADR-001-plataforma-v0.1.md) | Plataforma do v0.1 | Proposto |
 | [002](adr/ADR-002-interface-em-canvas.md) | Interface desenhada em canvas, por baixo do traço | Aceito |
 | [003](adr/ADR-003-gestos-de-dois-dedos.md) | Reconhecedor de gestos de 2 dedos (tempo, zoom, transformar, desfazer, palma) | Aceito |
+| [004](adr/ADR-004-camadas-tambores-reticula.md) | Camadas separadas das tintas, máscaras por id, retícula no compositor | Aceito |
 
 ## Fonte original
 

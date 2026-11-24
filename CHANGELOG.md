@@ -4,6 +4,40 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [0.4.0] — 2026-11-24
+
+Camadas, retícula e uso sem internet (pedidos #028–#033 e #035, escritos pelo chat; feitos sem a pausa de auditoria,
+a pedido do Raphael). Arquitetura: ADR-004.
+
+### Adicionado
+- **Camadas separadas das tintas** (#028): o projeto tem 4 tintas (tambores) e de 1 a 8 camadas. Cada camada imprime
+  com uma tinta, tem o próprio loop, visível, travada e retícula. Ordem de impressão = ordem das camadas. Camadas da
+  mesma tinta se juntam sem escurecer. Projetos antigos abrem com 4 camadas, sem mudança visual.
+- **Pétala Camadas** (#029, antigo setor Tinta): uma pastilha por camada (cor da tinta, número, apagada = invisível,
+  cadeado = travada) e "+" para criar; por fora, as 9 cores para a tinta da camada ativa. **Toque longo numa camada**
+  abre a folha da camada: Tinta (tambor e cor), Retícula, Visível, Travar, Subir, Descer, Duplicar, Apagar.
+- **Retícula por camada** (#030): **Estocástica** (padrão, o grão) ou **Reticulada** (pontos redondos em grade, ângulo
+  por tinta 15°/75°/0°/45°), **Densidade** de 5% a 100%. Lineatura 40/60/85 no Menu → Impressão. Abaixo de 10% os
+  pontos falham ao acaso; áreas cheias imprimem irregulares acima de 50%.
+- **Desalinhamento calibrado:** o máximo agora é 3 mm num A4 (antes ~1,2 mm); o padrão fica em ~1,5 mm.
+- **Tempo por camada** (#031): folha Tempo, prato, régua e gesto andam na camada ativa; leitura "C2 · 3/8" com mais de
+  4 camadas.
+- **Trapping** (#033): o balde avança 0,5 mm por baixo das linhas que o seguram (ligado por padrão; Menu → Impressão).
+- **Tintas prontas** (Menu → Impressão): Falso CMYK (Azul, Vermelho vivo, Amarelo, Preto) e "Do projeto".
+- **Abrir sem internet** (#035): service worker (`sw.js`) guarda o app; versão nova aparece no botão da roda ("Nova
+  versão. Toque para atualizar."), só com o loop parado; nunca recarrega sozinho.
+- Desfazer cobre criar, apagar, reordenar, duplicar camada, tinta, cor do tambor, visível, travar e retícula.
+
+### Mudado
+- Arquivo `.grao` versão 2 (`inks` + camadas com `id`, `visible`, `locked`, `screen`). O `sanitize` migra a versão 1.
+- Máscaras guardadas pelo id da camada (reordenar e desfazer não refazem máscaras).
+- Teste de lógica: 200 verificações (migração, limites, operações e desfazer de camadas, tintas prontas, trapping,
+  service worker).
+
+### Não verificado
+- O shader novo não foi compilado nesta máquina (o validador da Khronos foi bloqueado pelas permissões). Revisado à mão
+  contra as regras do GLSL ES 3.00. **Se o app abrir com a caixa vermelha "Shader: …", mande um print.**
+
 ## [0.3.2] — 2026-11-24
 
 Gestos, Vermelho vivo e preparação da auditoria (pedidos #022–#027 e #034, escritos pelo chat).

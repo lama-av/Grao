@@ -1,6 +1,6 @@
 // Grão v0.1 — ponto de entrada. Liga documento, relógio, compositor riso, entrada e interface.
 
-import { VERSION, BUILD, INKS, PAPERS, REPRINTS_PER_SECOND, hexToRgb } from './config.js';
+import { VERSION, BUILD, INKS, PAPERS, REPRINTS_PER_SECOND, PAPER_MM, DOC_W, hexToRgb } from './config.js';
 import { sanitize } from './doc/project.js';
 import { installActions } from './actions.js';
 import { History } from './doc/history.js';
@@ -17,7 +17,12 @@ import { videoFormat, recordSeconds, recordCanvas, fmtSeconds } from './io/video
 import { rebuildDirty } from './schedule.js';
 import { createView, fitView } from './view.js';
 
-const MAX_MIS_UV = 0.004; // desalinhamento máximo (fração da largura) com o controle no máximo
+// Desalinhamento calibrado (#030): o papel equivale a um A4 deitado (297 mm). A riso aceita 2 a 3 mm entre cores;
+// o controle no máximo desloca até 3 mm; o padrão (0,5) fica em ~1,5 mm.
+const MAX_MIS_UV = 3 / PAPER_MM;
+// Ângulo da retícula reticulada por tinta (padrão de riso, gera o moiré típico): 15°, 75°, 0°, 45°.
+const SCREEN_ANGLES = [15, 75, 0, 45].map((a) => (a * Math.PI) / 180);
+const A4_INCHES = PAPER_MM / 25.4;
 
 async function start() {
   const glCanvas = document.getElementById('gl');
@@ -170,12 +175,20 @@ async function start() {
     const seed = app.clock.seed(now, REPRINTS_PER_SECOND, s.ferver);
     const paper = PAPERS[p.paper] || PAPERS.natural;
     riso.draw({
-      masks: p.layers.map((layer, l) => app.masks.get(l, app.clock.frameOf(layer))),
-      prev: app.masks.get(p.activeLayer, (fa - 1 + n) % n),
-      next: app.masks.get(p.activeLayer, (fa + 1) % n),
-      inks: p.layers.map((layer) => hexToRgb(INKS[layer.ink].hex)),
-      opac: [1, 1, 1, 1],
+      layers: p.layers.map((layer) => ({
+        mask: app.masks.get(layer.id, app.clock.frameOf(layer)),
+        ink: layer.ink,
+        type: layer.screen.type === 'am' ? 1 : 0,
+        density: layer.screen.density,
+        on: layer.visible,
+      })),
+      empty: app.masks.empty,
+      prev: app.masks.get(active.id, (fa - 1 + n) % n),
+      next: app.masks.get(active.id, (fa + 1) % n),
+      inks: p.inks.map((i) => hexToRgb((INKS[i] || INKS[0]).hex)),
       offsets: offsets(seed, s.mis),
+      angles: SCREEN_ANGLES,
+      cell: DOC_W / (s.lpi * A4_INCHES),       // lineatura: linhas de pontos por polegada no A4
       paper: { rgb: hexToRgb(paper.hex), fiber: paper.fiber, incl: paper.incl, tex: paper.tex },
       grain: s.grain,
       seed,
@@ -199,6 +212,30 @@ async function start() {
 
   // Fase de testes: confirma qual versão o tablet está rodando (o Chrome guarda cópias antigas).
   app.toast(`Grão ${VERSION}-${BUILD}`);
+
+  // Abrir sem internet (#035). Só em https (GitHub Pages) ou localhost: o navegador não aceita em http da rede.
+  app.updateReady = null;
+  app.applyUpdate = () => {
+    if (!app.updateReady) return;
+    app.updateRequested = true;
+    app.updateReady.postMessage('atualizar');
+  };
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      const check = () => { if (reg.waiting && navigator.serviceWorker.controller) app.updateReady = reg.waiting; };
+      check();
+      reg.addEventListener('updatefound', () => {
+        const w = reg.installing;
+        w?.addEventListener('statechange', () => { if (w.state === 'installed') check(); });
+      });
+    }).catch((err) => console.warn('Grão: service worker não registrou', err));
+    let reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!app.updateRequested || reloading) return;   // só recarrega depois do toque no aviso
+      reloading = true;
+      Promise.resolve(app.saveNow()).finally(() => location.reload());
+    });
+  }
 
   // Novidade mostrada uma vez por aparelho, no botão da roda (#025).
   try {

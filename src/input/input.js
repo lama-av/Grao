@@ -4,7 +4,7 @@
 // o resto vai para o papel. O #wet guarda só o traço molhado e o laço; a caixa da seleção vai para o #ui.
 
 import { DOC_W, DOC_H, INKS, PAPERS, TAP_MOVE_PX } from '../config.js';
-import { newStroke, cloneStroke, boundsOf, fillDependents } from '../doc/project.js';
+import { newStroke, cloneStroke, boundsOf, fillDependents, inkOf } from '../doc/project.js';
 import { BRUSHES } from '../render/stroke.js';
 import { drawLastSegment, drawStroke } from '../render/stroke.js';
 import { uvToDoc, pinch, settle, isFit } from '../view.js';
@@ -228,6 +228,9 @@ export function setupInput(app, wetCanvas) {
     const p = toDoc(e);
     const layer = app.project.layers[app.project.activeLayer];
 
+    // Camada travada: não aceita traço, balde nem laço (#028).
+    if (layer.locked) { app.ui?.say('Camada travada'); return; }
+
     // Com o botão do laço segurado, a caneta sempre faz laço. Com o Laço fixo (roda), dentro da seleção ela move.
     if (!app.lassoHeld && app.selection && insideBounds(p, selectionBounds())) {
       mode = 'move';
@@ -398,7 +401,7 @@ export function setupInput(app, wetCanvas) {
   function colorFor(s) {
     if (s.kind === 'cut') return PAPERS[app.project.paper].hex;
     const layer = app.project.layers[app.project.activeLayer];
-    return INKS[layer.ink].hex;
+    return inkOf(app.project, layer).hex;
   }
 
   function selectWithLasso() {
@@ -497,7 +500,7 @@ export function setupInput(app, wetCanvas) {
           const layer = activeLayer();
           const dir = Math.sign(act.frames);
           for (let i = 0; i < Math.abs(act.frames); i++) app.clock.step(layer, dir);
-          app.ui?.say(`${app.clock.frameOf(layer) + 1}/${layer.frames.length}`);
+          app.ui?.say(app.frameLabel ? app.frameLabel(layer) : `${app.clock.frameOf(layer) + 1}/${layer.frames.length}`);
           break;
         }
         case 'undo':

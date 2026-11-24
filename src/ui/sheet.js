@@ -1,4 +1,5 @@
-// Folhas compactas perto da roda (HTML): "Menu" (arquivo e ajustes) e "Tempo" (FPS e frames da tinta ativa).
+// Folhas compactas perto da roda (HTML): "Menu" (arquivo e ajustes), "Tempo" (FPS e frames da camada ativa),
+// "Gestos" e a folha da camada (toque longo numa camada da pétala Camadas).
 // Só existem com a caneta parada: fecham quando o papel ou a roda são tocados (ver wheel.paperDown).
 
 import { INKS, PAPERS, FPS_OPTIONS, MAX_FRAMES } from '../config.js';
@@ -6,6 +7,8 @@ import { confirmDialog } from './dialog.js';
 import { downloadProject, pickProjectFile, projectFromText } from '../io/file.js';
 import { fmtSeconds } from '../io/video.js';
 import { fitView, isFit } from '../view.js';
+import { inkOf, DRUMS } from '../doc/project.js';
+import { LPI_OPTIONS } from '../config.js';
 
 export function setupSheet(app) {
   const el = document.createElement('div');
@@ -60,6 +63,13 @@ export function setupSheet(app) {
         <label>Grão <input type="range" data-k="grain" min="0" max="1" step="0.01"></label>
         <label>Desalinhamento <input type="range" data-k="mis" min="0" max="1" step="0.01"></label>
         <label class="check"><input type="checkbox" data-k="ferver"> Ferver</label>
+        <div class="lp-row"><span>Lineatura</span><div class="lp-lpi"></div></div>
+        <label class="check"><input type="checkbox" data-k="trapping"> Trapping (balde avança por baixo da linha)</label>
+        <div class="sheet-title">Tintas prontas</div>
+        <div class="row">
+          <button class="btn small" data-act="cmyk">Falso CMYK</button>
+          <button class="btn small" data-act="inks-back"${app.inksBeforePreset ? '' : ' disabled'}>Do projeto</button>
+        </div>
       </div>
       <div class="sheet-group">
         <div class="sheet-title">Desenho e roda</div>
@@ -81,7 +91,15 @@ export function setupSheet(app) {
     q('grain').value = s.grain;
     q('mis').value = s.mis;
     q('smooth').value = s.smooth || 0;
-    for (const k of ['ferver', 'auto', 'pinWheel', 'lefty']) q(k).checked = !!s[k];
+    for (const k of ['ferver', 'auto', 'pinWheel', 'lefty', 'trapping']) q(k).checked = !!s[k];
+    const lpi = el.querySelector('.lp-lpi');
+    LPI_OPTIONS.forEach((v) => {
+      const b = document.createElement('button');
+      b.className = 'btn small' + (v === s.lpi ? ' on' : '');
+      b.textContent = v;
+      b.onclick = () => { s.lpi = v; app.requestSave(); buildMenu(); };
+      lpi.appendChild(b);
+    });
     q('debug').checked = !!app.debug?.visible;
     refreshStatus();
 
@@ -91,6 +109,13 @@ export function setupSheet(app) {
     q('mis').oninput = (e) => { s.mis = +e.target.value; app.requestSave(); };
     q('smooth').oninput = (e) => { s.smooth = +e.target.value; app.requestSave(); };
     for (const k of ['ferver', 'auto', 'pinWheel']) q(k).onchange = (e) => { s[k] = e.target.checked; app.requestSave(); };
+    q('trapping').onchange = (e) => {
+      s.trapping = e.target.checked;
+      app.requestSave();
+      app.markAllFills?.();                 // os baldes são refeitos com ou sem trapping
+    };
+    act('cmyk').onclick = () => { app.applyFalseCmyk(); buildMenu(); };
+    act('inks-back').onclick = () => { app.restoreProjectInks(); buildMenu(); };
     q('lefty').onchange = (e) => { s.lefty = e.target.checked; app.requestSave(); position(); };
     paper.onchange = () => { app.project.paper = paper.value; app.requestSave(); };
     q('debug').onchange = (e) => app.debug.setVisible(e.target.checked);
@@ -144,14 +169,14 @@ export function setupSheet(app) {
     const layer = app.project.layers[i];
     el.setAttribute('aria-label', 'Tempo');
     el.innerHTML = `
-      <div class="sheet-title">Tempo da tinta ${INKS[layer.ink].name}</div>
+      <div class="sheet-title">Tempo da camada ${i + 1} · ${inkOf(app.project, layer).name}</div>
       <div class="lp-row"><span>FPS</span><div class="lp-fps"></div></div>
       <div class="lp-row"><span>Frames</span>
         <button class="btn small" data-act="frames-" aria-label="Remover frame">−</button>
         <b class="lp-count">${layer.frames.length}</b>
         <button class="btn small" data-act="frames+" aria-label="Adicionar frame">+</button>
       </div>
-      <div class="sheet-note">Cada tinta tem o próprio loop. Duração: ${fmtSeconds(layer.frames.length / layer.fps)}.</div>`;
+      <div class="sheet-note">Cada camada tem o próprio loop. Duração: ${fmtSeconds(layer.frames.length / layer.fps)}.</div>`;
     const fps = el.querySelector('.lp-fps');
     FPS_OPTIONS.forEach((v) => {
       const b = document.createElement('button');
@@ -170,15 +195,94 @@ export function setupSheet(app) {
       if (layer.frames.length <= 1) return;
       if (layer.frames[layer.frames.length - 1].length) { app.toast('Esse frame tem desenho. Apague antes de remover.'); return; }
       layer.frames.pop();
-      app.masks.drop(i, layer.frames.length);
+      app.masks.drop(layer.id, layer.frames.length);
       app.selection = null; app.onSelectionChange?.();
       app.requestSave(); buildTime();
     };
   }
 
-  function open(m) {
+  // Folha da camada (#029): tinta (tambor e cor), retícula (#030), visível, travar, ordem, duplicar, apagar.
+  let sheetLayer = 0;
+  function buildLayer() {
+    const p = app.project;
+    const i = Math.min(sheetLayer, p.layers.length - 1);
+    sheetLayer = i;
+    const L = p.layers[i];
+    el.setAttribute('aria-label', `Camada ${i + 1}`);
+    const drums = Array.from({ length: DRUMS }, (_, d) =>
+      `<button class="swatch${L.ink === d ? ' on' : ''}" data-drum="${d}" style="background:${INKS[p.inks[d]].hex}" aria-label="Tinta ${d + 1}: ${INKS[p.inks[d]].name}">${d + 1}</button>`).join('');
+    const colors = INKS.map((k, j) =>
+      `<button class="swatch small${p.inks[L.ink] === j ? ' on' : ''}" data-color="${j}" style="background:${k.hex}" aria-label="${k.name}"></button>`).join('');
+    const dens = Math.round(L.screen.density * 100);
+    el.innerHTML = `
+      <div class="sheet-title">Camada ${i + 1}</div>
+      <div class="sheet-group">
+        <div class="sheet-title">Tinta</div>
+        <div class="swatches">${drums}</div>
+        <div class="sheet-note">Cor da tinta ${L.ink + 1}: ${inkOf(p, L).name}</div>
+        <div class="swatches">${colors}</div>
+      </div>
+      <div class="sheet-group">
+        <div class="sheet-title">Retícula</div>
+        <div class="row">
+          <button class="btn small${L.screen.type === 'stochastic' ? ' on' : ''}" data-act="stochastic">Estocástica</button>
+          <button class="btn small${L.screen.type === 'am' ? ' on' : ''}" data-act="am">Reticulada</button>
+        </div>
+        <label>Densidade <span class="dens-val">${dens}%</span>
+          <input type="range" data-k="density" min="5" max="100" step="1" value="${dens}"></label>
+      </div>
+      <div class="sheet-group">
+        <label class="check"><input type="checkbox" data-k="visible"${L.visible ? ' checked' : ''}> Visível</label>
+        <label class="check"><input type="checkbox" data-k="locked"${L.locked ? ' checked' : ''}> Travar</label>
+        <div class="row">
+          <button class="btn small" data-act="up"${i < p.layers.length - 1 ? '' : ' disabled'}>Subir</button>
+          <button class="btn small" data-act="down"${i > 0 ? '' : ' disabled'}>Descer</button>
+        </div>
+        <button class="btn small" data-act="dup">Duplicar camada</button>
+        <button class="btn small" data-act="del"${p.layers.length > 1 ? '' : ' disabled'}>Apagar camada</button>
+      </div>`;
+    const q = (k) => el.querySelector(`[data-k="${k}"]`);
+    const act = (a) => el.querySelector(`[data-act="${a}"]`);
+    el.querySelectorAll('[data-drum]').forEach((b) => { b.onclick = () => { app.setLayerInk(i, +b.dataset.drum); buildLayer(); }; });
+    el.querySelectorAll('[data-color]').forEach((b) => { b.onclick = () => { app.setDrumColor(L.ink, +b.dataset.color); buildLayer(); }; });
+    act('stochastic').onclick = () => { app.setLayerScreen(i, { type: 'stochastic' }); buildLayer(); };
+    act('am').onclick = () => { app.setLayerScreen(i, { type: 'am' }); buildLayer(); };
+    // Densidade: muda ao vivo enquanto arrasta; entra no desfazer uma vez, ao soltar.
+    let densBefore = null;
+    q('density').oninput = (e) => {
+      if (!densBefore) densBefore = app.layerSnapshot();
+      L.screen = { ...L.screen, density: Math.max(0.05, Math.min(1, +e.target.value / 100)) };
+      el.querySelector('.dens-val').textContent = `${e.target.value}%`;
+    };
+    q('density').onchange = () => { if (densBefore) app.commitLayers(densBefore); densBefore = null; };
+    q('visible').onchange = () => { app.toggleLayerVisible(i); buildLayer(); };
+    q('locked').onchange = () => { app.toggleLayerLock(i); buildLayer(); };
+    act('up').onclick = () => { if (app.moveLayer(i, +1)) sheetLayer = i + 1; buildLayer(); };
+    act('down').onclick = () => { if (app.moveLayer(i, -1)) sheetLayer = i - 1; buildLayer(); };
+    act('dup').onclick = () => { if (app.duplicateLayer(i)) sheetLayer = i + 1; buildLayer(); };
+    act('del').onclick = async () => {
+      const hasDrawing = L.frames.some((fr) => fr.length);
+      if (hasDrawing) {
+        close();
+        const ok = await confirmDialog({
+          text: `Apagar a camada ${i + 1}? O desenho dela some de todos os frames.`,
+          ok: 'Apagar camada',
+        });
+        if (ok) app.deleteLayer(i);
+        return;
+      }
+      app.deleteLayer(i);
+      close();
+    };
+  }
+
+  function open(m, arg) {
     mode = m;
-    if (m === 'more') buildMenu(); else if (m === 'gestures') buildGestures(); else buildTime();
+    if (m === 'layer') sheetLayer = arg ?? app.project.activeLayer;
+    if (m === 'more') buildMenu();
+    else if (m === 'gestures') buildGestures();
+    else if (m === 'layer') buildLayer();
+    else buildTime();
     position();
     el.hidden = false;
   }

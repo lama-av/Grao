@@ -121,6 +121,10 @@ Rodapé: "A palma apoiada é ignorada enquanto a caneta está perto da tela."
 | Gesto de tempo | 3/8 (mesma leitura do prato) |
 | Camada travada (tentou desenhar) | Camada travada |
 | Limite de camadas | Máximo de 8 camadas. |
+| Apagar a última camada | A última camada não pode ser apagada. |
+| Versão nova (botão da roda) | Nova versão. Toque para atualizar. |
+| Leitura: camada escolhida | Camada 3 |
+| Tintas prontas (leitura) | Falso CMYK |
 | Apagar camada com desenho | Apagar a camada 3? O desenho dela some de todos os frames. · Apagar camada · Cancelar |
 | Folha da camada: rótulos | Tinta · Retícula · Estocástica · Reticulada · Densidade · Visível · Travar · Subir · Descer · Duplicar camada · Apagar camada |
 | Menu → Impressão | Lineatura · 40 · 60 · 85 |

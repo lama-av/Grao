@@ -7,7 +7,7 @@
 import { INKS, PAPERS, DOC_W, WHEEL_STEP_DEG, HISTORY_MODE_MS } from '../config.js';
 import { docToUv } from '../view.js';
 import { BRUSHES } from '../render/stroke.js';
-import { SIZE_MIN, SIZE_MAX } from '../doc/project.js';
+import { SIZE_MIN, SIZE_MAX, MAX_LAYERS, inkOf } from '../doc/project.js';
 
 const MARGIN = 16;
 const BTN_R = 32;                         // botão recolhido: 64 px
@@ -37,8 +37,8 @@ const SECTORS = [
   { id: 'redo', label: 'Refazer', a: -60 },
   { id: 'tool', label: 'Ferramenta', a: 0 },
   { id: 'more', label: 'Menu', a: 60 },
-  { id: 'layers', label: 'Tempo', a: 120 },
-  { id: 'ink', label: 'Tinta', a: 180 },
+  { id: 'time', label: 'Tempo', a: 120 },
+  { id: 'ink', label: 'Camadas', a: 180 },   // pétala Camadas (v0.4, #029); id antigo mantido
 ];
 
 // Pétala Ferramenta em dois arcos (#026): o que risca (perto) e o que mexe (fora).
@@ -59,8 +59,7 @@ export function setupWheel(app, canvas) {
 
   let open = false;
   let animT0 = -1e9;          // início da animação de abrir/fechar
-  let petal = null;           // null | 'ink' | 'inkcolor' | 'tool'
-  let petalLayer = 0;         // camada cuja cor está sendo trocada
+  let petal = null;           // null | 'ink' (Camadas) | 'tool'
   let plateHeld = false;
   let sizePreview = false;
   let dragPos = null;         // botão sendo arrastado para outro canto
@@ -118,17 +117,19 @@ export function setupWheel(app, canvas) {
     let items = [];
     const p = app.project;
     if (petal === 'ink') {
-      // as 4 tintas do projeto (perto) e as 8 cores possíveis para a tinta ativa (fora): tudo à vista
-      const inks = p.layers.map((L, i) => ({ kind: 'ink', i, color: INKS[L.ink].hex, on: i === p.activeLayer }));
-      const cur = p.layers[p.activeLayer].ink;
+      // Camadas (perto), de baixo para cima na ordem de impressão, mais "+"; fora, as 9 cores para o tambor da
+      // camada ativa (troca a cor do tambor: vale para todas as camadas dele). Tudo à vista.
+      const layers = p.layers.map((L, i) => ({
+        kind: 'layer', i, color: inkOf(p, L).hex, on: i === p.activeLayer, hidden: !L.visible, locked: L.locked,
+      }));
+      if (p.layers.length < MAX_LAYERS) layers.push({ kind: 'add', label: '+' });
+      const drum = p.layers[p.activeLayer].ink;
+      const cur = p.inks[drum];
       const colors = INKS.map((k, j) => ({
         kind: 'color', j, color: k.hex, on: j === cur,
-        used: j !== cur && p.layers.some((L) => L.ink === j),
+        used: j !== cur && p.inks.some((x, d) => d !== drum && x === j),
       }));
-      return placeArc(inks, PETAL_R, PETAL_STEP, PILL_R).concat(placeArc(colors, COLOR_R, COLOR_STEP, COLOR_PILL_R));
-    } else if (petal === 'inkcolor') {
-      const cur = p.layers[petalLayer].ink;
-      items = INKS.map((k, j) => ({ kind: 'inkcolor', j, color: k.hex, on: j === cur }));
+      return placeArc(layers, PETAL_R, PETAL_STEP, PILL_R).concat(placeArc(colors, COLOR_R, COLOR_STEP, COLOR_PILL_R));
     } else if (petal === 'tool') {
       const pill = ([t, label]) => ({ kind: 'tool', tool: t, label, on: app.tool === t });
       return placeArc(RISCAR.map(pill), PETAL_R, PETAL_STEP, PILL_R).concat(placeArc(MEXER.map(pill), MEXER_R, PETAL_STEP, PILL_R));
@@ -157,7 +158,20 @@ export function setupWheel(app, canvas) {
   }
   const inRect = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
 
+  // Aviso de versão nova (#035): só com o loop parado e a roda recolhida; tocar atualiza.
+  const UPDATE_TEXT = 'Nova versão. Toque para atualizar.';
+  function updateRect() {
+    if (!app.updateReady || !app.clock.paused || open || dragPos) return null;
+    const c = btnCenter(), dir = BASE[corner()] * RAD;
+    const x = c.x + Math.cos(dir) * 70, y = c.y + Math.sin(dir) * 70 + (corner()[0] === 'b' ? -46 : 46);
+    ctx.font = '600 13px system-ui, sans-serif';
+    const w = ctx.measureText(UPDATE_TEXT).width + 28;
+    return { x: Math.max(8, Math.min(W - w - 8, x - w / 2)), y: y - 22, w, h: 44 };
+  }
+
   function hit(p) {
+    const ur = updateRect();
+    if (ur && inRect(p, ur)) return { kind: 'update' };
     const chips = chipRects();
     if (chips) {
       if (inRect(p, chips.dup)) return { kind: 'chip', id: 'dup' };
@@ -233,7 +247,7 @@ export function setupWheel(app, canvas) {
     } else {
       const layer = app.project.layers[app.project.activeLayer];
       app.clock.step(layer, dir);
-      say(`${app.clock.frameOf(layer) + 1}/${layer.frames.length}`);
+      say(app.frameLabel ? app.frameLabel(layer) : `${app.clock.frameOf(layer) + 1}/${layer.frames.length}`);
     }
   }
 
@@ -244,7 +258,7 @@ export function setupWheel(app, canvas) {
       app.redo();
     } else if (id === 'ink' || id === 'tool') {
       petal = petal === id ? null : id;
-    } else if (id === 'more' || id === 'layers') {
+    } else if (id === 'more' || id === 'time') {
       petal = null;
       if (sheetWas === id) app.sheet.close(); else app.sheet.open(id);
     }
@@ -252,17 +266,19 @@ export function setupWheel(app, canvas) {
 
   function runPill(it) {
     const p = app.project;
-    if (it.kind === 'ink') {
+    if (it.kind === 'layer') {
       p.activeLayer = it.i;
       app.selection = null;
       app.onSelectionChange?.();
       petal = null;
-      say(INKS[p.layers[it.i].ink].name.split(' ')[0]);
-    } else if (it.kind === 'inkcolor') {
-      p.layers[petalLayer].ink = it.j;
+      say(`Camada ${it.i + 1}`);
+    } else if (it.kind === 'add') {
+      if (app.addLayer()) say(`Camada ${p.activeLayer + 1}`);
       petal = null;
     } else if (it.kind === 'color') {
-      p.layers[p.activeLayer].ink = it.j;     // a pétala fica aberta para ver o resultado e trocar de novo
+      // a pétala fica aberta para ver o resultado e trocar de novo
+      if (app.setDrumColor) app.setDrumColor(p.layers[p.activeLayer].ink, it.j);
+      else p.inks[p.layers[p.activeLayer].ink] = it.j;
       say(INKS[it.j].name);
     } else if (it.kind === 'tool') {
       app.tool = it.tool;
@@ -296,8 +312,9 @@ export function setupWheel(app, canvas) {
       sizeFromPoint(p);
     } else if (h.kind === 'btn') {
       g.timer = setTimeout(() => { g.dragging = true; dragPos = p; }, DRAG_MS);
-    } else if (h.kind === 'pill' && h.item.kind === 'ink') {
-      g.timer = setTimeout(() => { g.long = true; petalLayer = h.item.i; petal = 'inkcolor'; }, LONG_MS);
+    } else if (h.kind === 'pill' && h.item.kind === 'layer') {
+      // toque longo numa camada: abre a folha da camada (tinta, retícula, visível, travar, ordem…)
+      g.timer = setTimeout(() => { g.long = true; petal = null; collapse(); app.sheet?.open('layer', h.item.i); }, LONG_MS);
     } else if (h.kind === 'sector' && (h.sector.id === 'ink' || h.sector.id === 'tool') && petal !== h.sector.id) {
       // abre a pétala já ao encostar: dá para arrastar até a pastilha e soltar em cima dela
       petal = h.sector.id;
@@ -375,6 +392,8 @@ export function setupWheel(app, canvas) {
       } else if (g.kind === 'chip') {
         if (g.id === 'dup') app.duplicateSelectionToNextFrame();
         else app.deleteSelection();
+      } else if (g.kind === 'update') {
+        app.applyUpdate?.();
       }
     }
   }
@@ -420,7 +439,7 @@ export function setupWheel(app, canvas) {
 
   function frameInfo() {
     const layer = app.project.layers[app.project.activeLayer];
-    return { layer, n: layer.frames.length, f: app.clock.frameOf(layer), ink: INKS[layer.ink].hex };
+    return { layer, n: layer.frames.length, f: app.clock.frameOf(layer), ink: inkOf(app.project, layer).hex };
   }
 
   function drawButton(c) {
@@ -508,7 +527,7 @@ export function setupWheel(app, canvas) {
     // setores
     for (const sec of SECTORS) {
       ring(c, R_CENTER, R_SECT, sec.a - 30, sec.a + 30);
-      const on = petal === sec.id || (petal === 'inkcolor' && sec.id === 'ink') || app.sheet?.mode === sec.id;
+      const on = petal === sec.id || app.sheet?.mode === sec.id;
       ctx.fillStyle = on ? C.hi : C.panel; ctx.fill();
       ctx.lineWidth = 1; ctx.strokeStyle = C.line; ctx.stroke();
       const off = (sec.id === 'undo' && !app.history.canUndo) || (sec.id === 'redo' && !app.history.canRedo);
@@ -538,10 +557,21 @@ export function setupWheel(app, canvas) {
         ctx.lineWidth = 3; ctx.strokeStyle = C.text; ctx.stroke();
       }
       disc(it.x, it.y, it.r);
-      if (it.color) {
+      if (it.kind === 'layer') {
+        // camada: cor da tinta; apagada = invisível; número no meio; cadeado = travada
+        ctx.save();
+        if (it.hidden) ctx.globalAlpha *= 0.3;
+        ctx.fillStyle = it.color; ctx.fill();
+        ctx.restore();
+        ctx.lineWidth = it.on ? 4 : 1.5; ctx.strokeStyle = it.on ? C.text : C.bg;
+        if (it.hidden) ctx.setLineDash([4, 3]);
+        ctx.stroke(); ctx.setLineDash([]);
+        text(String(it.i + 1), it.x, it.y + 1, 13, lum(it.color) > 0.55 ? C.bg : '#ffffff', 700);
+        if (it.locked) drawLock(it.x + it.r * 0.62, it.y - it.r * 0.62);
+      } else if (it.color) {
         ctx.fillStyle = it.color; ctx.fill();
         ctx.lineWidth = it.on ? 4 : 1.5; ctx.strokeStyle = it.on ? C.text : C.bg; ctx.stroke();
-        if (it.used) {                      // cor já usada por outra tinta do projeto
+        if (it.used) {                      // cor já usada por outro tambor do projeto
           disc(it.x, it.y, 4); ctx.fillStyle = C.bg; ctx.fill();
         }
       } else {
@@ -552,9 +582,10 @@ export function setupWheel(app, canvas) {
     }
     if (petal === 'ink') {
       const a0 = (base - (COLOR_STEP * (INKS.length - 1)) / 2) * RAD;
-      const a1 = (base - (PETAL_STEP * 3) / 2 - PETAL_STEP) * RAD;   // logo antes da 1ª tinta
       label('Cor da tinta', c.x + Math.cos(a0) * (COLOR_R + 36), c.y + Math.sin(a0) * (COLOR_R + 36));
-      label('Tintas', c.x + Math.cos(a1) * PETAL_R, c.y + Math.sin(a1) * PETAL_R);
+      const nL = Math.min(MAX_LAYERS, app.project.layers.length + 1);
+      const aL = (base - (PETAL_STEP * (nL - 1)) / 2 - PETAL_STEP) * RAD;
+      label('Camadas', c.x + Math.cos(aL) * PETAL_R, c.y + Math.sin(aL) * PETAL_R);
     }
     if (petal === 'tool') {
       const r0 = (base - (PETAL_STEP * 3) / 2 - PETAL_STEP) * RAD;
@@ -573,6 +604,17 @@ export function setupWheel(app, canvas) {
       const a0 = (base - SPEED_SPAN / 2) * RAD;
       text('Tamanho', c.x + Math.cos(a0) * (SIZE_R1 + 14), c.y + Math.sin(a0) * (SIZE_R1 + 14), 10, C.muted);
     }
+  }
+
+  // Brilho aproximado de uma cor #rrggbb (0..1), para escolher número claro ou escuro.
+  function lum(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  }
+  function drawLock(x, y) {
+    disc(x, y, 9); ctx.fillStyle = C.bg; ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y - 1.5, 3, Math.PI, 0); ctx.lineWidth = 1.5; ctx.strokeStyle = C.text; ctx.stroke();
+    ctx.fillStyle = C.text; ctx.fillRect(x - 3.5, y - 1, 7, 5);
   }
 
   // Rótulo pequeno com fundo, legível sobre qualquer papel ou tinta.
@@ -670,11 +712,11 @@ export function setupWheel(app, canvas) {
     const sb = app.input?.selectionBounds();
     noteSelection(!!sb);
     const sig = [
-      W, H, open, petal, petalLayer, corner(), n, f, ink, app.clock.paused, app.clock.speed, plateHeld,
+      W, H, open, petal, corner(), n, f, ink, app.clock.paused, app.clock.speed, plateHeld,
       now < app.historyUntil, now < readUntil ? readText : '', app.tool, settings().sizes[sizeTool()], sizePreview,
       dragPos && `${dragPos.x | 0},${dragPos.y | 0}`, app.sheet?.mode, app.history.canUndo, app.history.canRedo,
-      sb && `${sb.x0 | 0},${sb.y0 | 0},${sb.x1 | 0},${sb.y1 | 0}`,
-      app.project.layers.map((L) => L.ink).join(','), hover, app.lassoHeld, app.project.paper, showHint, app.recording, now < rulerUntil,
+      sb && `${sb.x0 | 0},${sb.y0 | 0},${sb.x1 | 0},${sb.y1 | 0}`, app.project.inks.join(','), app.project.activeLayer,
+      app.project.layers.map((L) => `${L.id}.${L.ink}.${L.visible ? 1 : 0}${L.locked ? 1 : 0}`).join(','), hover, app.lassoHeld, app.project.paper, showHint, app.recording, now < rulerUntil, !!app.updateReady,
       app.view && `${app.view.s.toFixed(3)},${app.view.ox.toFixed(4)},${app.view.oy.toFixed(4)}`,
     ].join('|');
     if (!animating && sig === lastSig) return;
@@ -702,6 +744,14 @@ export function setupWheel(app, canvas) {
       }
       if (!animating || dragPos) drawButton(c);
       if (now < readUntil && !dragPos) drawReadoutNearButton(c);
+    }
+
+    const ur = updateRect();
+    if (ur && now >= readUntil) {
+      ctx.beginPath();
+      ctx.roundRect(ur.x, ur.y, ur.w, ur.h, 22);
+      ctx.fillStyle = C.accent; ctx.fill();
+      text(UPDATE_TEXT, ur.x + ur.w / 2, ur.y + ur.h / 2, 13, '#1b1a18', 700);
     }
 
     // o painel de teste fica no canto oposto à roda

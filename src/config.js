@@ -1,14 +1,16 @@
 // Constantes do Grão.
 // Documento em unidades fixas (3:2, como a tela do tablet); máscaras em 80% disso.
 
-export const VERSION = '0.3.2';
-export const BUILD = 'b11';                // muda a cada publicação: mostra no tablet se a versão nova chegou
+export const VERSION = '0.4.0';
+export const BUILD = 'b12';                // muda a cada publicação: mostra no tablet se a versão nova chegou
 export const DOC_W = 1200;
 export const DOC_H = 800;
 export const MASK_SCALE = 0.8;            // máscara = 960 × 640, 1 canal
 export const MAX_FRAMES = 12;
 export const DEFAULT_FRAMES = 8;
 export const FPS_OPTIONS = [6, 8, 12, 24];
+export const LPI_OPTIONS = [40, 60, 85];  // lineatura da retícula reticulada, em linhas por polegada num A4 (#030)
+export const PAPER_MM = 297;              // o papel do Grão equivale a um A4 deitado: 1200 unidades = 297 mm
 export const REPRINTS_PER_SECOND = 8;     // "ferver": quantas reimpressões por segundo
 export const WHEEL_STEP_DEG = 30;         // um frame a cada 30° de giro
 export const HISTORY_MODE_MS = 3000;      // roda de histórico após tocar em Desfazer

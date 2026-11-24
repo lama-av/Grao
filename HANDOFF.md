@@ -54,7 +54,11 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 > **Novo roteiro até a v1.0** (decidido no chat em 24/11, conselho de design): `docs/13-conselho-v0.3.md`.
 > Ele substitui a ordem de versões do doc 10. Arquitetura dos gestos: `docs/adr/ADR-003-gestos-de-dois-dedos.md`.
 >
-> **Ordem:** faça a **v0.3.2** (#022–#026, depois #034, por fim #027) e **PARE** no #027. A v0.4 (#028–#032) só começa quando o Raphael
+> **Atualização (24/11, Raphael no VS Code):** "execute os pedidos até a versão 1.0, sem pausas". A v0.4 foi feita
+> logo depois da 0.3.2, sem a auditoria; da 0.5 em diante os pedidos foram escritos pelo VS Code a partir do roteiro
+> (doc 13) e estão abaixo, já com resposta. Relatório geral: `docs/relatorio-v1.0.md`.
+>
+> **Ordem original:** faça a **v0.3.2** (#022–#026, depois #034, por fim #027) e **PARE** no #027. A v0.4 (#028–#032) só começa quando o Raphael
 > trouxer o resultado do teste no tablet e o chat liberar (o chat marca no topo desta fila: "v0.4 liberada").
 
 ### Roteiro até a v1.0
@@ -223,8 +227,8 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - **Não parei aqui:** o Raphael pediu (24/11) "execute os pedidos até a versão 1.0, sem pausas". A v0.4 e as
     seguintes foram feitas em seguida; ver as respostas de cada pedido e `docs/relatorio-v1.0.md`.
 
-### #028 — Camadas separadas das tintas (modelo e migração) — ESPERA LIBERAÇÃO
-- **Status:** Bloqueado (espera a auditoria da 0.3.2) · **Prioridade:** P1 · **Versão alvo:** 0.4.0
+### #028 — Camadas separadas das tintas (modelo e migração)
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.4.0
 - **Origem:** doc 10 (T-030, T-034), doc 13 (decisão 6)
 - **O que fazer:**
   - o projeto tem **4 tintas** (`project.inks`, os "tambores", cada uma com uma das 8 cores) e **até 8 camadas**;
@@ -238,10 +242,18 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - [ ] 8 camadas com 4 tintas desenham, tocam e exportam
   - [ ] teste de lógica cobre migração, limites (8 camadas, 4 tintas) e desfazer de camadas
 - **Arquivos prováveis:** `src/doc/project.js`, `src/render/riso/*`, `src/render/masks.js`, `src/schedule.js`, `src/actions.js`
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b12):**
+  - `project.inks` (4 tambores, índices de INKS) + 1 a 8 camadas `{ id, ink: 0–3, fps, frames, visible, locked,
+    screen, name? }`. Arquivo versão 2; a versão 1 migra sem mudança visual (cores das camadas viram as dos tambores).
+  - Compositor: até 8 camadas numa passada; camadas da mesma tinta se juntam pelo máximo; tintas multiplicam.
+    Máscaras por **id da camada** (ADR-004): reordenar, esconder, trocar tinta e desfazer não refazem máscaras.
+  - Desfazer de camadas por retrato `{ type: 'layers', before, after }` (criar, apagar, reordenar, duplicar, tinta,
+    cor do tambor, visível, travar, retícula). Camada travada: "Camada travada" e nada acontece.
+  - A última camada não pode ser apagada ("A última camada não pode ser apagada.", texto novo no doc 11).
+  - **Testar no tablet:** abrir um projeto da 0.3.x (igual); criar até 8 camadas; desenhar em várias; tocar e exportar.
 
-### #029 — Setor "Camadas" na roda — ESPERA LIBERAÇÃO
-- **Status:** Bloqueado · **Prioridade:** P1 · **Versão alvo:** 0.4.0
+### #029 — Setor "Camadas" na roda
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.4.0
 - **O que fazer:**
   - o setor **Tinta** vira **Camadas** (mesma posição);
   - pétala Camadas: arco de pastilhas, uma por camada, de baixo para cima na ordem de impressão, cada uma pintada
@@ -257,10 +269,18 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - [ ] criar, ativar, esconder, travar, reordenar e apagar camada pela roda em até 2 toques (+ toque longo para a folha)
   - [ ] textos conforme o doc 11
 - **Arquivos prováveis:** `src/ui/wheel.js`, `src/ui/sheet.js`
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b12):**
+  - Setor **Camadas** (posição do antigo Tinta). Pétala: uma pastilha por camada, de baixo para cima na ordem de
+    impressão, com a cor da tinta e o número; apagada e tracejada = invisível; cadeado = travada; "+" cria (some com 8).
+    Por fora, o arco das 9 cores troca a cor da tinta (tambor) da camada ativa.
+  - **Toque longo** numa camada: folha da camada (HTML): Tinta (4 tambores + 9 cores do tambor), Retícula
+    (Estocástica · Reticulada · Densidade), Visível, Travar, Subir, Descer, Duplicar camada, Apagar camada (confirma
+    se tiver desenho, texto do doc 11).
+  - Menu → Impressão → **Tintas prontas**: Falso CMYK e Do projeto (no desfazer).
+  - **Testar no tablet:** criar, ativar, esconder, travar, reordenar e apagar pela roda e pela folha.
 
-### #030 — Retícula por camada: estocástica e reticulada — ESPERA LIBERAÇÃO
-- **Status:** Bloqueado · **Prioridade:** P1 · **Versão alvo:** 0.4.0
+### #030 — Retícula por camada: estocástica e reticulada
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.4.0
 - **Origem:** pedido do Raphael ("existem 2 tipos de retícula quando trabalhando em riso, a estocástica e a
   reticulada, isso também deve ser implementado"); doc 13 (decisão 7)
 - **O que fazer:**
@@ -294,18 +314,30 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - [ ] duas camadas reticuladas de tintas diferentes mostram ângulos diferentes
   - [ ] densidade 10% fica clara e legível nas duas retículas
 - **Arquivos prováveis:** `src/render/riso/riso.frag`, `src/render/riso/riso.js`, `src/doc/project.js`, `src/ui/sheet.js`, `docs/05-motor-riso.md`
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b12):**
+  - Shader: função de cobertura com dois tipos. **Estocástica:** o grão de antes; a densidade remove cachos de tinta.
+    **Reticulada:** grade girada (15°, 75°, 0°, 45° por tambor), ponto redondo de área = tom × densidade; célula pela
+    lineatura do projeto (40/60/85 lpi num A4 → ~2,4 / 1,7 / 1,2 unidades do documento).
+  - Abaixo de 10% caem até 60% dos pontos ao acaso (muda com o ferver); áreas cheias ficam irregulares de 50% a 95%.
+  - **Sem moiré de pixel:** a borda do ponto é suavizada em meio pixel por um uniforme (`uPxDoc`), sem `fwidth` (as
+    derivadas dentro de desvios são indefinidas no GLSL ES); ponto menor que um pixel desbota em vez de escurecer.
+    **Não foi possível ver na tela aqui:** se houver moiré em 100%, mandar print (Dúvidas).
+  - Desalinhamento: máximo de 3 mm num A4 (1200 unidades = 297 mm); padrão 0,5 = ~1,5 mm.
+  - **Testar no tablet:** as duas retículas em 100%, 10% e 5%; duas camadas reticuladas de tintas diferentes (ângulos
+    diferentes); painel: compositor ≤ 8 ms com 4 e com 8 camadas.
 
-### #031 — Tempo por camada (polimetria) — ESPERA LIBERAÇÃO
-- **Status:** Bloqueado · **Prioridade:** P2 · **Versão alvo:** 0.4.0
+### #031 — Tempo por camada (polimetria)
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.4.0
 - **O que fazer:** a folha Tempo mostra FPS e frames **da camada ativa** (hoje é da tinta ativa); o prato, a régua
   do #023 e o gesto de tempo andam na camada ativa; a leitura mostra o nome ou número da camada junto ("C2 · 3/8")
   quando houver mais de 4 camadas.
 - **Pronto quando:** [ ] duas camadas com loops de tamanhos diferentes tocam juntas e o gesto de tempo anda na ativa
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b12):**
+  - Folha Tempo mostra "Tempo da camada N · Tinta"; prato, régua e gesto andam na camada ativa; com mais de 4 camadas
+    a leitura é "C2 · 3/8". Polimetria funciona como antes (cada camada com fps e frames próprios).
 
-### #033 — Balde com trapping (avança por baixo da linha) — ESPERA LIBERAÇÃO
-- **Status:** Bloqueado · **Prioridade:** P2 · **Versão alvo:** 0.4.0
+### #033 — Balde com trapping (avança por baixo da linha)
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.4.0
 - **Origem:** Risotrip: com o desalinhamento de 2 a 3 mm, gráficas usam "trapping" (uma cor invade um pouco a
   vizinha) para não aparecer filete branco entre as cores.
 - **Problema:** o balde para exatamente na linha. Quando a linha é de outra tinta e o desalinhamento desloca as
@@ -319,10 +351,13 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - [ ] com desalinhamento no máximo, linha preta + preenchimento rosa não mostram filete branco
   - [ ] desligado, o filete aparece; o preenchimento continua sem vazar
 - **Arquivos prováveis:** `src/render/fill.js`, `src/render/masks.js`, `src/ui/sheet.js`
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b12):**
+  - `floodFill(..., trap)`: depois de crescer até a linha, o preenchimento avança mais 2 px da máscara (≈ 0,5 mm) só
+    por cima de pixels de linha (da própria camada e das outras); nunca para o outro lado. Menu → Impressão →
+    **Trapping** (ligado por padrão); mudar refaz os baldes. Testado com linha grossa de outra camada.
 
-### #035 — Abrir sem internet (service worker) — ESPERA LIBERAÇÃO
-- **Status:** Bloqueado · **Prioridade:** P2 · **Versão alvo:** 0.4.0
+### #035 — Abrir sem internet (service worker)
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.4.0
 - **Origem:** revisão do conselho (24/11): o Grão já é usado no tablet pelo GitHub Pages; sem rede ele não abre.
   Era o T-053 da v0.6, trazido para cá.
 - **O que fazer:**
@@ -334,14 +369,22 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - [ ] no tablet, com o Wi-Fi desligado, o app instalado abre e desenha
   - [ ] uma versão nova aparece depois de tocar no aviso, sem perder o desenho
 - **Arquivos prováveis:** novo `sw.js` na raiz, `src/main.js`, `manifest.webmanifest`
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b12):**
+  - `sw.js` na raiz: guarda os arquivos do app (lista no próprio arquivo; o teste de lógica confere que está completa e
+    que a versão bate com `VERSION-BUILD`). Primeiro o guardado, depois a rede. Só em https (GitHub Pages) ou localhost.
+  - Versão nova: baixa em segundo plano; com o loop parado e a roda recolhida aparece no botão da roda **"Nova versão.
+    Toque para atualizar."**; tocar salva e recarrega. Nunca recarrega sozinho.
+  - **A cada versão:** atualizar `VERSION` no `sw.js` (regra anotada no `CLAUDE.md`).
+  - **Testar no tablet:** abrir o app instalado com o Wi-Fi desligado; publicar uma versão nova e ver o aviso.
 
-### #032 — Fechar a 0.4.0 (PARE aqui) — ESPERA LIBERAÇÃO
-- **Status:** Bloqueado · **Prioridade:** P1 · **Versão alvo:** 0.4.0
+### #032 — Fechar a 0.4.0 (PARE aqui)
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.4.0
 - **O que fazer:** depois do #033 e do #035: `VERSION` 0.4.0, CHANGELOG, `INSTRUCOES.txt`, docx, `docs/relatorio-v0.4.md` com roteiro de
   teste (camadas, retículas, polimetria, desempenho com 8 camadas). Atualizar `docs/05-motor-riso.md` com a
   retícula. Parar e esperar a auditoria.
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b12):**
+  - `VERSION` 0.4.0, CHANGELOG, INSTRUCOES, docx, `docs/relatorio-v0.4.md`, doc 05 com a retícula, ADR-004.
+  - Não parei (pedido do Raphael): segui para a 0.5.
 
 ---
 

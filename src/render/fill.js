@@ -31,8 +31,10 @@ function dilate(src, w, h, r) {
 // Preenche a partir de (sx, sy), em pixels da máscara.
 // gap: buracos de até ~2*gap px na linha são fechados (a tinta "não vaza" por falhas pequenas do traço).
 // Devolve quantos pixels foram pintados (0 = tocou em cima de uma linha ou fora da máscara).
-// extraWall (opcional): Uint8Array w*h com 1 onde há linha de outra tinta (também segura o preenchimento).
-export function floodFill(rgba, w, h, sx, sy, gap = 2, extraWall = null) {
+// extraWall (opcional): Uint8Array w*h com 1 onde há linha de outra camada (também segura o preenchimento).
+// trap (px): trapping (#033). O preenchimento avança mais `trap` px por baixo das linhas que o seguraram, só por
+// cima de pixels de linha, nunca para fora da área. Evita o filete de papel quando as tintas desalinham.
+export function floodFill(rgba, w, h, sx, sy, gap = 2, extraWall = null, trap = 0) {
   sx = Math.floor(sx); sy = Math.floor(sy);
   if (sx < 0 || sy < 0 || sx >= w || sy >= h) return 0;
   const ink = new Uint8Array(w * h);
@@ -64,9 +66,11 @@ export function floodFill(rgba, w, h, sx, sy, gap = 2, extraWall = null) {
   }
   // a área cresce de volta por baixo das linhas (senão sobra uma fresta de papel junto do traço)
   const grown = dilate(region, w, h, gap + 1);
+  const trapped = trap > 0 ? dilate(region, w, h, gap + 1 + trap) : null;
   let n = 0;
   for (let i = 0, j = 0; i < grown.length; i++, j += 4) {
-    if (grown[i] && rgba[j] < 255) { rgba[j] = rgba[j + 1] = rgba[j + 2] = 255; rgba[j + 3] = 255; n++; }
+    const paint = grown[i] || (trapped && trapped[i] && ink[i]);
+    if (paint && rgba[j] < 255) { rgba[j] = rgba[j + 1] = rgba[j + 2] = 255; rgba[j + 3] = 255; n++; }
   }
   return n;
 }

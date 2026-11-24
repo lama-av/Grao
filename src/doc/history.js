@@ -1,6 +1,10 @@
-// Pilha de desfazer. Cada ação guarda o frame antes e depois (listas rasas de traços).
+// Pilha de desfazer. Dois tipos de passo:
+// - frame:   { l, f, before, after } — listas rasas de traços de um frame;
+// - camadas: { type: 'layers', before, after } — retratos das tintas e camadas (criar, apagar, reordenar,
+//            tinta, cor do tambor, visível, travar, retícula). Ver app.restoreLayers em actions.js.
 // Traços nunca são alterados no lugar depois de entrar numa ação: transformações trocam
-// o objeto por um clone, então os "antes" continuam válidos.
+// o objeto por um clone, então os "antes" continuam válidos. A pilha é linear: um passo só é desfeito
+// depois dos que vieram depois dele, então os índices de camada de cada passo continuam valendo.
 
 export class History {
   constructor(app) {
@@ -37,6 +41,7 @@ export class History {
   get canRedo() { return this.redoStack.length > 0; }
 
   #apply(a, list) {
+    if (a.type === 'layers') { this.app.restoreLayers(list); return; }
     const layer = this.app.project.layers[a.l];
     if (!layer || a.f >= layer.frames.length) return;
     layer.frames[a.f] = list.slice();

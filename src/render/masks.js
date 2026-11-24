@@ -34,13 +34,15 @@ export class Masks {
     this.walls = undefined;     // paredes do frame sendo desenhado (calculadas uma vez, no 1º balde)
   }
 
-  key(l, f) { return l * 100 + f; }
+  // Chave da textura: id fixo da camada (não a posição), para reordenar/apagar/desfazer camadas sem refazer nada.
+  key(id, f) { return id * 100 + f; }
+  idOf(l, project) { return project?.layers[l]?.id ?? l; }
 
-  get(l, f) { return this.textures.get(this.key(l, f)) || this.empty; }
+  get(id, f) { return this.textures.get(this.key(id, f)) || this.empty; }
 
-  // project é opcional: sem ele, o balde só respeita as linhas da própria tinta.
+  // l = posição da camada; project é opcional: sem ele, a chave é a posição e o balde só vê a própria camada.
   rebuild(l, f, strokes, project) {
-    const k = this.key(l, f);
+    const k = this.key(this.idOf(l, project), f);
     if (!strokes || strokes.length === 0) {
       const t = this.textures.get(k);
       if (t) { this.gl.deleteTexture(t); this.textures.delete(k); }
@@ -54,7 +56,7 @@ export class Masks {
   // Balde novo: tenta preencher em cima do frame atual. Devolve quantos pixels pintou.
   // Se pintou, a textura já fica pronta (quem chamou não precisa marcar o frame para refazer).
   tryFill(l, f, strokes, fill, project) {
-    const k = this.key(l, f);
+    const k = this.key(this.idOf(l, project), f);
     const last = this.lastStrokes;
     const current = k === this.lastKey && strokes.length === last.length && last.every((s, i) => s === strokes[i]);
     if (!current) this.#draw(l, f, strokes, project);
@@ -72,7 +74,21 @@ export class Masks {
     project.layers.forEach((layer, l) => layer.frames.forEach((fr, f) => this.rebuild(l, f, fr, project)));
   }
 
-  drop(l, f) { this.rebuild(l, f, null); }
+  // Apaga a textura de (id da camada, frame).
+  drop(id, f) {
+    const k = this.key(id, f), t = this.textures.get(k);
+    if (t) { this.gl.deleteTexture(t); this.textures.delete(k); }
+    if (k === this.lastKey) this.lastKey = -1;
+  }
+
+  // Apaga as texturas de camadas que não existem mais (camada apagada).
+  prune(project) {
+    const ids = new Set(project.layers.map((L) => L.id));
+    for (const [k, t] of this.textures) {
+      if (!ids.has(Math.floor(k / 100))) { this.gl.deleteTexture(t); this.textures.delete(k); }
+    }
+    this.lastKey = -1;
+  }
 
   clear() {
     this.lastKey = -1;
@@ -82,7 +98,7 @@ export class Masks {
 
   // Deixa o rascunho com o desenho de `strokes` (todos, ou só os novos no fim).
   #draw(l, f, strokes, project) {
-    const k = this.key(l, f);
+    const k = this.key(this.idOf(l, project), f);
     const ctx = this.ctx;
     ctx.globalCompositeOperation = 'source-over';
     // Traços confirmados são imutáveis (CLAUDE.md): mesmo objeto = mesmo desenho. Só vale quando há traço novo
@@ -144,7 +160,8 @@ export class Masks {
   #fill(s, l, f, project) {
     const walls = this.#wallsOf(l, f, project);
     const img = this.ctx.getImageData(0, 0, this.w, this.h);
-    const n = floodFill(img.data, this.w, this.h, s.pts[0] * MASK_SCALE, s.pts[1] * MASK_SCALE, 2, walls);
+    const trap = project?.settings?.trapping === false ? 0 : 2;   // 0,5 mm ≈ 2 unidades ≈ 2 px da máscara
+    const n = floodFill(img.data, this.w, this.h, s.pts[0] * MASK_SCALE, s.pts[1] * MASK_SCALE, 2, walls, trap);
     if (n) this.ctx.putImageData(img, 0, 0);
     return n;
   }
