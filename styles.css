@@ -81,6 +81,9 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
 .sheet-title { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
 .sheet-note { color: var(--muted); font-size: 12px; line-height: 1.4; }
 .save-status { color: var(--muted); font-size: 12px; }
+.gestures { margin: 0; display: grid; gap: 4px 0; }
+.gestures dt { color: var(--text); font-weight: 600; margin-top: 6px; }
+.gestures dd { margin: 0; color: var(--muted); line-height: 1.4; }
 .sheet input[type="text"] {
   font: inherit; font-size: 15px; padding: 10px; min-height: 44px;
   background: #2e2b27; color: var(--text); border: 1px solid var(--line); border-radius: 8px;

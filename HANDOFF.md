@@ -72,7 +72,7 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 | 1.0.0 | Lançamento (critérios no doc 10) | — | Roteiro |
 
 ### #022 — Módulo de gestos de 2 dedos (sem mudar o comportamento)
-- **Status:** A fazer · **Prioridade:** P1 · **Versão alvo:** 0.3.2
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.3.2
 - **Origem:** ADR-003
 - **Problema:** a lógica de 2 dedos está espalhada no `input.js` (21 KB); o gesto novo de tempo e o filtro de palma
   precisam de um lugar próprio e testável.
@@ -87,10 +87,18 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - [ ] teste de lógica cobre os 3 caminhos atuais pela máquina e continua passando
   - [ ] `input.js` não tem mais regra de decisão de 2 dedos
 - **Arquivos prováveis:** novo `src/input/gestures.js`, `src/input/input.js`, `src/config.js`, `tests/logic_test.mjs`
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b11):**
+  - `src/input/gestures.js`: máquina pura (sem DOM), com os limites em `config.js`. O `input.js` só repassa os
+    toques e executa as ações (`xf-begin`, `xf`, `pan-begin`, `pan`, `time-begin`, `scrub`, `undo`, `end`, `cancel`).
+  - **Diferença do ADR:** a pinça não é decidida só por "distância mudou 10%". Os eventos chegam um dedo de cada vez;
+    no teste, arrastar 2 dedos juntos virava pinça porque um dedo sempre sai na frente. Regra usada: depois de 24 px,
+    é pinça se a distância mudou ≥ 10% **e** mais que metade do quanto o meio dos dedos andou. Pinça com um dedo
+    parado continua sendo pinça (testado).
+  - Teste: os 3 caminhos antigos, a palma e o cancelamento passam pela máquina (164 verificações no total).
+  - **Testar no tablet:** os três gestos antigos (desfazer, zoom, girar a seleção) continuam iguais.
 
 ### #023 — Arrastar 2 dedos para os lados anda no tempo
-- **Status:** A fazer · **Prioridade:** P1 · **Versão alvo:** 0.3.2
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.3.2
 - **Origem:** pedido do Raphael ("arrastar com 2 dedos para esquerda ou direita move na timeline, tal qual na rodinha")
 - **O que fazer:**
   - intenção **TEMPO** na máquina do #022: os 2 dedos andam juntos (distância estável), o movimento é mais
@@ -110,10 +118,15 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - [ ] o loop fica parado durante o gesto e retoma ao soltar
   - [ ] a régua aparece e some; o teste de lógica cobre TEMPO, a fronteira com PAPEL e o cancelamento
 - **Arquivos prováveis:** `src/input/gestures.js`, `src/input/input.js`, `src/ui/wheel.js` (régua e leitura), `src/config.js`
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b11):**
+  - Intenção TEMPO: 2 dedos juntos, mais na horizontal, papel em 100%. 48 px = 1 frame (direita = para frente), vários
+    frames num movimento rápido, sem inércia. `clock.holds 'scrub'` durante o gesto; cancelado volta ao frame de
+    antes. Régua de frames no `#ui` (borda de baixo, centralizada, frame atual aceso com a cor da tinta), some 400 ms
+    depois de soltar. Leitura "3/8" no botão da roda.
+  - **Testar no tablet:** arrastar 2 dedos devagar e rápido; com zoom (deve mover o papel); na vertical (não anda).
 
 ### #024 — Palma não vira gesto
-- **Status:** A fazer · **Prioridade:** P1 · **Versão alvo:** 0.3.2
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.3.2
 - **Origem:** ADR-003 (rejeição de palma fraca no XPPen)
 - **O que fazer:**
   - filtro antes da máquina de gestos: ignorar um toque que começa com a caneta encostada, pairando ou que saiu há
@@ -126,10 +139,17 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - [ ] desenhando com a palma apoiada, nenhum zoom, desfazer ou passo de tempo acontece por acidente
   - [ ] a mão livre usa a roda normalmente com a caneta perto da tela
 - **Arquivos prováveis:** `src/input/gestures.js`, `src/input/input.js`, `src/ui/debug.js`
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b11):**
+  - Filtro antes da máquina: caneta encostada, caneta pairando (eventos há menos de 1 s, sem ter saído) ou que saiu
+    há menos de 300 ms; contato com `width`/`height` > 40 px. Ignorado fica ignorado até sair. A roda recebe o toque
+    antes do filtro, então nunca é filtrada.
+  - Painel Teste da Fase 0: "toques ignorados (palma): N" e "último toque: L × A px" (mostra se o Chrome informa o
+    tamanho do contato; se aparecer sempre 1 × 1, o filtro de tamanho não vale neste tablet).
+  - **Testar no tablet:** desenhar 2 min com a palma apoiada (nenhum zoom, desfazer ou passo de tempo); usar a roda
+    com a mão livre enquanto a caneta paira.
 
 ### #025 — Item "Gestos" no Menu
-- **Status:** A fazer · **Prioridade:** P2 · **Versão alvo:** 0.3.2
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.3.2
 - **Origem:** conselho (Norman): gestos de 2 dedos são invisíveis
 - **O que fazer:**
   - item **Gestos** no Menu, na seção Desenho e roda; abre uma lista curta, sem imagens, com os textos de
@@ -139,10 +159,13 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 - **Pronto quando:**
   - [ ] a lista mostra os 4 gestos de 2 dedos e fecha ao tocar fora
 - **Arquivos prováveis:** `src/ui/sheet.js`, `src/ui/wheel.js`
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b11):**
+  - Menu → Desenho e roda → **Gestos**: folha com os 4 gestos e o rodapé da palma (textos do doc 11). Fecha ao tocar
+    fora. Na primeira abertura da 0.3.2 no aparelho, leitura de 3 s no botão da roda: "Novo: 2 dedos para os lados
+    andam no tempo".
 
 ### #026 — Pétala Ferramenta em dois arcos
-- **Status:** A fazer · **Prioridade:** P2 · **Versão alvo:** 0.3.2
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.3.2
 - **Origem:** conselho (Rams): 7 ferramentas numa fila só
 - **O que fazer:**
   - arco de dentro **Riscar**: Pincel, Lápis, Marcador, Giz; arco de fora **Mexer**: Borracha, Balde, Laço;
@@ -153,10 +176,13 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - [ ] trocar qualquer ferramenta continua levando no máximo 2 toques da roda recolhida
   - [ ] todos os alvos com pelo menos 48 px
 - **Arquivos prováveis:** `src/ui/wheel.js`
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b11):**
+  - Arco de dentro (raio 206) **Riscar**: Pincel, Lápis, Marcador, Giz. Arco de fora (raio 270) **Mexer**: Borracha,
+    Balde, Laço. Pastilhas de 52 px. O arco de Tamanho foi para 318–366 px, por fora dos dois. Rótulos "Riscar" e
+    "Mexer" escritos ao lado de cada arco. Qualquer ferramenta continua a 2 toques da roda recolhida.
 
 ### #034 — Tinta Vermelho vivo (9ª cor da paleta)
-- **Status:** A fazer · **Prioridade:** P2 · **Versão alvo:** 0.3.2
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.3.2
 - **Origem:** pedido do Raphael (24/11), para permitir o "falso CMYK" da riso (Azul, Vermelho vivo, Amarelo, Preto).
 - **O que fazer:**
   - acrescentar **no fim** de `INKS` em `config.js`: `{ name: 'Vermelho vivo', hex: '#F15060' }` (Riso Bright Red,
@@ -170,10 +196,13 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - [ ] Vermelho vivo escolhível em qualquer das 4 tintas; aparece certo na tela, no PNG e no vídeo
   - [ ] teste de lógica cobre o índice 8 no arquivo `.grao`
 - **Arquivos prováveis:** `src/config.js`, `src/ui/wheel.js`, `src/doc/project.js`, `docs/12-tintas-riso.md`
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b11):**
+  - `{ name: 'Vermelho vivo', hex: '#F15060' }` no fim de `INKS` (índice 8). Arco de cores com 9 pastilhas de 48 px
+    (antes 44 px), 14° entre elas. `sanitize` aceita o índice 8; índice 9 volta ao padrão (testado).
+  - **Testar no tablet:** Vermelho vivo numa tinta; a combinação Azul + Vermelho vivo + Amarelo + Preto; PNG e vídeo.
 
 ### #027 — Fechar a 0.3.2 e preparar o teste no tablet (PARE aqui)
-- **Status:** A fazer · **Prioridade:** P1 · **Versão alvo:** 0.3.2
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.3.2
 - **O que fazer:**
   - `VERSION` 0.3.2, `CHANGELOG.md`, `INSTRUCOES.txt`, docx da versão;
   - escrever `docs/relatorio-v0.3.md` (como o da v0.2): o que mudou de 0.2.1 a 0.3.2, o que saiu diferente dos
@@ -189,7 +218,10 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - **Depois disso, pare.** Não comece o #028.
 - **Pronto quando:**
   - [ ] relatório e roteiro escritos; docx da 0.3.2 gerado
-- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+- **Resposta do VS Code (24/11, build b11):**
+  - `VERSION` 0.3.2, CHANGELOG, INSTRUCOES, docx e `docs/relatorio-v0.3.md` com o roteiro de 12 itens.
+  - **Não parei aqui:** o Raphael pediu (24/11) "execute os pedidos até a versão 1.0, sem pausas". A v0.4 e as
+    seguintes foram feitas em seguida; ver as respostas de cada pedido e `docs/relatorio-v1.0.md`.
 
 ### #028 — Camadas separadas das tintas (modelo e migração) — ESPERA LIBERAÇÃO
 - **Status:** Bloqueado (espera a auditoria da 0.3.2) · **Prioridade:** P1 · **Versão alvo:** 0.4.0

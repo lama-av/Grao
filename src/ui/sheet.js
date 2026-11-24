@@ -68,6 +68,7 @@ export function setupSheet(app) {
         <label class="check"><input type="checkbox" data-k="pinWheel"> Fixar roda</label>
         <label class="check"><input type="checkbox" data-k="lefty"> Canhoto</label>
         <label class="check"><input type="checkbox" data-k="debug"> Teste da Fase 0</label>
+        <button class="btn small" data-act="gestures">Gestos</button>
         <button class="btn small" data-act="fit"${app.view && !isFit(app.view) ? '' : ' disabled'}>Encaixar papel (100%)</button>
       </div>
       <div class="version">Grão ${app.version}</div>`;
@@ -111,6 +112,7 @@ export function setupSheet(app) {
       if (ok) { app.replaceProject(p); app.toast('Projeto aberto'); }
     };
     act('png').onclick = () => app.exportPNG();
+    act('gestures').onclick = () => open('gestures');
     act('fit').onclick = () => { fitView(app.view); app.input?.redrawOverlay(); close(); };
     act('video').onclick = () => { close(); app.exportVideo(); };
     act('new').onclick = async () => {
@@ -121,6 +123,20 @@ export function setupSheet(app) {
       });
       if (ok) app.newProject();
     };
+  }
+
+  // Lista dos gestos de 2 dedos (textos do doc 11, seção "Gestos"). Fecha ao tocar fora, como as outras folhas.
+  function buildGestures() {
+    el.setAttribute('aria-label', 'Gestos com 2 dedos');
+    el.innerHTML = `
+      <div class="sheet-title">Gestos com 2 dedos</div>
+      <dl class="gestures">
+        <dt>Tocar rápido</dt><dd>Desfaz o último passo.</dd>
+        <dt>Arrastar para os lados</dt><dd>Anda no tempo, frame a frame. Com o papel inteiro na tela.</dd>
+        <dt>Abrir ou fechar os dedos</dt><dd>Aproxima e afasta o papel. Com zoom, arrastar move o papel.</dd>
+        <dt>Sobre a seleção</dt><dd>Move, gira e muda o tamanho do que foi selecionado.</dd>
+      </dl>
+      <div class="sheet-note">A palma apoiada é ignorada enquanto a caneta está perto da tela.</div>`;
   }
 
   function buildTime() {
@@ -162,7 +178,7 @@ export function setupSheet(app) {
 
   function open(m) {
     mode = m;
-    if (m === 'more') buildMenu(); else buildTime();
+    if (m === 'more') buildMenu(); else if (m === 'gestures') buildGestures(); else buildTime();
     position();
     el.hidden = false;
   }

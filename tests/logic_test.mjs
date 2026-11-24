@@ -60,6 +60,7 @@ function makeApp() {
   const ui = fakeCanvas(), wet = fakeCanvas();
   app.ui = setupWheel(app, ui);
   app.input = setupInput(app, wet);
+  wet.app = app;
   return { app, wet };
 }
 
@@ -79,7 +80,11 @@ function pointer(wet, type = 'pen') {
     pressure: pressure ?? (buttons & 1 ? 0.6 : 0),
   });
   return {
-    down: (x, y, b = 1, btn = 0, p) => send('pointerdown', x, y, b, btn, p),
+    // Dedo: por padrão simula a caneta longe há tempo (o filtro de palma ignora toques logo depois da caneta).
+    down: (x, y, b = 1, btn = 0, p) => {
+      if (type === 'touch' && wet.app && wet.autoPenAway !== false) wet.app.input.gestures.penGone(-1e9);
+      send('pointerdown', x, y, b, btn, p);
+    },
     move: (x, y, b = 0, p) => send('pointermove', x, y, b, -1, p),
     up: (x, y, b = 0, btn = 0) => send('pointerup', x, y, b, btn),
     cancel: (x, y) => send('pointercancel', x, y, 0, -1),
@@ -215,12 +220,12 @@ for (const code of [4]) {
   lp.down(...inkAt(0));
   await sleep(600);
   check('toque longo abre as cores', app.ui.petal === 'inkcolor');
-  const colorAt = (j) => at(206, base - (step * 7) / 2 + step * j);
+  const colorAt = (j) => at(206, base - (step * 8) / 2 + step * j);   // 9 cores
   lp.move(...colorAt(5)); lp.up(...colorAt(5));
   check('arrastar até a cor troca a cor da tinta', app.project.layers[0].ink === 5, app.project.layers[0].ink);
   // pétala Ferramenta: Borracha
   tap(wet, ...at(58, 0));
-  tap(wet, ...at(206, base - step * 3 + step * 4));   // 7 ferramentas: Pincel, Lápis, Marcador, Giz, Borracha, Balde, Laço
+  tap(wet, ...at(270, base - step));   // arco Mexer (fora): Borracha, Balde, Laço
   check('escolher Borracha na pétala', app.tool === 'eraser');
   app.tool = 'brush';
   // recolhe ao desenhar
@@ -253,7 +258,7 @@ for (const code of [4]) {
   tap(wet, ...BTN);
   tap(wet, ...at(58, 180));
   check('pétala Tinta aberta', app.ui.petal === 'ink');
-  const colorArc = (j) => at(270, -45 - (14 * 7) / 2 + 14 * j);
+  const colorArc = (j) => at(270, -45 - (14 * 8) / 2 + 14 * j);      // 9 cores
   tap(wet, ...colorArc(6));
   check('tocar numa cor do arco troca a cor da tinta ativa', app.project.layers[0].ink === 6, app.project.layers[0].ink);
   check('a pétala continua aberta depois de trocar a cor', app.ui.petal === 'ink');
@@ -607,7 +612,7 @@ for (const code of [4]) {
 // ---------- pincéis (T-021) e suavização (T-025) ----------
 {
   const { app, wet } = makeApp();
-  const toolAt = (k) => at(206, -45 - 17 * 3 + 17 * k);
+  const toolAt = (k) => at(206, -45 - 17 * 1.5 + 17 * k);   // arco Riscar: Pincel, Lápis, Marcador, Giz
   const pick = (k) => { app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 0)); tap(wet, ...toolAt(k)); app.ui.collapse(); };
   pick(1);
   check('pétala: Lápis', app.tool === 'pencil');
@@ -634,7 +639,7 @@ for (const code of [4]) {
   app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 0));
   const before = { ...app.project.settings.sizes };
   const sz = pointer(wet, 'touch');
-  sz.down(...at(264, -45 + 30)); sz.up(...at(264, -45 + 30));
+  sz.down(...at(342, -45 + 30)); sz.up(...at(342, -45 + 30));
   check('arco de Tamanho muda só o Giz', app.project.settings.sizes.chalk === 40 && app.project.settings.sizes.brush === before.brush);
   // projeto antigo com um tamanho só
   const old = JSON.parse(JSON.stringify(app.project));
@@ -673,6 +678,146 @@ for (const code of [4]) {
   const spread = (p) => { let lo = 1e9, hi = -1e9; for (let i = 30; i < p.length - 3; i += 3) { lo = Math.min(lo, p[i + 1]); hi = Math.max(hi, p[i + 1]); } return hi - lo; };
   check('com suavização, o zigue-zague fica bem menor', spread(sm) < spread(raw) * 0.5, `${spread(sm).toFixed(1)} < ${spread(raw).toFixed(1)}`);
   check('com suavização, o traço termina onde a caneta parou', Math.abs(sm.at(-3) - 500 * 1200 / W) < 1e-6, `${sm.at(-3)} ${sm.at(-2)} n=${sm.length}`);
+}
+
+// ---------- máquina de gestos (ADR-003, #022–#024) ----------
+{
+  const { createGestures } = await import('../src/input/gestures.js');
+  const G = () => createGestures();
+  const t = { id: 0 };
+  const two = (g, a, b, ctx = {}, t0 = 0) => [...g.down({ id: 1, x: a[0], y: a[1], t: t0 }, ctx), ...g.down({ id: 2, x: b[0], y: b[1], t: t0 }, ctx)];
+  const types = (acts) => acts.map((x) => x.type).join(',');
+  // os dois dedos andam juntos (dx, dy) em passos de ~4 px, um dedo de cada vez; devolve todas as ações
+  const pos = { 1: null, 2: null };
+  const place = (a, b) => { pos[1] = [...a]; pos[2] = [...b]; };
+  const walk = (g, dx, dy, ctx = {}) => {
+    const n = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 4));
+    const acts = [];
+    for (let i = 0; i < n; i++) for (const id of [1, 2]) {
+      pos[id][0] += dx / n; pos[id][1] += dy / n;
+      acts.push(...g.move({ id, x: pos[id][0], y: pos[id][1], t: 50 + i }, ctx));
+    }
+    return acts;
+  };
+  // DESFAZER
+  let g = G(); two(g, [100, 100], [300, 100]);
+  let out = [...g.up(1, 100), ...g.up(2, 120)];
+  check('máquina: toque rápido = desfazer', types(out) === 'undo', types(out));
+  // TRANSFORMAR
+  g = G();
+  out = two(g, [100, 100], [300, 100], { overSelection: () => true });
+  check('máquina: sobre a seleção = transformar já ao pousar', types(out) === 'xf-begin' && g.intent === 'xf');
+  out = g.move({ id: 2, x: 320, y: 140, t: 50 }, {});
+  check('máquina: transformar segue os dedos', types(out) === 'xf');
+  out = [...g.up(1, 400), ...g.up(2, 400)];
+  check('máquina: fim do transformar', out[0].type === 'end' && out[0].intent === 'xf' && out[0].moved > 12);
+  // PAPEL por pinça
+  g = G(); two(g, [100, 100], [300, 100], { fit: true });
+  out = g.move({ id: 2, x: 330, y: 100, t: 50 }, { fit: true });     // distância +15%
+  check('máquina: distância mudou 10% = papel (zoom)', types(out) === 'pan-begin,pan' && g.intent === 'pan');
+  // TEMPO
+  g = G(); place([100, 300], [300, 300]); two(g, pos[1], pos[2], { fit: true });
+  out = walk(g, 26, 2, { fit: true });
+  check('máquina: andaram juntos na horizontal com o papel em 100% = tempo', g.intent === 'time' && out[0]?.type === 'time-begin', types(out));
+  out = walk(g, 24, 0);
+  check('máquina: 48 px = 1 frame para a frente', out.filter((x) => x.type === 'scrub').reduce((n, x) => n + x.frames, 0) === 1, JSON.stringify(out));
+  out = walk(g, 200, 0);
+  check('máquina: movimento rápido anda vários frames', out.filter((x) => x.type === 'scrub').reduce((n, x) => n + x.frames, 0) === 4, JSON.stringify(out));
+  out = walk(g, -330, 0);
+  check('máquina: para a esquerda volta', out.some((x) => x.type === 'scrub' && x.frames < 0));
+  out = [...g.up(1, 200, true), ...g.up(2, 200)];
+  check('máquina: cancelado devolve quantos frames andou', out[0].type === 'cancel' && out[0].intent === 'time' && out[0].frames === -1, JSON.stringify(out));
+  // com zoom, arrastar = papel
+  g = G(); place([100, 300], [300, 300]); two(g, pos[1], pos[2], { fit: false });
+  out = walk(g, 30, 0, { fit: false });
+  check('máquina: com zoom, arrastar = mover o papel', g.intent === 'pan' && out[0]?.type === 'pan-begin');
+  // em 100%, arrastar na vertical não é tempo
+  g = G(); place([100, 300], [300, 300]); two(g, pos[1], pos[2], { fit: true });
+  walk(g, 2, 30, { fit: true });
+  check('máquina: arrastar na vertical não anda no tempo', g.intent === 'pan');
+  // pinça com um dedo parado (polegar fixo) também é pinça
+  g = G(); place([100, 300], [300, 300]); two(g, pos[1], pos[2], { fit: true });
+  for (let i = 1; i <= 10; i++) g.move({ id: 2, x: 300 + i * 4, y: 300, t: 50 + i }, { fit: true });
+  check('máquina: abrir com um dedo parado = pinça', g.intent === 'pan');
+  // a intenção não muda no meio
+  g = G(); place([100, 300], [300, 300]); two(g, pos[1], pos[2], { fit: true });
+  walk(g, 26, 0, { fit: true });
+  g.move({ id: 2, x: 700, y: 300, t: 70 }, { fit: true });                        // vira "pinça" no meio
+  check('máquina: decidiu tempo, continua tempo até soltar', g.intent === 'time');
+  // PALMA
+  g = G();
+  g.penEvent(1000, true);
+  out = g.down({ id: 1, x: 100, y: 100, t: 1000 }, {});
+  check('palma: toque com a caneta encostada é ignorado', types(out) === 'ignored');
+  g.penGone(1100);
+  out = g.down({ id: 2, x: 300, y: 100, t: 1300 }, {});
+  check('palma: toque até 300 ms depois da caneta é ignorado', types(out) === 'ignored');
+  out = g.down({ id: 3, x: 300, y: 100, t: 1500 }, {});
+  check('palma: depois de 300 ms vale', types(out) === '' && !g.active);
+  check('palma: toque ignorado continua ignorado (não forma gesto com o novo)', !g.active);
+  g = G(); g.penEvent(0, false);                                                   // pairando
+  check('palma: caneta pairando ignora toques', types(g.down({ id: 1, x: 1, y: 1, t: 500 }, {})) === 'ignored');
+  g = G();
+  check('palma: contato largo (> 40 px) é ignorado', types(g.down({ id: 1, x: 1, y: 1, t: 0, w: 60, h: 30 }, {})) === 'ignored');
+  check('palma: conta os ignorados para o painel', g.stats.ignored === 1 && g.stats.lastW === 60);
+}
+{
+  // TEMPO no app: segura o loop, anda na tinta ativa, a régua aparece; cancelado volta
+  const { app, wet } = makeApp();
+  app.clock.paused = false; app.clock.t = 0;
+  let ruler = null;
+  app.ui.ruler = (on) => { ruler = on; };
+  const a = pointer(wet, 'touch'), b = pointer(wet, 'touch');
+  a.down(300, 400); b.down(500, 400);
+  for (let x = 4; x <= 32; x += 4) { a.move(300 + x, 401); b.move(500 + x, 401); }
+  check('tempo: segura o loop durante o gesto', app.clock.holds.has('scrub') && ruler === true);
+  for (let x = 36; x <= 100; x += 4) { a.move(300 + x, 402); b.move(500 + x, 402); }
+  check('tempo: 100 px para a direita = 2 frames', app.clock.frameOf(app.project.layers[0]) === 2, app.clock.frameOf(app.project.layers[0]));
+  a.up(400, 402); b.up(600, 402);
+  check('tempo: soltar solta o loop e esconde a régua', !app.clock.holds.has('scrub') && ruler === false);
+  check('tempo: não desfaz nem mexe no zoom', app.history.depth === 0 && app.view.s === 1);
+  app.clock.t = 0;
+  const c = pointer(wet, 'touch'), d = pointer(wet, 'touch');
+  c.down(300, 400); d.down(500, 400);
+  for (let x = 4; x <= 100; x += 4) { c.move(300 + x, 401); d.move(500 + x, 401); }
+  c.cancel(400, 401); d.cancel(600, 401);
+  check('tempo: cancelado volta ao frame de antes', app.clock.frameOf(app.project.layers[0]) === 0 && !app.clock.holds.has('scrub'));
+}
+{
+  // palma no app: desenhando, um toque da palma não vira gesto
+  const { app, wet } = makeApp();
+  wet.autoPenAway = false;
+  stroke(wet, 300, 300);
+  const pa = pointer(wet, 'touch'), pb = pointer(wet, 'touch');
+  pa.down(500, 400); pb.down(700, 400); pa.up(500, 400); pb.up(700, 400);
+  check('palma logo depois do traço não desfaz', all(app).length === 1 && app.input.gestures.stats.ignored === 2);
+  // a roda continua respondendo com a caneta perto
+  const pen = pointer(wet); pen.move(600, 300, 0);
+  tap(wet, ...BTN);
+  check('a roda responde mesmo com a caneta pairando', app.ui.isOpen);
+}
+
+// ---------- 0.3.2: dois arcos, Vermelho vivo ----------
+{
+  const { app, wet } = makeApp();
+  tap(wet, ...BTN); tap(wet, ...at(58, 0));
+  tap(wet, ...at(270, -45));
+  check('arco Mexer: Balde em 2 toques', app.tool === 'bucket');
+  app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 0));
+  tap(wet, ...at(270, -45 + 17));
+  check('arco Mexer: Laço', app.tool === 'lasso');
+  app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 0));
+  tap(wet, ...at(206, -45 + 17 * 1.5));
+  check('arco Riscar: Giz', app.tool === 'chalk');
+  const { INKS } = await import('../src/config.js');
+  check('paleta com 9 tintas, Vermelho vivo no fim', INKS.length === 9 && INKS[8].name === 'Vermelho vivo' && INKS[8].hex === '#F15060');
+  app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 180));
+  tap(wet, ...at(270, -45 - (14 * 8) / 2 + 14 * 8));
+  check('Vermelho vivo escolhível no arco de cores', app.project.layers[0].ink === 8);
+  const { projectToText, projectFromText } = await import('../src/io/file.js');
+  check('Vermelho vivo (índice 8) salva e abre no .grao', projectFromText(projectToText(app.project)).layers[0].ink === 8);
+  const bad = JSON.parse(projectToText(app.project)); bad.layers[0].ink = 9;
+  check('índice 9 não existe: volta ao padrão', projectFromText(JSON.stringify(bad)).layers[0].ink === 0);
 }
 
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);

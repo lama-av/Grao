@@ -3,18 +3,17 @@
 // O #wet fica no topo e recebe todos os eventos: primeiro pergunta à roda (app.ui.down) se o toque é dela;
 // o resto vai para o papel. O #wet guarda só o traço molhado e o laço; a caixa da seleção vai para o #ui.
 
-import { DOC_W, DOC_H, INKS, PAPERS } from '../config.js';
+import { DOC_W, DOC_H, INKS, PAPERS, TAP_MOVE_PX } from '../config.js';
 import { newStroke, cloneStroke, boundsOf, fillDependents } from '../doc/project.js';
 import { BRUSHES } from '../render/stroke.js';
 import { drawLastSegment, drawStroke } from '../render/stroke.js';
-import { uvToDoc, pinch, settle } from '../view.js';
+import { uvToDoc, pinch, settle, isFit } from '../view.js';
+import { createGestures } from './gestures.js';
 
 // Captura o ponteiro; ignora a falha quando o ponteiro já sumiu (eventos sintéticos, cancelamentos).
 function capture(el, e) { try { el.setPointerCapture(e.pointerId); } catch { /* sem captura */ } }
 
 const SELECTION_MARGIN_PX = 80; // ~2 cm de folga para pousar 2 dedos sobre seleções pequenas
-const TAP_MS = 200;
-const TAP_MOVE_PX = 12;
 
 // Botões da caneta (valores de PointerEvent.buttons). A ponta encostada é 1.
 // Botão lateral 1: o Chrome reporta 2 (como o botão direito do mouse) → alterna Pincel / Borracha.
@@ -47,8 +46,10 @@ export function setupInput(app, wetCanvas) {
   let target = null;      // { l, f }
   let lasso = [];
   let moveStart = null;   // { x, y, snap: Map(id -> {pts, w}), before }
-  const touches = new Map();
-  let gesture = null;
+  const gestures = createGestures();   // decide o que 2 dedos fazem (ADR-003)
+  let xfState = null;     // TRANSFORMAR: { start, t }
+  let panStart = null;    // PAPEL: vista e dedos no começo
+  let timeStart = null;   // TEMPO: tempo do relógio no começo (para cancelar)
   const uiPointers = new Set(); // ponteiros que começaram na roda: move/up vão para ela
   let penBtns = 0;              // botões laterais vistos no último evento da caneta
 
@@ -201,8 +202,14 @@ export function setupInput(app, wetCanvas) {
   const tipOf = (e) => (e.buttons & CONTACT) !== 0 || (e.type === 'pointerdown' && e.button === 0 && e.buttons === 0);
 
   // ---------- caneta ----------
+  // A caneta perto da tela (encostada ou pairando) avisa o filtro de palma dos gestos.
+  function penSeen(e) {
+    if (e.pointerType === 'pen') gestures.penEvent(performance.now(), (e.buttons & CONTACT) !== 0);
+  }
+
   wetCanvas.addEventListener('pointerdown', (e) => {
     app.debug?.pointer(e);
+    penSeen(e);
     if (app.recording) return;                // gravando o vídeo: o papel e a roda esperam
     if (isPen(e)) {
       penButtons(e);
@@ -305,6 +312,7 @@ export function setupInput(app, wetCanvas) {
   }
 
   wetCanvas.addEventListener('pointermove', (e) => {
+    penSeen(e);
     if (isPen(e)) penButtons(e);
     if (uiPointers.has(e.pointerId)) { app.ui.move(e); return; }
     if (!isPen(e)) { touchMove(e); return; }
@@ -373,6 +381,7 @@ export function setupInput(app, wetCanvas) {
   }
 
   wetCanvas.addEventListener('pointerup', (e) => {
+    if (e.pointerType === 'pen') gestures.penEvent(performance.now(), false);   // levantou: continua pairando
     if (uiPointers.delete(e.pointerId)) { app.ui.up(e, false); if (isPen(e)) penButtons(e); return; }
     if (isPen(e)) { finishPen(e, false); penButtons(e); } else touchUp(e);
   });
@@ -380,7 +389,9 @@ export function setupInput(app, wetCanvas) {
     if (uiPointers.delete(e.pointerId)) { app.ui.up(e, true); if (isPen(e)) penAway(); return; }
     if (isPen(e)) { finishPen(e, true); penAway(); } else touchUp(e, true);
   });
-  wetCanvas.addEventListener('pointerleave', (e) => { if (isPen(e) && e.pointerType === 'pen') penAway(); });
+  wetCanvas.addEventListener('pointerleave', (e) => {
+    if (e.pointerType === 'pen') { penAway(); gestures.penGone(performance.now()); }
+  });
   window.addEventListener('blur', penAway);
   wetCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -409,87 +420,118 @@ export function setupInput(app, wetCanvas) {
   }
 
   // ---------- dedos (2 dedos) ----------
-  function touchDown(e) {
-    capture(wetCanvas, e);
-    touches.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY });
-    if (touches.size === 2 && !gesture) {
-      const [a, b] = [...touches.values()];
-      gesture = { t0: performance.now(), moved: 0, xf: null };
-      const sb = selectionBounds();
-      if (sb) {
+  // A decisão fica na máquina de gestos (src/input/gestures.js); aqui só executamos a intenção.
+  const touchOf = (e) => ({ id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), w: e.width || 0, h: e.height || 0 });
+  const docOf = (p) => toDoc({ clientX: p.x, clientY: p.y });
+
+  function gestureCtx() {
+    return {
+      fit: !app.view || isFit(app.view),
+      overSelection(a, b) {
+        const sb = selectionBounds();
+        if (!sb) return false;
         const r = wetCanvas.getBoundingClientRect();
         const marginDoc = (SELECTION_MARGIN_PX / r.width) * DOC_W / zoom();
-        const pa = toDoc({ clientX: a.x, clientY: a.y });
-        const pb = toDoc({ clientX: b.x, clientY: b.y });
-        if (insideBounds(pa, sb, marginDoc) && insideBounds(pb, sb, marginDoc)) {
-          gesture.xf = { start: twoFinger(pa, pb), t: beginTransform() };
-        }
-      }
-      // Fora da seleção, 2 dedos movem o papel: pinça = zoom, arrastar = mover (T-020).
-      if (!gesture.xf && app.view) gesture.pan = { view: { ...app.view }, ...screenPair(a, b) };
-    }
-  }
-
-  // Meio e distância de 2 dedos em uv da tela.
-  function screenPair(a, b) {
-    const r = wetCanvas.getBoundingClientRect();
-    return {
-      mid: { u: ((a.x + b.x) / 2 - r.left) / r.width, w: ((a.y + b.y) / 2 - r.top) / r.height },
-      dist: Math.hypot((b.x - a.x) / r.width, (b.y - a.y) / r.width),
+        return insideBounds(docOf(a), sb, marginDoc) && insideBounds(docOf(b), sb, marginDoc);
+      },
     };
   }
 
-  function touchMove(e) {
-    const t = touches.get(e.pointerId);
-    if (!t) return;
-    t.x = e.clientX; t.y = e.clientY;
-    if (!gesture) return;
-    gesture.moved = Math.max(gesture.moved, Math.hypot(t.x - t.x0, t.y - t.y0));
-    if (gesture.xf && touches.size >= 2) {
-      const [a, b] = [...touches.values()];
-      const now = twoFinger(toDoc({ clientX: a.x, clientY: a.y }), toDoc({ clientX: b.x, clientY: b.y }));
-      const s0 = gesture.xf.start;
-      const scale = Math.max(0.1, now.dist / Math.max(1, s0.dist));
-      const rot = now.angle - s0.angle;
-      const cos = Math.cos(rot) * scale, sin = Math.sin(rot) * scale;
-      // gira e escala em volta do centro inicial, depois desloca para o centro atual
-      const m = {
-        a: cos, b: sin, c: -sin, d: cos,
-        e: now.cx - (cos * s0.cx - sin * s0.cy),
-        f: now.cy - (sin * s0.cx + cos * s0.cy),
-        scale,
-      };
-      if (!applyMatrix(gesture.xf.t, m)) gesture.xf = null;   // a seleção foi trocada no meio: para de girar
-      redrawOverlay();
-    } else if (gesture.pan && touches.size >= 2 && gesture.moved >= TAP_MOVE_PX) {
-      const [a, b] = [...touches.values()];
-      pinch(app.view, gesture.pan, screenPair(a, b));
-      redrawOverlay();
-      app.ui?.say(`${Math.round(app.view.s * 100)}%`);
+  function touchDown(e) {
+    capture(wetCanvas, e);
+    run(gestures.down(touchOf(e), gestureCtx()));
+  }
+  function touchMove(e) { run(gestures.move(touchOf(e), gestureCtx())); }
+  function touchUp(e, cancelled) { run(gestures.up(e.pointerId, performance.now(), cancelled)); }
+
+  // Meio e distância de 2 dedos em uv da tela.
+  function screenPair(p) {
+    const r = wetCanvas.getBoundingClientRect();
+    return {
+      mid: { u: ((p.a.x + p.b.x) / 2 - r.left) / r.width, w: ((p.a.y + p.b.y) / 2 - r.top) / r.height },
+      dist: Math.hypot((p.b.x - p.a.x) / r.width, (p.b.y - p.a.y) / r.width),
+    };
+  }
+
+  function activeLayer() { return app.project.layers[app.project.activeLayer]; }
+
+  function run(actions) {
+    for (const act of actions) {
+      switch (act.type) {
+        case 'xf-begin':
+          xfState = { start: twoFinger(docOf(act.start.a), docOf(act.start.b)), t: beginTransform() };
+          break;
+        case 'xf': {
+          if (!xfState) break;
+          const now = twoFinger(docOf(act.now.a), docOf(act.now.b));
+          const s0 = xfState.start;
+          const scale = Math.max(0.1, now.dist / Math.max(1, s0.dist));
+          const rot = now.angle - s0.angle;
+          const cos = Math.cos(rot) * scale, sin = Math.sin(rot) * scale;
+          // gira e escala em volta do centro inicial, depois desloca para o centro atual
+          const m = {
+            a: cos, b: sin, c: -sin, d: cos,
+            e: now.cx - (cos * s0.cx - sin * s0.cy),
+            f: now.cy - (sin * s0.cx + cos * s0.cy),
+            scale,
+          };
+          if (!applyMatrix(xfState.t, m)) xfState = null;   // a seleção foi trocada no meio: para de girar
+          redrawOverlay();
+          break;
+        }
+        case 'pan-begin':
+          if (app.view) panStart = { view: { ...app.view }, ...screenPair(act.start) };
+          break;
+        case 'pan':
+          if (!panStart) break;
+          pinch(app.view, panStart, screenPair(act.now));
+          redrawOverlay();
+          app.ui?.say(`${Math.round(app.view.s * 100)}%`);
+          break;
+        case 'time-begin':
+          timeStart = app.clock.t;
+          app.clock.holds.add('scrub');       // o loop espera enquanto os dedos andam no tempo
+          app.ui?.ruler?.(true);
+          break;
+        case 'scrub': {
+          const layer = activeLayer();
+          const dir = Math.sign(act.frames);
+          for (let i = 0; i < Math.abs(act.frames); i++) app.clock.step(layer, dir);
+          app.ui?.say(`${app.clock.frameOf(layer) + 1}/${layer.frames.length}`);
+          break;
+        }
+        case 'undo':
+          app.undo();
+          break;
+        case 'end':
+        case 'cancel':
+          finishGesture(act);
+          break;
+        default:
+      }
     }
   }
 
-  function touchUp(e, cancelled) {
-    touches.delete(e.pointerId);
-    if (!gesture) return;
-    if (touches.size === 0) {
-      const g = gesture;
-      gesture = null;                       // antes de tudo: um erro abaixo não pode travar os próximos gestos
-      const quick = performance.now() - g.t0 < TAP_MS && g.moved < TAP_MOVE_PX;
-      if (g.xf) {
-        if (!cancelled && g.moved >= TAP_MOVE_PX) endTransform(g.xf.t);
-        else {
-          restoreFrame(g.xf.t);
-          if (quick && !cancelled) app.undo();
-        }
-      } else if (quick && !cancelled) {
-        app.undo();
-      } else if (g.pan && g.moved >= TAP_MOVE_PX) {
-        settle(app.view);                   // perto de 100%: encaixa o papel inteiro
-        if (app.view.s === 1) app.ui?.say('100%');
+  function finishGesture(act) {
+    const cancelled = act.type === 'cancel';
+    if (act.intent === 'xf' && xfState) {
+      if (!cancelled && act.moved >= TAP_MOVE_PX) endTransform(xfState.t);
+      else {
+        restoreFrame(xfState.t);
+        if (!cancelled && act.quick) app.undo();   // toque rápido sobre a seleção também desfaz
       }
-      redrawOverlay();
+      xfState = null;
+    } else if (act.intent === 'pan') {
+      settle(app.view);                        // perto de 100%: encaixa o papel inteiro
+      if (app.view.s === 1) app.ui?.say('100%');
+      panStart = null;
+    } else if (act.intent === 'time') {
+      if (cancelled && timeStart !== null) app.clock.t = timeStart;   // cancelado pelo sistema: volta ao frame de antes
+      app.clock.holds.delete('scrub');
+      app.ui?.ruler?.(false);
+      timeStart = null;
     }
+    redrawOverlay();
   }
 
   function twoFinger(a, b) {
@@ -499,7 +541,10 @@ export function setupInput(app, wetCanvas) {
   new ResizeObserver(resize).observe(wetCanvas);
   resize();
 
-  return { redrawOverlay, clearWet, selectionBounds, get transforming() { return !!(moveStart || gesture?.xf); } };
+  return {
+    redrawOverlay, clearWet, selectionBounds, gestures,
+    get transforming() { return !!(moveStart || xfState); },
+  };
 }
 
 function pointInPolygon(x, y, poly) {

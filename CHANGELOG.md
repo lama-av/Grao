@@ -4,6 +4,28 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [0.3.2] — 2026-11-24
+
+Gestos, Vermelho vivo e preparação da auditoria (pedidos #022–#027 e #034, escritos pelo chat).
+
+### Adicionado
+- **Arrastar 2 dedos para os lados anda no tempo** (#023): com o papel em 100%, 48 px = 1 frame da tinta ativa
+  (direita = para frente). O loop espera enquanto os dedos estão na tela; uma **régua de frames** aparece na borda de
+  baixo e some 400 ms depois de soltar; leitura "3/8". Com zoom, arrastar continua movendo o papel.
+- **Palma não vira gesto** (#024): toques que começam com a caneta encostada, pairando ou até 300 ms depois, e toques
+  com contato maior que 40 px, são ignorados até sair. A roda nunca é filtrada. Painel Teste da Fase 0: "toques
+  ignorados" e o tamanho do último toque.
+- **Menu → Gestos** (#025): os 4 gestos de 2 dedos. Na primeira abertura: "Novo: 2 dedos para os lados andam no tempo".
+- **Pétala Ferramenta em dois arcos** (#026): Riscar (Pincel, Lápis, Marcador, Giz) perto; Mexer (Borracha, Balde,
+  Laço) fora; o arco de Tamanho foi para fora dos dois.
+- **Vermelho vivo** (#034), 9ª tinta (`#F15060`, Riso Bright Red), para o falso CMYK. Pastilhas de cor com 48 px.
+
+### Mudado
+- Gestos de 2 dedos saíram do `input.js` para `src/input/gestures.js` (máquina de estados, ADR-003) (#022).
+- Pinça decidida pela mudança de distância **comparada ao deslocamento do meio dos dedos**: os eventos chegam um dedo
+  de cada vez, e só "a distância mudou 10%" confundia arrastar com pinça.
+- Teste de lógica: 164 verificações.
+
 ## [0.3.1] — 2026-11-24
 
 Fecha a v0.3 do plano ("Papel e ferramentas"): zoom, pincéis e suavização.

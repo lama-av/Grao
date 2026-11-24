@@ -83,9 +83,9 @@ async def main():
         await tap('touch', 26, *at(206, start + step))
         check('trocar tinta', await g("()=>window.grao.project.activeLayer") == 1)
 
-        # pétala Ferramenta (0°): Pincel, Lápis, Marcador, Giz, Borracha, Balde, Laço
+        # pétala Ferramenta (0°): arco Riscar (perto) e arco Mexer (fora)
         await tap('touch', 27, *at(58, 0))
-        await tap('touch', 28, *at(206, base - step * 3 + step * 4))   # 7 ferramentas; Borracha é a 5ª
+        await tap('touch', 28, *at(270, base - step))   # arco Mexer (fora): Borracha, Balde, Laço
         check('escolher Borracha', await g("()=>window.grao.tool") == 'eraser')
         await g("()=>{window.grao.tool='brush'}")
 

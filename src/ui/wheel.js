@@ -16,9 +16,11 @@ const R_SPEED0 = 126, R_SPEED1 = 174;     // arco de velocidade: 48 px de espess
 const SPEED_SPAN = 60;                    // graus
 const PETAL_R = 206, PILL_R = 26;         // pastilhas de 52 px
 const PETAL_STEP = 17;                    // graus entre pastilhas
-const COLOR_R = 270, COLOR_PILL_R = 22;   // arco das 8 cores da tinta ativa (pétala Tinta), pastilhas de 44 px
+const COLOR_R = 270, COLOR_PILL_R = 24;   // arco das 9 cores da tinta ativa (pétala Tinta), pastilhas de 48 px
 const COLOR_STEP = 14;
-const SIZE_R0 = 240, SIZE_R1 = 288;       // arco de tamanho (pétala Ferramenta)
+const MEXER_R = 270;                      // pétala Ferramenta: arco de fora (Borracha, Balde, Laço)
+const SIZE_R0 = 318, SIZE_R1 = 366;       // arco de tamanho (pétala Ferramenta), por fora dos dois arcos
+const RULER_FADE_MS = 400;                // régua de frames some 400 ms depois de soltar os 2 dedos
 const ANIM_MS = 150;
 const READ_MS = 1500;
 const LONG_MS = 500;                      // toque longo numa tinta
@@ -39,8 +41,9 @@ const SECTORS = [
   { id: 'ink', label: 'Tinta', a: 180 },
 ];
 
-const TOOLS = [['brush', 'Pincel'], ['pencil', 'Lápis'], ['marker', 'Marcador'], ['chalk', 'Giz'],
-  ['eraser', 'Borracha'], ['bucket', 'Balde'], ['lasso', 'Laço']];
+// Pétala Ferramenta em dois arcos (#026): o que risca (perto) e o que mexe (fora).
+const RISCAR = [['brush', 'Pincel'], ['pencil', 'Lápis'], ['marker', 'Marcador'], ['chalk', 'Giz']];
+const MEXER = [['eraser', 'Borracha'], ['bucket', 'Balde'], ['lasso', 'Laço']];
 
 const C = {
   panel: '#252320', plate: '#2e2b27', hub: '#1f1d1a', line: '#3a3732', hi: '#3a3631',
@@ -127,7 +130,8 @@ export function setupWheel(app, canvas) {
       const cur = p.layers[petalLayer].ink;
       items = INKS.map((k, j) => ({ kind: 'inkcolor', j, color: k.hex, on: j === cur }));
     } else if (petal === 'tool') {
-      items = TOOLS.map(([t, label]) => ({ kind: 'tool', tool: t, label, on: app.tool === t }));
+      const pill = ([t, label]) => ({ kind: 'tool', tool: t, label, on: app.tool === t });
+      return placeArc(RISCAR.map(pill), PETAL_R, PETAL_STEP, PILL_R).concat(placeArc(MEXER.map(pill), MEXER_R, PETAL_STEP, PILL_R));
     }
     return placeArc(items, PETAL_R, PETAL_STEP, PILL_R);
   }
@@ -181,7 +185,11 @@ export function setupWheel(app, canvas) {
   }
 
   // ---------- ações ----------
-  function say(text) { readText = text; readUntil = performance.now() + READ_MS; }
+  function say(text, ms = READ_MS) { readText = text; readUntil = performance.now() + ms; }
+
+  // Régua de frames do gesto de tempo (#023): aparece com os 2 dedos, some 400 ms depois de soltar.
+  let rulerUntil = 0;
+  function ruler(on) { rulerUntil = on ? Infinity : performance.now() + RULER_FADE_MS; }
 
   function openWheel() { if (!open) { open = true; animT0 = performance.now(); } }
   function collapse() {
@@ -549,6 +557,10 @@ export function setupWheel(app, canvas) {
       label('Tintas', c.x + Math.cos(a1) * PETAL_R, c.y + Math.sin(a1) * PETAL_R);
     }
     if (petal === 'tool') {
+      const r0 = (base - (PETAL_STEP * 3) / 2 - PETAL_STEP) * RAD;
+      const r1 = (base - PETAL_STEP - PETAL_STEP) * RAD;
+      label('Riscar', c.x + Math.cos(r0) * PETAL_R, c.y + Math.sin(r0) * PETAL_R);
+      label('Mexer', c.x + Math.cos(r1) * MEXER_R, c.y + Math.sin(r1) * MEXER_R);
       ring(c, SIZE_R0, SIZE_R1, base - SPEED_SPAN / 2, base + SPEED_SPAN / 2);
       ctx.fillStyle = 'rgba(37,35,32,0.94)'; ctx.fill();
       ctx.lineWidth = 1; ctx.strokeStyle = C.line; ctx.stroke();
@@ -599,6 +611,24 @@ export function setupWheel(app, canvas) {
     }
   }
 
+  function drawRuler() {
+    const { n, f, ink } = frameInfo();
+    const step = Math.min(28, (W * 0.6) / n);
+    const w = step * n + 16, h = 30;
+    const x0 = (W - w) / 2, y0 = H - h - 14;
+    ctx.beginPath();
+    ctx.roundRect(x0, y0, w, h, 8);
+    ctx.fillStyle = 'rgba(27,26,24,0.88)'; ctx.fill();
+    for (let i = 0; i < n; i++) {
+      const x = x0 + 8 + step * (i + 0.5);
+      ctx.beginPath();
+      ctx.roundRect(x - 2, y0 + (i === f ? 6 : 10), 4, i === f ? 18 : 10, 2);
+      ctx.fillStyle = i === f ? ink : '#6b655b';
+      ctx.fill();
+      if (i === f) { ctx.lineWidth = 1; ctx.strokeStyle = C.text; ctx.stroke(); }
+    }
+  }
+
   function drawSizePreview() {
     const r = (settings().sizes[sizeTool()] * docScale() * (app.view?.s || 1)) / 2;
     disc(W / 2, H / 2, Math.max(1, r));
@@ -644,7 +674,7 @@ export function setupWheel(app, canvas) {
       now < app.historyUntil, now < readUntil ? readText : '', app.tool, settings().sizes[sizeTool()], sizePreview,
       dragPos && `${dragPos.x | 0},${dragPos.y | 0}`, app.sheet?.mode, app.history.canUndo, app.history.canRedo,
       sb && `${sb.x0 | 0},${sb.y0 | 0},${sb.x1 | 0},${sb.y1 | 0}`,
-      app.project.layers.map((L) => L.ink).join(','), hover, app.lassoHeld, app.project.paper, showHint, app.recording,
+      app.project.layers.map((L) => L.ink).join(','), hover, app.lassoHeld, app.project.paper, showHint, app.recording, now < rulerUntil,
       app.view && `${app.view.s.toFixed(3)},${app.view.ox.toFixed(4)},${app.view.oy.toFixed(4)}`,
     ].join('|');
     if (!animating && sig === lastSig) return;
@@ -654,6 +684,7 @@ export function setupWheel(app, canvas) {
     ctx.clearRect(0, 0, W, H);
     drawSelection();
     if (sizePreview) drawSizePreview();
+    if (now < rulerUntil) drawRuler();
 
     const s = open ? clamp(k, 0, 1) : 1 - clamp(k, 0, 1);
     const ease = 1 - (1 - s) * (1 - s);
@@ -681,7 +712,7 @@ export function setupWheel(app, canvas) {
   function rebuild() { collapse(); lastSig = ''; }
 
   return {
-    down, move, up, paperDown, update, rebuild, collapse, say,
+    down, move, up, paperDown, update, rebuild, collapse, say, ruler,
     get corner() { return corner(); },
     get isOpen() { return open; },
     get petal() { return petal; },

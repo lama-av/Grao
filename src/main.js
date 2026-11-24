@@ -200,6 +200,14 @@ async function start() {
   // Fase de testes: confirma qual versão o tablet está rodando (o Chrome guarda cópias antigas).
   app.toast(`Grão ${VERSION}-${BUILD}`);
 
+  // Novidade mostrada uma vez por aparelho, no botão da roda (#025).
+  try {
+    if (!localStorage.getItem('grao.novo.gesto-tempo')) {
+      localStorage.setItem('grao.novo.gesto-tempo', '1');
+      setTimeout(() => app.ui.say('Novo: 2 dedos para os lados andam no tempo', 3000), 2700);
+    }
+  } catch { /* sem armazenamento: não mostra */ }
+
   window.grao = app; // para inspecionar pelo console durante os testes
 }
 
