@@ -17,6 +17,7 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
+- **1.0.0-rc.4 (24/11/2026):** 3 dedos refazem, pinça imediata, dedo com pressão (se o aparelho medir), Tour do Grão.
 - **1.0.0-rc.3 (24/11/2026):** palma só com a caneta encostada; dedo e caneta juntos; aviso de versão sempre visível.
 - **1.0.0-rc.2 (24/11/2026):** correções do 1º teste da rc.1 (gestos, dicas, retícula, janelas, anel, tamanho 200, dedo).
 - **1.0.0-rc.1 (24/11/2026):** candidata a 1.0 — todos os recursos do roteiro; falta o teste no tablet.
@@ -88,6 +89,7 @@ sw.js                  service worker: guarda o app para abrir sem internet; avi
   ui/wheel.js          roda de canto no canvas #ui: botão, centro, setores, prato, velocidade, pétalas, chips
   ui/sheet.js          folhas HTML Menu (arquivo e ajustes) e Tempo (FPS e frames) — só com a caneta parada
   ui/dialog.js         caixa de confirmação ("Apagar e começar" / "Cancelar")
+  ui/tour.js           Tour do Grão (17 passos, holofote pela geometria da roda)
   ui/debug.js          painel "Teste da Fase 0"
   io/storage.js        IndexedDB: galeria de projetos (p:<uid>), projeto aberto, salvamento com debounce
   io/file.js           arquivo .grao: salvar (baixar), abrir (seletor do aparelho), conferir (sanitize)
@@ -124,7 +126,8 @@ Regras de fluxo:
 ## Decisões que não devem ser desfeitas sem conversa
 
 1. **Um gesto, uma função.** Nenhum gesto muda de função conforme um estado escondido.
-2. **Nada de 3 dedos nem toque duplo no canvas** (a palma dispara toques falsos). **Dedo e caneta juntos** (pedido do
+2. **Nada de toque duplo no canvas** (a palma dispara toques falsos). **3 dedos só para o toque rápido de refazer**
+   (rc.4, pedido do Raphael). **Dedo e caneta juntos** (pedido do
    Raphael, 24/11): o dedo desenha sem pressão quando a caneta não está perto; com a caneta pairando, o dedo só faz
    gesto; com a caneta encostada (ou até 300 ms depois), o toque é palma e é ignorado. Segundo dedo descarta o risco.
 3. **O papel é a tela inteira; a interface é uma roda de canto que se recolhe** (a partir da v0.2). A caneta

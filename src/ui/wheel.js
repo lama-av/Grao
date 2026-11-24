@@ -838,8 +838,28 @@ export function setupWheel(app, canvas) {
 
   function rebuild() { collapse(); lastSig = ''; }
 
+  // Tour (rc.4): o tour abre/fecha a roda e as pétalas, sem animação, e pergunta onde está cada parte.
+  function tour(state) {
+    if (state.open) { open = true; animT0 = -1e9; petal = state.petal || null; }
+    else { petal = null; open = false; animT0 = -1e9; }
+    lastSig = '';
+  }
+  function geometry() {
+    const r = canvas.getBoundingClientRect();
+    const at = (p, rad) => ({ x: r.left + p.x, y: r.top + p.y, r: rad });
+    const c = wheelCenter(), base = BASE[corner()] * RAD;
+    const polarAt = (deg, radius, rad) => at({ x: c.x + Math.cos(deg * RAD) * radius, y: c.y + Math.sin(deg * RAD) * radius }, rad);
+    return {
+      btn: at(btnCenter(), BTN_R),
+      center: at(c, R_CENTER),
+      plate: at(c, R_PLATE),
+      speed: at({ x: c.x + Math.cos(base) * ((R_SPEED0 + R_SPEED1) / 2), y: c.y + Math.sin(base) * ((R_SPEED0 + R_SPEED1) / 2) }, 30),
+      sector: (id) => polarAt(SECTORS.find((s) => s.id === id).a, (R_CENTER + R_SECT) / 2, 28),
+    };
+  }
+
   return {
-    down, move, up, paperDown, update, rebuild, collapse, say, ruler,
+    down, move, up, paperDown, update, rebuild, collapse, say, ruler, tour, geometry,
     get corner() { return corner(); },
     get isOpen() { return open; },
     get petal() { return petal; },

@@ -79,7 +79,12 @@ export function setupInput(app, wetCanvas) {
 
   function pressureOf(e) {
     if (e.pointerType === 'mouse') return 0.5;
-    if (e.pointerType === 'touch') return 0.6;   // dedo desenha sem sensibilidade (só a caneta tem pressão)
+    // Dedo: se o Android informa pressão de verdade (varia entre 0 e 1, não é o 0,5 ou 1 fixo de quem não mede),
+    // usa ela (com piso, porque dedo leve dá valores baixos); senão, pressão fixa de 0,6.
+    if (e.pointerType === 'touch') {
+      const pr = e.pressure;
+      return pr > 0 && pr < 1 && pr !== 0.5 ? Math.max(0.25, Math.min(1, pr * 1.2)) : 0.6;
+    }
     return e.pressure > 0 ? e.pressure : 0.5;
   }
 
@@ -549,6 +554,9 @@ export function setupInput(app, wetCanvas) {
         }
         case 'undo':
           app.undo();
+          break;
+        case 'redo':
+          app.redo();
           break;
         case 'end':
         case 'cancel':

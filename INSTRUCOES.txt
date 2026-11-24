@@ -1,6 +1,6 @@
 GRÃO — INSTRUÇÕES DE USO
 ========================
-Versão descrita: 1.0.0-rc.3 (candidata a 1.0)
+Versão descrita: 1.0.0-rc.4 (candidata a 1.0)
 Atualizado em: 24/11/2026
 Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
 
@@ -31,11 +31,13 @@ SUMÁRIO
 - No tablet (Chrome): https://lama-av.github.io/Grao/
 - Para instalar como app: menu do Chrome > "Adicionar à tela inicial". Depois de
   aberto uma vez com internet, o Grão abre SEM INTERNET.
-- Ao abrir, aparece a versão (ex.: "Grão 1.0.0-rc.3-b20"). A versão também
+- Ao abrir, aparece a versão (ex.: "Grão 1.0.0-rc.4-b21"). A versão também
   aparece no fim do Menu.
 - Versão nova publicada: aparece junto do botão da roda "Nova versão. Toque
   para atualizar." (e no Menu, "Atualizar agora"). Tocar salva e atualiza. O app
   nunca recarrega sozinho.
+- TOUR DO GRÃO: na primeira vez no aparelho, um tour de 17 passos mostra tudo,
+  apontando cada parte. Para rever: Menu > Tour do Grão.
 - Na primeira vez no aparelho, o Grão abre com uma bola quicando. As 3 dicas no
   papel aparecem uma vez por aparelho (em qualquer projeto) e cada uma some quando
   você faz o que ela diz. Para ver de novo: Menu > Gestos > Mostrar as dicas de novo.
@@ -62,13 +64,13 @@ Caneta
 
 Dedos no papel
 - DEDO E CANETA JUNTOS: com a caneta longe da tela, 1 dedo desenha como a
-  caneta (sem sensibilidade). Com a caneta pairando perto, o dedo não risca
+  caneta (com sensibilidade se o aparelho medir a pressão do dedo; senão, fixa). Com a caneta pairando perto, o dedo não risca
   (seria a palma), mas os gestos de 2 dedos funcionam. Um segundo dedo apaga o
   risco que começou e vira gesto. Tocar o papel recolhe a roda.
-- Toque rápido com 2 dedos: Desfazer.
+- Toque rápido com 2 dedos: Desfazer. Toque rápido com 3 dedos: Refazer.
 - Arrastar 2 dedos para os lados (papel inteiro na tela): anda no tempo, frame a
   frame (direita = para frente). Uma régua de frames aparece embaixo.
-- Abrir ou fechar 2 dedos: zoom (até 400%). Com zoom, arrastar 2 dedos move o
+- Pinça (abrir ou fechar 2 dedos): zoom (até 400%), começa na hora. Com zoom, arrastar 2 dedos move o
   papel. Soltar perto de 100% encaixa o papel inteiro.
 - 2 dedos sobre a seleção: movem, giram e mudam o tamanho dela.
 - A palma é ignorada enquanto a caneta está encostada (e até 0,3 s depois de
@@ -165,7 +167,7 @@ ferramenta lembra o seu).
 - Impressão: Papel, Grão, Desalinhamento (até 3 mm), Ferver, Lineatura (40/60/85),
   Trapping, Marcas de rolo, Transferência, Prova de impressão, Tintas prontas.
 - Desenho e roda: Suavizar traço, Auto, Cebola, Fixar roda, Canhoto, Qualidade
-  automática, Teste da Fase 0, Gestos, Encaixar papel (100%).
+  automática, Teste da Fase 0, Tour do Grão, Gestos, Encaixar papel (100%).
 - Atualizar agora (quando há versão nova) e a versão, no fim.
 
 

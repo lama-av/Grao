@@ -88,7 +88,10 @@ export function setupSheet(app) {
         <label class="check"><input type="checkbox" data-k="lefty"> Canhoto</label>
         <label class="check"><input type="checkbox" data-k="autoQuality"> Qualidade automática (se o tablet engasgar)</label>
         <label class="check"><input type="checkbox" data-k="debug"> Teste da Fase 0</label>
-        <button class="btn small" data-act="gestures">Gestos</button>
+        <div class="row">
+          <button class="btn small" data-act="tour">Tour do Grão</button>
+          <button class="btn small" data-act="gestures">Gestos</button>
+        </div>
         <button class="btn small" data-act="fit"${app.view && !isFit(app.view) ? '' : ' disabled'}>Encaixar papel (100%)</button>
       </div>
       ${app.updateReady ? '<button class="btn small" data-act="update">Atualizar agora (versão nova pronta)</button>' : ''}
@@ -176,6 +179,7 @@ export function setupSheet(app) {
     el.querySelector('[data-act="update"]')?.addEventListener('click', () => app.applyUpdate?.());
     act('export').onclick = () => open('export');
     act('gestures').onclick = () => open('gestures');
+    act('tour').onclick = () => { close(); app.ui?.collapse(); app.tour?.start(); };
     act('fit').onclick = () => { fitView(app.view); app.input?.redrawOverlay(); close(); };
     // Desde a v0.6 o projeto atual fica guardado na galeria: projeto novo não apaga nada.
     act('new').onclick = async () => {
@@ -190,16 +194,21 @@ export function setupSheet(app) {
   function buildGestures() {
     el.setAttribute('aria-label', 'Gestos com 2 dedos');
     el.innerHTML = `
-      <div class="sheet-title">Gestos com 2 dedos</div>
+      <div class="sheet-title">Gestos com os dedos</div>
       <dl class="gestures">
         <dt>Tocar rápido</dt><dd>Desfaz o último passo.</dd>
+        <dt>Tocar rápido com 3 dedos</dt><dd>Refaz.</dd>
         <dt>Arrastar para os lados</dt><dd>Anda no tempo, frame a frame. Com o papel inteiro na tela.</dd>
         <dt>Abrir ou fechar os dedos</dt><dd>Aproxima e afasta o papel. Com zoom, arrastar move o papel.</dd>
         <dt>Sobre a seleção</dt><dd>Move, gira e muda o tamanho do que foi selecionado.</dd>
       </dl>
-      <div class="sheet-note">A palma apoiada é ignorada enquanto a caneta está perto da tela.</div>
-      <button class="btn small" data-act="hints">Mostrar as dicas de novo</button>`;
+      <div class="sheet-note">Com a caneta longe, 1 dedo desenha. A palma é ignorada enquanto a caneta está encostada.</div>
+      <div class="row">
+        <button class="btn small" data-act="hints">Mostrar as dicas de novo</button>
+        <button class="btn small" data-act="tour2">Tour do Grão</button>
+      </div>`;
     el.querySelector('[data-act="hints"]').onclick = () => { close(); app.resetHints?.(); };
+    el.querySelector('[data-act="tour2"]').onclick = () => { close(); app.ui?.collapse(); app.tour?.start(); };
   }
 
   // Folha Tempo (#036): tira de frames com miniaturas, operações de frame, exposição, FPS.

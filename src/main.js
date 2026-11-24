@@ -12,6 +12,7 @@ import { setupInput } from './input/input.js';
 import { setupWheel } from './ui/wheel.js';
 import { setupSheet } from './ui/sheet.js';
 import { setupDebug } from './ui/debug.js';
+import { setupTour, tourSeen } from './ui/tour.js';
 import { loadProject, saveProject, debounced } from './io/storage.js';
 import { downloadBlob, baseNameFor } from './io/file.js';
 import { videoFormat, recordSeconds, recordCanvas, fmtSeconds, planFrames } from './io/video.js';
@@ -455,6 +456,10 @@ async function start() {
       Promise.resolve(app.saveNow()).finally(() => location.reload());
     });
   }
+
+  // Tour completo (rc.4): na primeira vez no aparelho começa sozinho; depois, Menu → Tour do Grão.
+  app.tour = setupTour(app);
+  if (!tourSeen()) setTimeout(() => app.tour.start(), 1500);
 
   // Novidade mostrada uma vez por aparelho, no botão da roda (#025).
   try {

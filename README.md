@@ -3,7 +3,7 @@
 **Caderno de animação em loop com cara de impressão risográfica**, feito para desenhar com caneta num tablet
 Android. Você desenha dentro de um loop que nunca para; o grão da impressão ferve no ritmo da animação.
 
-> **Versão:** `1.0.0-rc.3`, candidata a 1.0 (24/11/2026). Todos os recursos do plano até a 1.0 estão no app;
+> **Versão:** `1.0.0-rc.4`, candidata a 1.0 (24/11/2026). Todos os recursos do plano até a 1.0 estão no app;
 > **falta o teste no tablet** para virar 1.0.0. Relatório: [docs/relatorio-v1.0.md](docs/relatorio-v1.0.md) ·
 > Lista de testes: [docs/15-lista-de-testes.md](docs/15-lista-de-testes.md).
 
@@ -30,6 +30,7 @@ Aparelho-alvo: **XPPen Magic Drawing Pad (MDP1221)**, Android 15, caneta X3 Pro 
   grão que ferve, Prova de impressão.
 - **Guardar e levar:** galeria de projetos no aparelho, arquivo `.grao`, exportar GIF, vídeo (MP4/WebM), PNGs e
   **separações por tinta a 300 dpi para a gráfica riso**.
+- **Tour do Grão** no Menu (e na primeira vez), com todos os recursos passo a passo.
 - **Pensado para o tablet:** dedo e caneta juntos (o dedo desenha quando a caneta está longe); a palma não vira gesto; nada de 3 dedos nem toque duplo; roda com alvos de 48 px;
   abre sem internet; qualidade automática se o tablet engasgar.
 

@@ -1262,9 +1262,17 @@ for (const code of [4]) {
   const h = pointer(wet, 'touch'); h.down(300, 300); for (let i = 1; i <= 10; i++) h.move(300 + i * 10, 300); h.up(400, 300);
   check('caneta pairando perto: 1 dedo não risca (seria a palma)', all(app).length === 0);
   wet.autoPenAway = true;
-  stroke(wet, 300, 300, 10, 'touch');
+  const fz = pointer(wet, 'touch'); fz.down(300, 300, 1, 0, 0.5);
+  for (let i = 1; i <= 10; i++) fz.move(300 + i * 10, 300, 1, 0.5);
+  fz.up(400, 300);
   const s1 = all(app)[0];
-  check('caneta longe: o dedo desenha sem sensibilidade (pressão fixa), sem opção nenhuma', s1 && s1.pts.length > 9 && s1.pts.every((v, i) => i % 3 !== 2 || v === 0.6));
+  check('caneta longe: o dedo desenha; aparelho sem pressão no dedo (0,5) = pressão fixa 0,6', s1 && s1.pts.length > 9 && s1.pts.every((v, i) => i % 3 !== 2 || v === 0.6));
+  const fp = pointer(wet, 'touch'); fp.down(300, 500, 1, 0, 0.3);
+  for (let i = 1; i <= 10; i++) fp.move(300 + i * 10, 500, 1, 0.3 + i * 0.05);
+  fp.up(400, 500);
+  const s2 = all(app)[1];
+  check('aparelho que mede pressão no dedo: o traço do dedo varia', s2 && new Set(s2.pts.filter((_, i) => i % 3 === 2)).size > 3);
+  app.undo();
   // segundo dedo: o risco do primeiro some e vira gesto (toque rápido = desfazer)
   const a = pointer(wet, 'touch'), b = pointer(wet, 'touch');
   a.down(500, 400); a.move(505, 401); b.down(800, 400); a.up(505, 401); b.up(800, 400);
@@ -1278,19 +1286,61 @@ for (const code of [4]) {
   app.tool = 'brush';
   const x0 = all(app)[0].pts[0];
   const c = pointer(wet, 'touch'), d = pointer(wet, 'touch');
-  c.down(320, 310); d.down(400, 320);
-  for (let i = 1; i <= 10; i++) { c.move(320 + i * 8, 310); d.move(400 + i * 8, 320); }
-  c.up(400, 310); d.up(480, 320);
+  // (acima da caixa: embaixo dela ficam os botões Duplicar/Copiar/Apagar, que são da roda)
+  c.down(320, 290); d.down(400, 280);
+  for (let i = 1; i <= 10; i++) { c.move(320 + i * 8, 290); d.move(400 + i * 8, 280); }
+  c.up(400, 290); d.up(480, 280);
   check('com o dedo desenhando, 2 dedos sobre a seleção ainda movem a seleção', all(app).length === 1 && all(app)[0].pts[0] !== x0);
   // primeiro dedo perto da seleção (na folga de 80 px, fora da caixa): não risca nem solta a seleção
   const x1 = all(app)[0].pts[0];
   const e1 = pointer(wet, 'touch'), e2 = pointer(wet, 'touch');
   e1.down(480, 300);                               // fora da caixa, dentro da folga
   check('dedo perto da seleção não risca nem solta a seleção', !!app.selection && all(app).length === 1);
-  e2.down(560, 330);
-  for (let i = 1; i <= 10; i++) { e1.move(480 + i * 8, 300); e2.move(560 + i * 8, 330); }
-  e1.up(560, 300); e2.up(640, 330);
+  e2.down(560, 270);
+  for (let i = 1; i <= 10; i++) { e1.move(480 + i * 8, 300); e2.move(560 + i * 8, 270); }
+  e1.up(560, 300); e2.up(640, 270);
   check('e o segundo dedo transforma a seleção', all(app)[0].pts[0] !== x1);
+}
+
+// ---------- rc.4: 3 dedos refazem, pinça imediata ----------
+{
+  const { createGestures } = await import('../src/input/gestures.js');
+  let g = createGestures();
+  g.down({ id: 1, x: 100, y: 100, t: 0 }); g.down({ id: 2, x: 300, y: 100, t: 20 }); g.down({ id: 3, x: 500, y: 100, t: 60 });
+  let out = [...g.up(1, 150), ...g.up(2, 160), ...g.up(3, 170)];
+  check('toque rápido de 3 dedos = refazer', out.map((x) => x.type).join() === 'redo', JSON.stringify(out));
+  g = createGestures();
+  g.down({ id: 1, x: 100, y: 100, t: 0 }); g.down({ id: 2, x: 300, y: 100, t: 20 }); g.down({ id: 3, x: 500, y: 100, t: 60 });
+  out = [...g.up(1, 900), ...g.up(2, 900), ...g.up(3, 900)];
+  check('3 dedos segurados (não é toque rápido) não refazem', !out.some((x) => x.type === 'redo'));
+  g = createGestures();
+  g.down({ id: 1, x: 100, y: 100, t: 0 }); g.down({ id: 2, x: 300, y: 100, t: 20 });
+  out = [];
+  for (let i = 1; i <= 3; i++) { out.push(...g.move({ id: 2, x: 300 + i * 6, y: 100, t: 30 + i }, { fit: true })); }
+  check('pinça responde cedo (18 px de abertura, antes dos 24 px)', g.intent === 'pan' && out.some((x) => x.type === 'pan-begin'));
+  const { app, wet } = makeApp();
+  stroke(wet, 300, 300);
+  app.undo();
+  const a = pointer(wet, 'touch'), b = pointer(wet, 'touch'), c = pointer(wet, 'touch');
+  a.down(400, 400); b.down(500, 400); c.down(600, 400); a.up(400, 400); b.up(500, 400); c.up(600, 400);
+  check('no app: toque rápido de 3 dedos refaz', all(app).length === 1);
+}
+
+// ---------- rc.4: tour ----------
+{
+  const { TOUR_STEPS } = await import('../src/ui/tour.js');
+  check('tour completo: 17 passos, todos com título e texto', TOUR_STEPS.length === 17 && TOUR_STEPS.every((s) => s.title && s.text.length > 40));
+  const topics = TOUR_STEPS.map((s) => s.title).join(' ');
+  check('tour cobre roda, ferramentas, camadas, tempo, menu, gestos, seleção e exportação', ['roda', 'Ferramentas', 'Camadas', 'Tempo', 'Menu', 'Gestos', 'Seleção', 'exportar'].every((w) => topics.includes(w)));
+  const { app } = makeApp();
+  const g = app.ui.geometry();
+  check('a roda informa onde estão as partes (para o holofote do tour)', g.btn.r === 32 && g.center.r === 36 && Number.isFinite(g.sector('ink').x) && Number.isFinite(g.speed.y));
+  app.ui.tour({ open: true, petal: 'tool' });
+  check('o tour abre a roda e a pétala', app.ui.isOpen && app.ui.petal === 'tool');
+  for (const st of TOUR_STEPS) if (st.target) { const t = st.target(g); if (!Number.isFinite(t.x) || !Number.isFinite(t.r)) throw new Error('alvo inválido em ' + st.title); }
+  check('todos os alvos do tour existem', true);
+  app.ui.tour({ open: false });
+  check('o tour fecha a roda no fim', !app.ui.isOpen && app.ui.petal === null);
 }
 
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);

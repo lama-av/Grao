@@ -1,11 +1,11 @@
-# 15 · Lista de testes no tablet (1.0.0-rc.3)
+# 15 · Lista de testes no tablet (1.0.0-rc.4)
 
 **Para quem:** o Raphael, no XPPen Magic Drawing Pad, e o chat na auditoria.
 **Como usar:** marque **ok** ou descreva o **problema** (com print ou vídeo curto se puder). P1 = trava o uso,
 P2 = atrapalha, P3 = detalhe. A coluna **Pedido** aponta para o `HANDOFF.md`.
 
 **Antes de começar:**
-1. Abra https://lama-av.github.io/Grao/ e confira o aviso: **`Grão 1.0.0-rc.3-b20`** (também no fim do Menu). Se
+1. Abra https://lama-av.github.io/Grao/ e confira o aviso: **`Grão 1.0.0-rc.4-b21`** (também no fim do Menu). Se
    aparecer uma versão antiga, toque em "Nova versão. Toque para atualizar." junto do botão da roda.
 2. Se aparecer a caixa vermelha com "Shader: …", pare e mande print: o shader não pôde ser compilado no PC.
 3. Para ver o projeto de boas-vindas: limpe os dados do site antes (perde os projetos guardados; salve arquivos).
@@ -134,6 +134,10 @@ P2 = atrapalha, P3 = detalhe. A coluna **Pedido** aponta para o `HANDOFF.md`.
 | L9 | Caneta deitada na mesa: desenhar com o dedo; um 2º dedo apaga o risco e vira gesto | #066 | |
 | L10 | Caneta na mão, pairando: 2 dedos funcionam; 1 dedo não risca | #066 | |
 | L11 | Desenhando com a caneta e a palma apoiada: a palma não risca nem vira gesto (painel: motivo "caneta encostada") | #066 | |
+| L12 | Tour do Grão (começa sozinho na 1ª vez; Menu → Tour do Grão): os 17 passos, holofote no lugar certo | #067 | |
+| L13 | Toque rápido com 3 dedos refaz | #067 | |
+| L14 | Pinça começa o zoom na hora | #067 | |
+| L15 | Dedo com sensibilidade? (traço do dedo varia com a força) ___ | #067 | |
 
 ## K. Pessoas
 

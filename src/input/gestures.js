@@ -16,7 +16,9 @@
 //
 // Ações devolvidas (listas): {type:'ignored'} · {type:'xf-begin', start} · {type:'xf', start, now} ·
 // {type:'pan-begin', start} · {type:'pan', start, now} · {type:'time-begin'} · {type:'scrub', frames} ·
-// {type:'undo'} · {type:'end', intent, moved, quick} · {type:'cancel', intent, frames}
+// {type:'undo'} · {type:'redo'} · {type:'end', intent, moved, quick} · {type:'cancel', intent, frames}
+// rc.4: toque rápido de 3 dedos = REFAZER (pedido do Raphael; exceção à decisão 2 do CLAUDE.md). A pinça responde
+// assim que os dedos abrem ou fecham, sem esperar os 24 px.
 // start/now = { a: {x, y}, b: {x, y} } (os dois dedos, em px de CSS).
 
 import {
@@ -68,6 +70,11 @@ export function createGestures(cfg = {}) {
     }
     touches.set(tc.id, { x: tc.x, y: tc.y, x0: tc.x, y0: tc.y, ignored: false });
     const active = [...touches].filter(([, p]) => !p.ignored).map(([id]) => id);
+    // terceiro dedo logo depois dos dois primeiros, sem gesto decidido: pode ser o toque de refazer
+    if (g && !g.c && active.length === 3 && g.intent === 'deciding' && !g.lifted.size && tc.t - g.t0 < C.tapMs) {
+      g.c = tc.id;
+      return [];
+    }
     if (active.length !== 2 || g) return [];
     const [a, b] = active;
     g = { a, b, t0: tc.t, moved: 0, intent: 'deciding', scrubbed: 0, lifted: new Set(), cancelled: false };
@@ -85,23 +92,25 @@ export function createGestures(cfg = {}) {
     const p = touches.get(tc.id);
     if (!p) return [];
     p.x = tc.x; p.y = tc.y;
-    if (p.ignored || !g || (tc.id !== g.a && tc.id !== g.b) || g.lifted.size) return [];
-    for (const id of [g.a, g.b]) {
-      const q = touches.get(id);
-      g.moved = Math.max(g.moved, Math.hypot(q.x - q.x0, q.y - q.y0));
+    if (p.ignored || !g || (tc.id !== g.a && tc.id !== g.b && tc.id !== g.c) || g.lifted.size) return [];
+    for (const id of [g.a, g.b, g.c]) {
+      const q = id !== undefined && touches.get(id);
+      if (q) g.moved = Math.max(g.moved, Math.hypot(q.x - q.x0, q.y - q.y0));
     }
+    if (g.c !== undefined) return [];          // 3 dedos: só serve para o toque de refazer
     const now = pair();
     if (g.intent === 'xf') return [{ type: 'xf', start: g.start, now }];
     if (g.intent === 'pan') return [{ type: 'pan', start: g.start, now }];
     if (g.intent === 'time') return scrub(now);
-    // decidindo: espera um dedo andar C.decidePx. Os eventos chegam um dedo de cada vez, então um dedo sempre
-    // sai na frente; por isso a pinça não é só "a distância mudou 10%": a mudança de distância também precisa
-    // ser grande perto do quanto o meio dos dedos andou (arrastar junto quase não muda a distância).
-    if (g.moved < C.decidePx) return [];
+    // decidindo. Os eventos chegam um dedo de cada vez, então um dedo sempre sai na frente; por isso a pinça não é
+    // só "a distância mudou": a mudança também precisa ser grande perto do quanto o meio dos dedos andou
+    // (arrastar junto quase não muda a distância). A pinça decide cedo (16 px de abertura); tempo/papel, aos 24 px.
     const d0 = dist(g.start), dd = Math.abs(dist(now) - d0);
     const m0 = mid(g.start), m1 = mid(now);
     const dx = m1.x - m0.x, dy = m1.y - m0.y;
-    if (dd >= C.pinchRatio * d0 && dd > 0.5 * Math.hypot(dx, dy)) {
+    const early = dd >= Math.max(16, C.pinchRatio * 0.8 * d0) && dd > 0.6 * Math.hypot(dx, dy);
+    if (!early && g.moved < C.decidePx) return [];
+    if (early || (dd >= C.pinchRatio * d0 && dd > 0.5 * Math.hypot(dx, dy))) {
       g.intent = 'pan';
       return [{ type: 'pan-begin', start: g.start }, { type: 'pan', start: g.start, now }];
     }
@@ -127,12 +136,17 @@ export function createGestures(cfg = {}) {
   function up(id, t, cancelled = false) {
     const p = touches.get(id);
     touches.delete(id);
-    if (!p || p.ignored || !g || (id !== g.a && id !== g.b)) return [];
+    if (!p || p.ignored || !g || (id !== g.a && id !== g.b && id !== g.c)) return [];
     g.lifted.add(id);
     if (cancelled) g.cancelled = true;
-    if (g.lifted.size < 2 && touches.has(g.a === id ? g.b : g.a)) return [];
+    const ids = [g.a, g.b, g.c].filter((x) => x !== undefined);
+    if (ids.some((x) => !g.lifted.has(x) && touches.has(x))) return [];   // ainda tem dedo do gesto na tela
     const done = g;
     g = null;
+    if (done.c !== undefined) {               // 3 dedos: toque rápido = refazer (um pouco mais de tempo que 2)
+      const quick3 = t - done.t0 < C.tapMs * 1.6 && done.moved < C.tapMovePx * 1.5;
+      return quick3 && !done.cancelled ? [{ type: 'redo' }] : [{ type: 'end', intent: 'none', moved: done.moved, quick: false }];
+    }
     const quick = t - done.t0 < C.tapMs && done.moved < C.tapMovePx;
     if (done.intent === 'deciding') {
       return quick && !done.cancelled ? [{ type: 'undo' }] : [{ type: 'end', intent: 'none', moved: done.moved, quick }];

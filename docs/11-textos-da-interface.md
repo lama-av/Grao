@@ -183,7 +183,9 @@ Rodapé: "A palma apoiada é ignorada enquanto a caneta está perto da tela."
 | Pétala Camadas | Ajustes (abre a folha da camada ativa) |
 | Menu: atualizar | Atualizar agora (versão nova pronta) |
 | Painel: palma | toques ignorados (palma): 3 · último motivo: caneta encostada / caneta acabou de sair / contato largo |
-| Folha Gestos | Mostrar as dicas de novo |
+| Folha Gestos | Gestos com os dedos · Tocar rápido com 3 dedos: Refaz. · Mostrar as dicas de novo · Tour do Grão |
+| Menu | Tour do Grão |
+| Tour | 17 passos em `src/ui/tour.js` (título e texto de cada um) · Voltar · Próximo · Começar · Sair do tour · "3 de 17" |
 
 **Revisão de 24/11 (#056):** todos os avisos e leituras do código foram conferidos com este documento. Nenhum tem
 exclamação nem "Ops"; erros dizem o que falhou e o que fazer. Exceções aceitas ao limite de 12 caracteres das

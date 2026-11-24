@@ -54,7 +54,7 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 > **Novo roteiro até a v1.0** (decidido no chat em 24/11, conselho de design): `docs/13-conselho-v0.3.md`.
 > Ele substitui a ordem de versões do doc 10. Arquitetura dos gestos: `docs/adr/ADR-003-gestos-de-dois-dedos.md`.
 >
-> **Estado (24/11, fim do dia):** **1.0.0-rc.3 publicada** (pedidos #022–#066; #065 e #066 corrigem os testes no tablet). Nada testado no tablet desde
+> **Estado (24/11, fim do dia):** **1.0.0-rc.4 publicada** (pedidos #022–#067; #065–#067 vêm dos testes no tablet). Nada testado no tablet desde
 > a 0.2.0. Próximo passo: o Raphael passa pela lista `docs/15-lista-de-testes.md` e leva o resultado ao chat.
 >
 > **Atualização (24/11, Raphael no VS Code):** "execute os pedidos até a versão 1.0, sem pausas". A v0.4 foi feita
@@ -621,6 +621,20 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - Painel: versão e motivo do último toque ignorado.
   - **Testar no tablet:** confirmar `1.0.0-rc.3-b20`; 2 dedos com a caneta na mão; desenhar com o dedo com a caneta
     deitada na mesa; palma apoiada desenhando com a caneta (não risca, não vira gesto); ver o motivo no painel.
+
+### #067 — Refazer com 3 dedos, pinça, dedo com sensibilidade, tour completo
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 1.0.0-rc.4 · **Origem:** 3º teste do Raphael (24/11)
+- **O que o Raphael pediu:** dedo nativo, sem opção, e caneta com sensibilidade junto; refazer com toque rápido de 3
+  dedos; zoom por pinça; tour/tutorial completo no Menu, também como tutorial inicial.
+- **Resposta do VS Code (build b21):**
+  - Dedo nativo já era assim na rc.3 (o tablet estava na rc.2, que tinha a opção). Agora o dedo também usa a pressão
+    quando o Android a mede; a caneta não mudou (pressão própria).
+  - 3 dedos: um terceiro dedo até 200 ms depois dos dois primeiros, sem gesto decidido, marca o gesto; soltar rápido
+    (< 320 ms, < 18 px) = Refazer. Exceção à decisão 2 do `CLAUDE.md` (registrada).
+  - Pinça: decide cedo (abertura ≥ 16 px e maior que o deslocamento do meio dos dedos), sem esperar 24 px.
+  - Tour (`src/ui/tour.js`): 17 passos, holofote pela geometria da roda (`wheel.geometry()`), roda e pétalas abertas
+    pelo tour (`wheel.tour()`), cartão do lado oposto, Voltar/Próximo/Sair. Primeira vez no aparelho e Menu → Tour.
+  - **Testar no tablet:** tour do começo ao fim; 3 dedos refazem; pinça; dedo e caneta alternando.
 
 ### Pedidos já feitos (v0.2.0 a v0.3.1)
 

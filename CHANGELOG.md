@@ -4,6 +4,24 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [1.0.0-rc.4] — 2026-11-24
+
+Pedidos do Raphael depois do 3º teste no tablet (pedido #067).
+
+### Adicionado
+- **Refazer com toque rápido de 3 dedos** (exceção à decisão 2: "nada de 3 dedos").
+- **Tour do Grão:** tutorial completo de 17 passos com holofote em cada parte (papel, caneta, dedo, roda, prato,
+  velocidade, desfazer/refazer, ferramentas, camadas e retícula, tempo, menu, gestos, seleção, impressão e exportação).
+  A roda abre e mostra as pétalas sozinha durante o tour. Começa na primeira vez no aparelho; Menu → Tour do Grão.
+- **Dedo com sensibilidade** quando o aparelho mede a pressão do dedo (valor entre 0 e 1 que não seja o 0,5 fixo);
+  senão, pressão fixa. A caneta continua com a pressão dela.
+
+### Mudado
+- **Pinça mais imediata:** o zoom começa assim que os dedos abrem ou fecham ~16 px (antes, depois de 24 px de
+  movimento).
+- Folha "Gestos com os dedos" inclui o toque de 3 dedos e o botão do tour.
+- Teste de lógica: 290 verificações.
+
 ## [1.0.0-rc.3] — 2026-11-24
 
 Segundo teste do Raphael no tablet (pedido #066): os toques continuavam todos "palma" (de 30 a 80 px de contato),
