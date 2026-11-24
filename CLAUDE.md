@@ -55,7 +55,8 @@ src/
   render/masks.js      traço → textura R8 960×640 por (camada, frame)
   render/riso/         compositor WebGL2; riso.vert/riso.frag em GLSL ES 3.00
   input/input.js       Pointer Events no canvas: desenhar, recortar, laço, mover, gestos de 2 dedos
-  ui/thumbzone.js      zona do polegar: tintas, Laço, Desfazer, Recorte, roda, fader, leituras, ajustes
+  ui/wheel.js          roda de canto no canvas #ui: botão, centro, setores, prato, velocidade, pétalas, chips
+  ui/sheet.js          folhas HTML Mais e Camadas (só com a caneta parada)
   ui/debug.js          painel "Teste da Fase 0"
   io/storage.js        IndexedDB (um projeto atual), salvamento com debounce
 tests/smoke_test.py
@@ -64,10 +65,11 @@ tests/smoke_test.py
 ### Contrato do objeto `app` (criado em `main.js`)
 
 Campos: `project`, `clock`, `history`, `masks`, `riso`, `selection` (`{l, f, ids:Set}` ou `null`),
-`lassoHeld`, `cutTool`, `historyUntil`, `lowLatency`, `debug`.
+`lassoHeld`, `tool` (`brush`/`eraser`/`lasso`), `historyUntil`, `lowLatency`, `debug`, `ui` (roda), `sheet`, `input`.
 Funções: `markDirty(l, f)` (refaz a máscara no próximo quadro), `requestSave()`, `undo()`, `redo()`,
 `onStrokeCommitted(target)`, `onSelectionChange()`, `duplicateSelectionToNextFrame()`, `deleteSelection()`,
-`newProject()`, `exportPNG()`, `toast(msg)`.
+`newProject()`, `exportPNG()`, `toast(msg)`. `undo()/redo()` devolvem `true/false` e mostram a leitura na roda.
+Entrada: o `#wet` recebe tudo; `app.ui.down(e)` diz se o toque é da roda; senão `app.ui.paperDown()` e segue para o papel.
 
 Regras de fluxo:
 - Mudou traços de um frame → `history.push({l, f, before, after})`, `markDirty`, `requestSave`.

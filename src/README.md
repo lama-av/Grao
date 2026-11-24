@@ -1,8 +1,8 @@
 # src/ — código do Grão
 
-Código do v0.1.0 (ver [design do sistema](../docs/04-design-sistema-v0.1.md)). Módulos ES, sem etapa de build: abra `index.html` por um servidor local (Live Server).
+Código da v0.2 em construção (ver [design do sistema](../docs/04-design-sistema-v0.1.md)). Módulos ES, sem etapa de build: abra `index.html` por um servidor local (Live Server).
 
-Arquivos de hoje: `main.js`, `config.js`, `doc/project.js`, `doc/history.js`, `clock/clock.js`, `render/stroke.js`, `render/masks.js`, `render/riso/riso.{js,vert,frag}`, `input/input.js`, `ui/thumbzone.js`, `ui/debug.js`, `io/storage.js`.
+Arquivos de hoje: `main.js`, `config.js`, `doc/project.js`, `doc/history.js`, `clock/clock.js`, `render/stroke.js`, `render/masks.js`, `render/riso/riso.{js,vert,frag}`, `input/input.js`, `ui/wheel.js` (roda de canto, desenhada no `#ui`), `ui/sheet.js` (folhas Mais e Camadas), `ui/debug.js`, `io/storage.js`.
 
 Estrutura combinada (o que ainda não existe fica para as próximas versões):
 
@@ -13,10 +13,10 @@ src/
 ├── doc/           projeto, tintas, frames, traços (JSON), pilha de desfazer
 ├── clock/         fonte de relógio trocável (interno; MIDI na 1.1), frame por camada, velocidade, ferver
 ├── render/
-│   ├── wet/       traço molhado: canvas 2D desynchronized, por cima de tudo
+│   ├── wet/       traço molhado: canvas 2D transparente no topo (sem desynchronized: ver ADR-002)
 │   ├── masks/     traço → máscara de 1 canal por frame (soma tinta, subtrai recorte)
 │   └── riso/      compositor WebGL2 e shaders GLSL ES 3.00 (.vert / .frag)
-├── ui/            zona do polegar, roda de tempo (prato) + fader de velocidade, tecla de laço, desfazer
+├── ui/            roda de canto (canvas #ui), folhas Mais/Camadas, painel de teste
 └── io/            IndexedDB, exportar vídeo, GIF, PNG, SVG por tinta
 ```
 

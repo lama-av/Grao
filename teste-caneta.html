@@ -23,7 +23,8 @@
 </head>
 <body>
   <h1>Grão · Teste da Fase 0 (caneta, palma, latência)</h1>
-  <p>Esta página só mede. Nada fica salvo. No fim, tire um print das tabelas e mande.</p>
+  <p>Esta página só mede. Nada fica salvo. No fim, toque em <b>Copiar resultados</b> e cole o texto na conversa.</p>
+  <p><button id="copy" style="background:#ffe800;color:#111;font-weight:700">Copiar resultados</button> <span id="copied"></span></p>
 
   <h2>1. Botões da caneta</h2>
   <p>Encoste a caneta no papel abaixo e, <b>com ela encostada</b>, aperte e segure o botão lateral de baixo. Solte. Repita
@@ -165,6 +166,29 @@ window.addEventListener('pointercancel', (e) => {
   if (penActive || e.pointerType === 'pen') palm.cancelDuringPen++;
   note(`pointercancel (${e.pointerType})`);
 }, true);
+
+// Junta tudo num texto para colar na conversa (o tablet não tem console).
+$('copy').onclick = async () => {
+  const rows = [...seen.values()].sort((a, b) => a.buttons - b.buttons)
+    .map((r) => `  botões=${r.buttons}  button=${r.button}  tipo=${r.type}  encostada=${r.touching ? 'sim' : 'não'}  vezes=${r.n}`);
+  const text = [
+    `Grão · Teste da Fase 0 · ${new Date().toLocaleString('pt-BR')}`,
+    `navegador: ${navigator.userAgent}`,
+    `baixa latência no papel da direita: ${$('desyncOn').textContent}`,
+    '', 'Valores de "botões":', ...(rows.length ? rows : ['  nenhum']),
+    '', 'Eventos do sistema:', $('other').textContent,
+    '', 'Palma:', $('palm').textContent,
+    '', 'Latência (preencher à mão):', '  normal: ___ quadros · sensação _/5', '  baixa latência: ___ quadros · sensação _/5',
+  ].join('\n');
+  try { await navigator.clipboard.writeText(text); $('copied').textContent = 'Copiado'; }
+  catch {
+    // sem permissão de área de transferência: mostra o texto para copiar à mão
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'width:100%;height:240px;margin-top:8px';
+    $('copy').after(ta); ta.select();
+    $('copied').textContent = 'Selecione o texto abaixo e copie';
+  }
+};
 
 function note(msg) {
   other.unshift(`${new Date().toLocaleTimeString()}  ${msg}`);

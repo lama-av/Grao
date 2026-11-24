@@ -20,6 +20,7 @@ Leia na ordem se estiver chegando agora. Cada arquivo começa pela conclusão.
 | --- | --- | --- |
 | [000](adr/ADR-000-template.md) | Modelo para novos ADRs | — |
 | [001](adr/ADR-001-plataforma-v0.1.md) | Plataforma do v0.1 | Proposto |
+| [002](adr/ADR-002-interface-em-canvas.md) | Interface desenhada em canvas, por baixo do traço | Aceito |
 
 ## Fonte original
 

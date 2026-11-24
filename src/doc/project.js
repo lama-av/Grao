@@ -16,7 +16,8 @@ export function newProject(paper = 'natural') {
       fps: 8,
       frames: Array.from({ length: DEFAULT_FRAMES }, () => []),
     })),
-    settings: { grain: 0.6, mis: 0.5, ferver: true, auto: true, brush: 10, lefty: false },
+    // wheelCorner: null = automático (inferior esquerdo; inferior direito no modo Canhoto)
+    settings: { grain: 0.6, mis: 0.5, ferver: true, auto: true, brush: 10, lefty: false, wheelCorner: null, pinWheel: false },
   };
 }
 

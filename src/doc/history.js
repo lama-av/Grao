@@ -33,6 +33,8 @@ export class History {
   }
 
   get depth() { return this.undoStack.length; }
+  get canUndo() { return this.undoStack.length > 0; }
+  get canRedo() { return this.redoStack.length > 0; }
 
   #apply(a, list) {
     const layer = this.app.project.layers[a.l];

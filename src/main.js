@@ -7,7 +7,8 @@ import { Clock } from './clock/clock.js';
 import { Masks } from './render/masks.js';
 import { createRiso } from './render/riso/riso.js';
 import { setupInput } from './input/input.js';
-import { setupThumbZone } from './ui/thumbzone.js';
+import { setupWheel } from './ui/wheel.js';
+import { setupSheet } from './ui/sheet.js';
 import { setupDebug } from './ui/debug.js';
 import { loadProject, saveProject, debounced } from './io/storage.js';
 
@@ -16,7 +17,7 @@ const MAX_MIS_UV = 0.004; // desalinhamento máximo (fração da largura) com o 
 async function start() {
   const glCanvas = document.getElementById('gl');
   const wetCanvas = document.getElementById('wet');
-  const thumbRoot = document.getElementById('thumb');
+  const uiCanvas = document.getElementById('ui');
 
   const app = {
     version: VERSION,
@@ -24,7 +25,7 @@ async function start() {
     clock: new Clock(),
     selection: null,
     lassoHeld: false,
-    cutTool: false,
+    tool: 'brush',          // 'brush' | 'eraser' | 'lasso' (pétala Ferramenta)
     historyUntil: 0,
     lowLatency: false,
     dirty: new Set(),
@@ -42,7 +43,7 @@ async function start() {
   app.history = new History(app);
 
   app.markDirty = (l, f) => app.dirty.add(`${l}:${f}`);
-  const saveNow = () => saveProject(app.project).catch((err) => app.toast('Não consegui salvar: ' + err.message));
+  const saveNow = () => saveProject(app.project).catch(() => app.toast('Não deu para salvar. O navegador recusou o espaço. Exporte um PNG para garantir.'));
   app.requestSave = debounced(saveNow, 600);
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
 
@@ -54,8 +55,18 @@ async function start() {
     app.toast.t = setTimeout(() => { el.hidden = true; }, 2500);
   };
 
-  app.undo = () => { if (app.history.undo()) app.onSelectionChange(); };
-  app.redo = () => { if (app.history.redo()) app.onSelectionChange(); };
+  app.undo = () => {
+    const ok = app.history.undo();
+    if (ok) app.onSelectionChange();
+    app.ui?.say(ok ? 'Desfeito' : 'Nada para desfazer');
+    return ok;
+  };
+  app.redo = () => {
+    const ok = app.history.redo();
+    if (ok) app.onSelectionChange();
+    app.ui?.say(ok ? 'Refeito' : 'Nada para refazer');
+    return ok;
+  };
 
   // Auto: com o loop parado, cada traço terminado avança um frame (desenho quadro a quadro).
   app.onStrokeCommitted = () => {
@@ -109,7 +120,7 @@ async function start() {
     app.selection = null;
     app.clock.t = 0;
     app.onSelectionChange();
-    thumb.rebuild();
+    app.ui.rebuild();
     saveNow();
   };
 
@@ -120,11 +131,19 @@ async function start() {
     a.href = url;
     a.download = `grao-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.png`;
     a.click();
+    app.toast('PNG exportado');
   };
 
-  const thumb = setupThumbZone(app, thumbRoot);
-  app.debug = setupDebug(app, thumb.debugBox);
+  // Painel "Teste da Fase 0": flutua no canto oposto à roda (a roda escolhe o canto).
+  const debugBox = document.createElement('pre');
+  debugBox.className = 'debug';
+  debugBox.hidden = true;
+  document.body.appendChild(debugBox);
+  app.debug = setupDebug(app, debugBox);
+  app.sheet = setupSheet(app);
+  app.ui = setupWheel(app, uiCanvas);
   const input = setupInput(app, wetCanvas);
+  app.input = input;
 
   app.masks.rebuildAll(app.project);
 
@@ -183,14 +202,14 @@ async function start() {
     }
     app.dirty.clear();
     draw(now);
-    thumb.update();
+    app.ui.update();
     app.debug.frame();
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
   // Fase de testes: confirma qual versão o tablet está rodando (o Chrome guarda cópias antigas).
-  app.toast(`Grão ${VERSION}-${BUILD} · baixa latência: ${app.lowLatency ? 'LIGADA' : 'desligada'}`);
+  app.toast(`Grão ${VERSION}-${BUILD}`);
 
   window.grao = app; // para inspecionar pelo console durante os testes
 }
@@ -201,8 +220,7 @@ function hash(x) {
 }
 
 function fail(msg) {
-  document.body.innerHTML = `<div class="fail"><h1>Grão não abriu</h1><p>${msg}</p>
-    <p>Use o Chrome atualizado no tablet. Se o problema continuar, anote esta mensagem.</p></div>`;
+  document.body.innerHTML = `<div class="fail"><h1>O Grão não abriu</h1><p>${msg}</p></div>`;
 }
 
 start();

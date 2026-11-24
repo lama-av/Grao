@@ -4,7 +4,7 @@ import { DOC_W, DOC_H } from '../../config.js';
 
 export async function createRiso(canvas) {
   const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, preserveDrawingBuffer: false });
-  if (!gl) throw new Error('Este navegador não tem WebGL2.');
+  if (!gl) throw new Error('Este navegador não desenha com a GPU. Use o Chrome atualizado.');
 
   const [vs, fs] = await Promise.all([
     fetch(new URL('./riso.vert', import.meta.url)).then((r) => r.text()),

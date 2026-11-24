@@ -1,6 +1,7 @@
 // Entrada no canvas: caneta desenha e faz laço; dedos só para gestos de 2 dedos.
 // Toque de 1 dedo nunca desenha (proteção contra a palma). pointercancel descarta o traço.
-// O traço molhado vai para um canvas 2D "desynchronized", por cima de tudo.
+// O #wet fica no topo e recebe todos os eventos: primeiro pergunta à roda (app.ui.down) se o toque é dela;
+// o resto vai para o papel. O #wet guarda só o traço molhado e o laço; a caixa da seleção vai para o #ui.
 
 import { DOC_W, DOC_H, INKS, PAPERS } from '../config.js';
 import { newStroke, cloneStroke, boundsOf } from '../doc/project.js';
@@ -28,6 +29,7 @@ export function setupInput(app, wetCanvas) {
   let moveStart = null;   // { x, y, snap: Map(id -> {pts, w}), before }
   const touches = new Map();
   let gesture = null;
+  const uiPointers = new Set(); // ponteiros que começaram na roda: move/up vão para ela
 
   function resize() {
     const r = wetCanvas.getBoundingClientRect();
@@ -64,15 +66,6 @@ export function setupInput(app, wetCanvas) {
       ctx.moveTo(lasso[0].x, lasso[0].y);
       for (const p of lasso) ctx.lineTo(p.x, p.y);
       ctx.stroke();
-      ctx.restore();
-    }
-    const b = selectionBounds();
-    if (b) {
-      ctx.save();
-      ctx.setLineDash([8, 6]);
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = '#222';
-      ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
       ctx.restore();
     }
   }
@@ -134,27 +127,33 @@ export function setupInput(app, wetCanvas) {
   // ---------- caneta ----------
   wetCanvas.addEventListener('pointerdown', (e) => {
     app.debug?.pointer(e);
+    if (app.ui?.down(e)) { capture(wetCanvas, e); uiPointers.add(e.pointerId); return; }
+    app.ui?.paperDown(e);
     if (!isPen(e)) { touchDown(e); return; }
     if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 2) return;
     capture(wetCanvas, e);
     const p = toDoc(e);
     const layer = app.project.layers[app.project.activeLayer];
 
-    if (app.lassoHeld) {
-      mode = 'lasso';
-      lasso = [p];
-      app.selection = null;
-      redrawOverlay();
-      return;
-    }
-    if (app.selection && insideBounds(p, selectionBounds())) {
+    // Com o botão do laço segurado, a caneta sempre faz laço. Com o Laço fixo (roda), dentro da seleção ela move.
+    if (!app.lassoHeld && app.selection && insideBounds(p, selectionBounds())) {
       mode = 'move';
       moveStart = { x: p.x, y: p.y, ...beginTransform() };
       return;
     }
+    if (app.lassoHeld || app.tool === 'lasso') {
+      app.clock.holds.add('lassoTool'); // desenhando o laço, o loop fica parado
+      mode = 'lasso';
+      lasso = [p];
+      app.selection = null;
+      app.onSelectionChange?.();
+      redrawOverlay();
+      return;
+    }
     if (app.selection) { app.selection = null; redrawOverlay(); app.onSelectionChange?.(); }
 
-    const cut = app.cutTool || (e.buttons & 2) || (e.buttons & 32) || e.button === 2;
+    // Borracha: ferramenta escolhida na roda, ou botão lateral da caneta segurado (buttons & 2; 32 = ponta borracha).
+    const cut = app.tool === 'eraser' || (e.buttons & 2) || (e.buttons & 32) || e.button === 2;
     mode = 'draw';
     target = { l: app.project.activeLayer, f: app.clock.frameOf(layer) };
     stroke = newStroke(app.project, cut ? 'cut' : 'ink', app.project.settings.brush);
@@ -163,6 +162,7 @@ export function setupInput(app, wetCanvas) {
   });
 
   wetCanvas.addEventListener('pointermove', (e) => {
+    if (uiPointers.has(e.pointerId)) { app.ui.move(e); return; }
     if (!isPen(e)) { touchMove(e); return; }
     if (e.pointerType === 'pen') app.debug?.pointer(e);
     if (!mode) return;
@@ -200,7 +200,8 @@ export function setupInput(app, wetCanvas) {
       stroke = null;
       clearWet();
     } else if (mode === 'lasso') {
-      selectWithLasso();
+      app.clock.holds.delete('lassoTool');
+      if (cancelled) lasso = []; else selectWithLasso();
     } else if (mode === 'move') {
       if (!cancelled) endTransform(moveStart.before);
       moveStart = null;
@@ -209,8 +210,14 @@ export function setupInput(app, wetCanvas) {
     redrawOverlay();
   }
 
-  wetCanvas.addEventListener('pointerup', (e) => { if (isPen(e)) finishPen(e, false); else touchUp(e); });
-  wetCanvas.addEventListener('pointercancel', (e) => { if (isPen(e)) finishPen(e, true); else touchUp(e, true); });
+  wetCanvas.addEventListener('pointerup', (e) => {
+    if (uiPointers.delete(e.pointerId)) { app.ui.up(e, false); return; }
+    if (isPen(e)) finishPen(e, false); else touchUp(e);
+  });
+  wetCanvas.addEventListener('pointercancel', (e) => {
+    if (uiPointers.delete(e.pointerId)) { app.ui.up(e, true); return; }
+    if (isPen(e)) finishPen(e, true); else touchUp(e, true);
+  });
   wetCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
   function colorFor(s) {
@@ -305,7 +312,7 @@ export function setupInput(app, wetCanvas) {
   new ResizeObserver(resize).observe(wetCanvas);
   resize();
 
-  return { redrawOverlay, clearWet };
+  return { redrawOverlay, clearWet, selectionBounds };
 }
 
 function pointInPolygon(x, y, poly) {

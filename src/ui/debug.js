@@ -39,5 +39,5 @@ export function setupDebug(app, box) {
 
   function setVisible(v) { visible = v; box.hidden = !v; }
 
-  return { pointer, frame, setVisible };
+  return { pointer, frame, setVisible, box, get visible() { return visible; } };
 }

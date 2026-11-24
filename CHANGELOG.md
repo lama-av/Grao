@@ -4,6 +4,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+### v0.2 em construção (build b5, prévia publicada)
+- Papel em tela cheia; a zona do polegar saiu. Interface nova: **roda de canto** desenhada num canvas por baixo do traço (ADR-002).
+- Roda recolhida (64 px): tinta ativa, frames e parado; segurar e arrastar leva a outro canto (fica salvo).
+- Roda aberta: centro toca/pausa; setores Desfazer, Refazer, Tinta, Ferramenta, Camadas, Mais; prato do tempo; arco de velocidade. Recolhe ao desenhar, salvo com "Fixar roda".
+- Refazer (novo). Leituras "Desfeito", "Refeito", "Nada para desfazer".
+- Pétala Tinta (toque longo troca a cor) e pétala Ferramenta: Pincel, Borracha (antigo Recorte), Laço fixo e Tamanho com prévia.
+- Folha Mais (ajustes) e folha Camadas (FPS e frames). Chips "Duplicar →" e "Apagar" junto da seleção. Painel de teste no canto oposto à roda.
+- Textos conforme o doc 11. Teste automático reescrito para a roda (ainda não rodado).
+- `teste-caneta.html`: botão "Copiar resultados".
+
 ### Adicionado
 - Caixa vermelha de erros na tela do app (fase de testes no tablet, onde não há console).
 - Aviso ao abrir com a versão e o estado da baixa latência (para saber se o tablet pegou a versão nova).

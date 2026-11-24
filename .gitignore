@@ -24,3 +24,6 @@ captures/
 # Exportações e testes locais
 exports/
 *.log
+
+# Teste automático
+tests/shot.png

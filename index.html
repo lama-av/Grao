@@ -11,12 +11,11 @@
 </head>
 <body>
   <main id="app">
-    <aside id="thumb" class="thumb" aria-label="Controles da mão livre"></aside>
-    <div class="stage-wrap">
-      <div class="stage">
-        <canvas id="gl"></canvas>
-        <canvas id="wet"></canvas>
-      </div>
+    <!-- Três camadas: riso (GPU) → interface (roda, chips, caixa da seleção) → traço molhado (recebe os toques) -->
+    <div class="stage">
+      <canvas id="gl"></canvas>
+      <canvas id="ui" aria-label="Roda de canto: toque para abrir"></canvas>
+      <canvas id="wet"></canvas>
     </div>
   </main>
   <div id="toast" class="toast" role="status" hidden></div>
@@ -45,8 +44,7 @@
     // Aberto com dois cliques (file://), o navegador bloqueia os módulos: avisa em vez de ficar em branco.
     if (location.protocol === 'file:') {
       document.body.innerHTML = '<div class="fail"><h1>Abra pelo Live Server</h1>' +
-        '<p>O Grão não abre com dois cliques no arquivo. No VS Code, abra a pasta GRÃO e clique em <b>Go Live</b> ' +
-        '(canto inferior direito). O endereço precisa começar com <b>http://</b>.</p></div>';
+        '<p>O endereço precisa começar com <b>http://</b>. No VS Code, clique em <b>Go Live</b>.</p></div>';
     }
   </script>
   <script type="module" src="src/main.js"></script>
