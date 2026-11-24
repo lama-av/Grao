@@ -12,6 +12,8 @@ import { setupWheel } from './ui/wheel.js';
 import { setupSheet } from './ui/sheet.js';
 import { setupDebug } from './ui/debug.js';
 import { loadProject, saveProject, debounced } from './io/storage.js';
+import { downloadBlob, baseNameFor } from './io/file.js';
+import { videoFormat, recordSeconds, recordCanvas } from './io/video.js';
 
 const MAX_MIS_UV = 0.004; // desalinhamento máximo (fração da largura) com o controle no máximo
 
@@ -77,9 +79,37 @@ async function start() {
     const url = glCanvas.toDataURL('image/png');
     const a = document.createElement('a');
     a.href = url;
-    a.download = `grao-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.png`;
+    a.download = `${baseNameFor(app.project)}.png`;
     a.click();
     app.toast('PNG exportado');
+  };
+
+  // Exportar vídeo: grava o loop tocando desde o frame 1, na velocidade 1×, por ciclos inteiros.
+  app.recording = false;
+  app.canRecordVideo = !!videoFormat();
+  app.exportVideo = async () => {
+    if (app.recording) return;
+    const format = videoFormat();
+    if (!format) { app.toast('Este navegador não grava vídeo. Use o Chrome atualizado.'); return; }
+    const seconds = recordSeconds(app.project);
+    const c = app.clock;
+    const saved = { paused: c.paused, speed: c.speed };
+    app.selection = null;
+    app.onSelectionChange();
+    c.paused = false; c.speed = 1; c.t = 1e-4;
+    app.recording = true;
+    app.toast(`Gravando o loop: ${String(Math.round(seconds * 10) / 10).replace('.', ',')} s. Espere terminar.`);
+    try {
+      const blob = await recordCanvas(glCanvas, seconds, format);
+      downloadBlob(blob, `${baseNameFor(app.project)}.${format.ext}`);
+      app.toast(`Vídeo exportado (${format.ext.toUpperCase()}). Procure em Downloads.`);
+    } catch (err) {
+      console.warn('Grão: gravação de vídeo falhou', err);
+      app.toast('Não deu para gravar o vídeo. Tente de novo ou exporte um PNG.');
+    } finally {
+      app.recording = false;
+      c.paused = saved.paused; c.speed = saved.speed;
+    }
   };
 
   // Painel "Teste da Fase 0": flutua no canto oposto à roda (a roda escolhe o canto).

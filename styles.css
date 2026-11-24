@@ -43,6 +43,7 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   touch-action: manipulation;
 }
 .btn:active { background: #3a3631; }
+.btn:disabled { opacity: .45; }
 .btn.small { min-height: 48px; font-size: 14px; padding: 0 10px; }
 .btn.toggle[aria-pressed="true"], .btn.on { background: var(--text); color: var(--bg); }
 

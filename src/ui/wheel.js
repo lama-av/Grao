@@ -37,7 +37,7 @@ const SECTORS = [
   { id: 'ink', label: 'Tinta', a: 180 },
 ];
 
-const TOOLS = [['brush', 'Pincel'], ['eraser', 'Borracha'], ['lasso', 'Laço']];
+const TOOLS = [['brush', 'Pincel'], ['eraser', 'Borracha'], ['bucket', 'Balde'], ['lasso', 'Laço']];
 
 const C = {
   panel: '#252320', plate: '#2e2b27', hub: '#1f1d1a', line: '#3a3732', hi: '#3a3631',
@@ -418,8 +418,9 @@ export function setupWheel(app, canvas) {
       ctx.fillStyle = i === f ? C.text : '#5a554c';
       ctx.fill();
     }
-    // Miolo: a tinta ativa e a ferramenta (cheio = Pincel, vazado = Borracha, tracejado = Laço).
+    // Miolo: a tinta ativa e a ferramenta (cheio = Pincel, vazado = Borracha, quadrado = Balde, tracejado = Laço).
     disc(c.x, c.y, 13);
+    if (app.tool === 'bucket' && !app.lassoHeld) { ctx.beginPath(); ctx.roundRect(c.x - 11, c.y - 11, 22, 22, 4); }
     if (app.tool === 'eraser' && !app.lassoHeld) {
       ctx.fillStyle = (PAPERS[app.project.paper] || PAPERS.natural).hex;
       ctx.fill();
@@ -431,6 +432,10 @@ export function setupWheel(app, canvas) {
     if (app.tool === 'lasso' || app.lassoHeld) {
       disc(c.x, c.y, 17);
       ctx.setLineDash([3, 3]); ctx.lineWidth = 1.5; ctx.strokeStyle = C.text; ctx.stroke(); ctx.setLineDash([]);
+    }
+    if (app.recording) {              // ponto vermelho enquanto grava o vídeo
+      disc(c.x + BTN_R * 0.72, c.y - BTN_R * 0.72, 6);
+      ctx.fillStyle = '#e53935'; ctx.fill();
     }
     if (app.clock.paused) {           // traço fino quando parado
       disc(c.x, c.y, BTN_R - 3);
@@ -626,7 +631,7 @@ export function setupWheel(app, canvas) {
       now < app.historyUntil, now < readUntil ? readText : '', app.tool, settings().brush, sizePreview,
       dragPos && `${dragPos.x | 0},${dragPos.y | 0}`, app.sheet?.mode, app.history.canUndo, app.history.canRedo,
       sb && `${sb.x0 | 0},${sb.y0 | 0},${sb.x1 | 0},${sb.y1 | 0}`,
-      app.project.layers.map((L) => L.ink).join(','), hover, app.lassoHeld, app.project.paper, showHint,
+      app.project.layers.map((L) => L.ink).join(','), hover, app.lassoHeld, app.project.paper, showHint, app.recording,
     ].join('|');
     if (!animating && sig === lastSig) return;
     lastSig = animating ? '' : sig;

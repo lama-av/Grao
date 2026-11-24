@@ -50,6 +50,7 @@ export function setupSheet(app) {
           <button class="btn small" data-act="new">Novo projeto</button>
           <button class="btn small" data-act="png">Exportar PNG</button>
         </div>
+        <button class="btn small" data-act="video"${app.canRecordVideo ? '' : ' disabled'}>Exportar vídeo do loop</button>
       </div>
       <div class="sheet-group">
         <div class="sheet-title">Impressão</div>
@@ -104,6 +105,7 @@ export function setupSheet(app) {
       if (ok) { app.replaceProject(p); app.toast('Projeto aberto'); }
     };
     act('png').onclick = () => app.exportPNG();
+    act('video').onclick = () => { close(); app.exportVideo(); };
     act('new').onclick = async () => {
       close();
       const ok = await confirmDialog({

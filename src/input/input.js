@@ -5,7 +5,7 @@
 
 import { DOC_W, DOC_H, INKS, PAPERS } from '../config.js';
 import { newStroke, cloneStroke, boundsOf } from '../doc/project.js';
-import { drawLastSegment } from '../render/stroke.js';
+import { drawLastSegment, drawStroke } from '../render/stroke.js';
 
 // Captura o ponteiro; ignora a falha quando o ponteiro já sumiu (eventos sintéticos, cancelamentos).
 function capture(el, e) { try { el.setPointerCapture(e.pointerId); } catch { /* sem captura */ } }
@@ -17,6 +17,11 @@ const TAP_MOVE_PX = 12;
 // Botões da caneta (valores de PointerEvent.buttons). A ponta encostada é 1.
 // Botão lateral 1: o Chrome reporta 2 (como o botão direito do mouse) → alterna Pincel / Borracha.
 // Botão lateral 2: o Chrome do Android reporta 4 (meio) ou 32 (borracha), conforme o aparelho → segura o Laço.
+// Linha reta (T-023): segurar a caneta parada no fim do traço endireita a linha; depois dá para mover a ponta.
+const LINE_HOLD_MS = 500;
+const LINE_STILL = 4;       // unidades do documento: tremida que ainda conta como "parada"
+const LINE_MIN = 20;        // traço precisa ter pelo menos isso para virar linha
+
 const TIP = 1;
 const BTN_TOGGLE = 2;
 const BTN_LASSO = 4 | 32;
@@ -29,7 +34,8 @@ export function setupInput(app, wetCanvas) {
   const ctx = wetCanvas.getContext('2d', { desynchronized: wantLowLatency, alpha: true });
   app.lowLatency = !!ctx.getContextAttributes?.().desynchronized;
 
-  let mode = null;        // 'draw' | 'lasso' | 'move'
+  let mode = null;        // 'draw' | 'lasso' | 'move' | 'fill'
+  let line = null;        // linha reta: { timer, ax, ay (ponto parado), on (já endireitou) }
   let stroke = null;
   let target = null;      // { l, f }
   let lasso = [];
@@ -125,6 +131,14 @@ export function setupInput(app, wetCanvas) {
     app.markDirty(sel.l, sel.f);
   }
 
+  // Desiste de uma transformação: o frame volta à lista de antes (os traços originais, intactos).
+  function restoreFrame(before) {
+    const sel = app.selection;
+    if (!sel) return;
+    app.project.layers[sel.l].frames[sel.f] = before.slice();
+    app.markDirty(sel.l, sel.f);
+  }
+
   function endTransform(before) {
     const sel = app.selection;
     const fr = app.project.layers[sel.l].frames[sel.f];
@@ -201,12 +215,61 @@ export function setupInput(app, wetCanvas) {
     }
     if (app.selection) { app.selection = null; redrawOverlay(); app.onSelectionChange?.(); }
 
+    target = { l: app.project.activeLayer, f: app.clock.frameOf(layer) };
+    if (app.tool === 'bucket') {
+      // Balde: um toque preenche a área fechada em volta do ponto, com a tinta da camada.
+      mode = 'fill';
+      const fill = newStroke(app.project, 'fill', 1);
+      fill.pts.push(p.x, p.y, 1);
+      commitStroke(fill);
+      return;
+    }
     const cut = app.tool === 'eraser';
     mode = 'draw';
-    target = { l: app.project.activeLayer, f: app.clock.frameOf(layer) };
     stroke = newStroke(app.project, cut ? 'cut' : 'ink', app.project.settings.brush);
     stroke.pts.push(p.x, p.y, pressureOf(e));
     drawLastSegment(ctx, stroke, colorFor(stroke));
+    line = { timer: 0, ax: p.x, ay: p.y, on: false };
+    armLine();
+  }
+
+  function commitStroke(s) {
+    const fr = app.project.layers[target.l].frames[target.f];
+    const before = fr.slice();
+    fr.push(s);
+    app.history.push({ l: target.l, f: target.f, before, after: fr.slice() });
+    app.markDirty(target.l, target.f);
+    app.requestSave();
+  }
+
+  // ---------- linha reta ----------
+  function armLine() {
+    clearTimeout(line.timer);
+    line.timer = setTimeout(straighten, LINE_HOLD_MS);
+  }
+  function straighten() {
+    if (mode !== 'draw' || !line || line.on) return;
+    const p = stroke.pts;
+    const n = p.length;
+    if (Math.hypot(p[n - 3] - p[0], p[n - 2] - p[1]) < LINE_MIN) return;
+    let sum = 0;
+    for (let i = 2; i < n; i += 3) sum += p[i];
+    const pr = sum / (n / 3);                // pressão média: a linha fica com espessura uniforme
+    stroke.pts = [p[0], p[1], pr, p[n - 3], p[n - 2], pr];
+    line.on = true;
+    line.pressure = pr;
+    redrawWetStroke();
+    app.ui?.say('Linha');
+  }
+  // Depois de endireitar, a ponta da linha segue a caneta.
+  function moveLineEnd(q) {
+    const s = stroke.pts;
+    s[3] = q.x; s[4] = q.y;
+    redrawWetStroke();
+  }
+  function redrawWetStroke() {
+    clearWet();
+    drawStroke(ctx, stroke, 1, colorFor(stroke));
   }
 
   wetCanvas.addEventListener('pointermove', (e) => {
@@ -224,18 +287,22 @@ export function setupInput(app, wetCanvas) {
     if (!tip && e.pressure === 0) { finishPen(e, false); return; }
     const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
     if (mode === 'draw') {
+      if (line.on) { moveLineEnd(toDoc(e)); return; }
       const color = colorFor(stroke);
       for (const ce of events.length ? events : [e]) {
         const p = toDoc(ce);
         stroke.pts.push(p.x, p.y, pressureOf(ce));
         drawLastSegment(ctx, stroke, color);
       }
+      const q = toDoc(e);
+      if (Math.hypot(q.x - line.ax, q.y - line.ay) > LINE_STILL) { line.ax = q.x; line.ay = q.y; armLine(); }
     } else if (mode === 'lasso') {
       lasso.push(toDoc(e));
       redrawOverlay();
     } else if (mode === 'move') {
       const p = toDoc(e);
       const dx = p.x - moveStart.x, dy = p.y - moveStart.y;
+      if (Math.hypot(dx, dy) > 1) moveStart.moved = true;
       applyMatrix(moveStart.snap, { a: 1, b: 0, c: 0, d: 1, e: dx, f: dy, scale: 1 });
       redrawOverlay();
     }
@@ -244,13 +311,10 @@ export function setupInput(app, wetCanvas) {
   function finishPen(e, cancelled) {
     if (!mode) return;
     if (mode === 'draw') {
+      clearTimeout(line?.timer);
+      line = null;
       if (!cancelled && stroke.pts.length >= 3) {
-        const fr = app.project.layers[target.l].frames[target.f];
-        const before = fr.slice();
-        fr.push(stroke);
-        app.history.push({ l: target.l, f: target.f, before, after: fr.slice() });
-        app.markDirty(target.l, target.f);
-        app.requestSave();
+        commitStroke(stroke);
         app.onStrokeCommitted?.(target);
       }
       stroke = null;
@@ -259,7 +323,9 @@ export function setupInput(app, wetCanvas) {
       app.clock.holds.delete('lassoTool');
       if (cancelled) lasso = []; else selectWithLasso();
     } else if (mode === 'move') {
-      if (!cancelled) endTransform(moveStart.before);
+      // toque sem mover não vira passo de desfazer; cancelado (palma, sistema) volta ao lugar
+      if (!cancelled && moveStart.moved) endTransform(moveStart.before);
+      else restoreFrame(moveStart.before);
       moveStart = null;
     }
     mode = null;
@@ -291,7 +357,7 @@ export function setupInput(app, wetCanvas) {
     const ids = new Set();
     if (lasso.length > 2) {
       for (const s of layer.frames[f]) {
-        if (s.kind !== 'ink') continue;
+        if (s.kind === 'cut') continue;          // pincel e balde podem ser laçados; borracha não
         for (let i = 0; i < s.pts.length; i += 3) {
           if (pointInPolygon(s.pts[i], s.pts[i + 1], lasso)) { ids.add(s.id); break; }
         }
@@ -354,7 +420,10 @@ export function setupInput(app, wetCanvas) {
       const quick = performance.now() - gesture.t0 < TAP_MS && gesture.moved < TAP_MOVE_PX;
       if (gesture.xf) {
         if (!cancelled && gesture.moved >= TAP_MOVE_PX) endTransform(gesture.xf.before);
-        else if (quick && !cancelled) app.undo();
+        else {
+          restoreFrame(gesture.xf.before);
+          if (quick && !cancelled) app.undo();
+        }
       } else if (quick && !cancelled) {
         app.undo();
       }

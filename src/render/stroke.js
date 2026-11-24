@@ -9,7 +9,7 @@ export function widthAt(w, pressure) {
 // Desenha o traço inteiro. scale converte unidades do documento para pixels do contexto.
 export function drawStroke(ctx, s, scale, color) {
   const p = s.pts;
-  if (p.length < 3) return;
+  if (p.length < 3 || s.kind === 'fill') return;   // balde é feito na máscara (render/fill.js)
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
   ctx.lineCap = 'round';

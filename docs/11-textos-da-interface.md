@@ -73,3 +73,9 @@ apaga a tinta e mostra o papel).
 | Folha Tempo | Tempo da tinta Rosa flúor · FPS · Frames · Cada tinta tem o próprio loop. Duração: 1 s. |
 | Dica de 2 dedos | 2 dedos sobre a seleção: girar e escalar |
 | Leitura: botão da caneta | Borracha · Pincel · Laço |
+| Leitura: linha reta | Linha |
+| Pétala Ferramenta | Pincel · Borracha · Balde · Laço · Tamanho |
+| Menu: vídeo | Exportar vídeo do loop |
+| Aviso: gravando | Gravando o loop: 3 s. Espere terminar. |
+| Sucesso: vídeo | Vídeo exportado (MP4). Procure em Downloads. |
+| Erro: vídeo | Não deu para gravar o vídeo. Tente de novo ou exporte um PNG. · Este navegador não grava vídeo. Use o Chrome atualizado. |

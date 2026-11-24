@@ -84,13 +84,15 @@ Objetivo: trocar a zona lateral pela roda de canto, com desfazer e refazer à m�
 
 ### v0.3 — Papel e ferramentas
 Objetivo: navegar pelo desenho e ter ferramentas diferentes, ainda poucas.
+> **0.3.0 em 24/11/2026:** T-022 (Balde) e T-023 (Linha reta) feitos, mais o vídeo do T-052. Ficam para a **0.3.1**:
+> T-020 (zoom), T-021 (pincéis) e T-025 (suavização).
 - T-020 Zoom e mover o papel com 2 dedos (pinça fora da seleção); "Encaixar papel" na folha Mais; encaixe
   automático em 100 %.
 - T-021 Pincéis: **Lápis** (grão, pressão no tamanho), **Marcador** (chapado), **Giz** (falhado, textura).
   Cada um com tamanho próprio.
-- T-022 **Balde**: preenche uma área fechada do frame com a tinta da camada.
-- T-023 **Linha reta**: segurar a caneta parada 0,5 s no fim do traço endireita a linha.
-- T-024 Tamanho rápido: arco de tamanho na pétala de Ferramenta, com prévia do círculo.
+- T-022 **Balde**: preenche uma área fechada do frame com a tinta da camada. **Feito na 0.3.0.**
+- T-023 **Linha reta**: segurar a caneta parada 0,5 s no fim do traço endireita a linha. **Feito na 0.3.0.**
+- T-024 Tamanho rápido: arco de tamanho na pétala de Ferramenta, com prévia do círculo. **Feito na 0.2.0.**
 - T-025 Suavização opcional por pincel (padrão desligado; decisão 6).
 - 🧪 Ilustração parada + loop curto com as ferramentas novas. ⏸ Auditoria.
 
@@ -117,7 +119,8 @@ Objetivo: editar a animação sem sair do papel.
 Objetivo: não perder nada e tirar a animação do app.
 - T-050 Galeria de projetos (criar, duplicar, renomear, apagar com confirmação).
 - T-051 Arquivo `.grao` para backup e importação. **Feito na v0.2.1** (Menu: Salvar arquivo / Abrir arquivo).
-- T-052 Exportar GIF, MP4 (ou WebM) e sequência de PNG; escolher escala e número de voltas do loop.
+- T-052 Exportar GIF, MP4 (ou WebM) e sequência de PNG; escolher escala e número de voltas do loop. **Vídeo
+  (MP4/WebM) feito na 0.3.0**; faltam GIF, sequência de PNG, escala e voltas.
 - T-053 Service worker: abre sem internet.
 - 🧪 Exportar e postar um loop. ⏸ Auditoria.
 

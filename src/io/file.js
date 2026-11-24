@@ -7,12 +7,13 @@ import { sanitize } from '../doc/project.js';
 export const FILE_EXT = '.grao';
 
 // Nome de arquivo seguro a partir do nome do projeto ("Meu loop!" → "Meu-loop").
-export function fileNameFor(project) {
+export function baseNameFor(project) {
   const base = (project.name || 'Sem título')
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^A-Za-z0-9 _-]+/g, '').trim().replace(/\s+/g, '-').slice(0, 40);
-  return (base || 'grao') + FILE_EXT;
+  return base || 'grao';
 }
+export function fileNameFor(project) { return baseNameFor(project) + FILE_EXT; }
 
 export function projectToText(project) {
   return JSON.stringify({ ...project, saved: new Date().toISOString() });
@@ -27,11 +28,15 @@ export function projectFromText(text) {
 }
 
 export function downloadProject(project) {
-  const blob = new Blob([projectToText(project)], { type: 'application/json' });
+  downloadBlob(new Blob([projectToText(project)], { type: 'application/json' }), fileNameFor(project));
+}
+
+// Baixa qualquer arquivo gerado pelo app (no tablet vai para Downloads).
+export function downloadBlob(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = fileNameFor(project);
+  a.download = name;
   document.body.appendChild(a);
   a.click();
   a.remove();

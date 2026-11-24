@@ -4,6 +4,7 @@
 
 import { DOC_W, DOC_H, MASK_SCALE } from '../config.js';
 import { drawStroke } from './stroke.js';
+import { floodFill } from './fill.js';
 
 export class Masks {
   constructor(gl) {
@@ -14,8 +15,12 @@ export class Masks {
     this.scratch = document.createElement('canvas');
     this.scratch.width = this.w;
     this.scratch.height = this.h;
-    this.ctx = this.scratch.getContext('2d');
+    this.ctx = this.scratch.getContext('2d', { willReadFrequently: true });   // o balde lê os pixels
     this.empty = this.#createTexture();
+    // O rascunho guarda o último frame desenhado. Se o mesmo frame volta só com traços novos no fim (o caso
+    // comum: acabou de desenhar), desenhamos só os novos, sem refazer os baldes de antes.
+    this.lastKey = -1;
+    this.lastStrokes = [];
   }
 
   key(l, f) { return l * 100 + f; }
@@ -28,13 +33,28 @@ export class Masks {
     if (!strokes || strokes.length === 0) {
       const t = this.textures.get(k);
       if (t) { gl.deleteTexture(t); this.textures.delete(k); }
+      if (k === this.lastKey) this.lastKey = -1;
       return;
     }
     const ctx = this.ctx;
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, this.w, this.h);
-    for (const s of strokes) drawStroke(ctx, s, MASK_SCALE, s.kind === 'cut' ? '#000' : '#fff');
+    // Traços confirmados são imutáveis (CLAUDE.md): mesmo objeto = mesmo desenho. Só vale quando há traço novo
+    // no fim; mesma lista de novo significa que algo mudou no lugar (mover/girar a seleção mexe nos clones).
+    const last = this.lastStrokes;
+    let from = 0;
+    if (k === this.lastKey && strokes.length > last.length && last.every((s, i) => s === strokes[i])) {
+      from = last.length;
+    } else {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, this.w, this.h);
+    }
+    this.lastKey = k;
+    this.lastStrokes = strokes.slice();
+    for (let i = from; i < strokes.length; i++) {
+      const s = strokes[i];
+      if (s.kind === 'fill') this.#fill(s);
+      else drawStroke(ctx, s, MASK_SCALE, s.kind === 'cut' ? '#000' : '#fff');
+    }
 
     let t = this.textures.get(k);
     if (!t) { t = this.#createTexture(); this.textures.set(k, t); }
@@ -52,8 +72,17 @@ export class Masks {
   drop(l, f) { this.rebuild(l, f, null); }
 
   clear() {
+    this.lastKey = -1;
     for (const t of this.textures.values()) this.gl.deleteTexture(t);
     this.textures.clear();
+  }
+
+  // Balde: preenche a área em volta do ponto com o que já foi desenhado até aqui (ordem dos traços).
+  #fill(s) {
+    const img = this.ctx.getImageData(0, 0, this.w, this.h);
+    if (floodFill(img.data, this.w, this.h, s.pts[0] * MASK_SCALE, s.pts[1] * MASK_SCALE)) {
+      this.ctx.putImageData(img, 0, 0);
+    }
   }
 
   #createTexture() {

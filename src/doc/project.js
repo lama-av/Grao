@@ -25,6 +25,7 @@ export function newProject(paper = 'natural') {
 }
 
 export function newStroke(project, kind, w) {
+  // kind: 'ink' (pincel) | 'cut' (borracha) | 'fill' (balde: só o ponto tocado, a área é feita na máscara)
   return { id: project.nextId++, kind, w, pts: [] }; // pts = [x, y, pressão, x, y, pressão, …]
 }
 
@@ -98,7 +99,7 @@ export function sanitize(p) {
 
 function cleanStroke(s) {
   if (!s || typeof s !== 'object' || !Number.isInteger(s.id) || s.id < 1) return null;
-  if (s.kind !== 'ink' && s.kind !== 'cut') return null;
+  if (s.kind !== 'ink' && s.kind !== 'cut' && s.kind !== 'fill') return null;
   if (!Number.isFinite(s.w) || s.w <= 0) return null;
   const pts = s.pts;
   if (!Array.isArray(pts) || pts.length < 3 || pts.length % 3 !== 0 || pts.length > 300000) return null;

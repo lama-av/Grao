@@ -218,7 +218,7 @@ for (const code of [4, 32]) {
   check('arrastar até a cor troca a cor da tinta', app.project.layers[0].ink === 5, app.project.layers[0].ink);
   // pétala Ferramenta: Borracha
   tap(wet, ...at(58, 0));
-  tap(wet, ...at(206, base));
+  tap(wet, ...at(206, base - (step * 3) / 2 + step));   // 4 ferramentas: Pincel, Borracha, Balde, Laço
   check('escolher Borracha na pétala', app.tool === 'eraser');
   app.tool = 'brush';
   // recolhe ao desenhar
@@ -300,6 +300,158 @@ for (const code of [4, 32]) {
   app.newProject();
   check('novo projeto mantém canto da roda e Canhoto', app.project.settings.wheelCorner === 'tr' && app.project.settings.lefty);
   check('novo projeto começa vazio', all(app).length === 0);
+}
+
+// ---------- balde (preenchimento) ----------
+{
+  const { floodFill } = await import('../src/render/fill.js');
+  const w = 60, h = 40;
+  const img = () => new Uint8ClampedArray(w * h * 4);
+  const px = (d, x, y) => d[(y * w + x) * 4];
+  const rect = (d, x0, y0, x1, y1) => {                     // contorno de 1 px
+    for (let x = x0; x <= x1; x++) for (const y of [y0, y1]) d.fill(255, (y * w + x) * 4, (y * w + x) * 4 + 4);
+    for (let y = y0; y <= y1; y++) for (const x of [x0, x1]) d.fill(255, (y * w + x) * 4, (y * w + x) * 4 + 4);
+  };
+  let d = img(); rect(d, 10, 10, 40, 30);
+  const n = floodFill(d, w, h, 25, 20);
+  check('balde preenche dentro do contorno', n > 0 && px(d, 25, 20) === 255 && px(d, 12, 12) === 255);
+  check('balde não vaza para fora do contorno', px(d, 5, 5) === 0 && px(d, 50, 35) === 0);
+  d = img(); rect(d, 10, 10, 40, 30);
+  for (let y = 18; y <= 20; y++) d.fill(0, (y * w + 40) * 4, (y * w + 40) * 4 + 4);   // buraco de 3 px na linha
+  floodFill(d, w, h, 25, 20);
+  check('buraco pequeno na linha não deixa vazar', px(d, 50, 20) === 0);
+  d = img(); rect(d, 10, 10, 40, 30);
+  check('balde em cima da linha não faz nada', floodFill(d, w, h, 10, 20) === 0);
+  d = img();
+  check('balde no papel vazio pinta tudo', floodFill(d, w, h, 5, 5) === w * h);
+}
+{
+  const { app, wet } = makeApp();
+  app.tool = 'bucket';
+  tap(wet, 300, 300, 'pen');
+  const s = all(app)[0];
+  check('balde grava só o ponto tocado', s?.kind === 'fill' && s.pts.length === 3, JSON.stringify(s));
+  check('balde entra no desfazer', app.undo() && all(app).length === 0);
+  app.tool = 'brush';
+  stroke(wet, 300, 300);
+  app.tool = 'bucket';
+  tap(wet, 320, 310, 'pen');
+  app.tool = 'brush';
+  const pen = pointer(wet);
+  pen.move(250, 250, 0); pen.down(250, 250, 4, 1);
+  for (const [x, y] of [[250, 250], [450, 250], [450, 400], [250, 400], [250, 260]]) pen.move(x, y, 5, 0.5);
+  pen.move(250, 260, 4, 0); pen.up(250, 260, 0, 1);
+  check('laço pega traço e balde juntos', app.selection?.ids.size === 2, app.selection?.ids.size);
+  const { sanitize } = await import('../src/doc/project.js');
+  check('arquivo com balde abre', sanitize(JSON.parse(JSON.stringify(app.project))).layers[0].frames.flat().some((x) => x.kind === 'fill'));
+}
+
+// ---------- linha reta (segurar a caneta parada) ----------
+{
+  const { app, wet } = makeApp();
+  const pen = pointer(wet);
+  pen.down(200, 200);
+  for (let i = 1; i <= 20; i++) pen.move(200 + i * 10, 200 + Math.sin(i) * 15, 1);   // traço tremido
+  await sleep(600);                                                                 // segura parada
+  pen.move(500, 260, 1); pen.up(500, 260);
+  const s = all(app)[0];
+  check('linha reta tem só começo e fim', s?.pts.length === 6, s?.pts.length);
+  check('a ponta da linha segue a caneta depois de endireitar', s && Math.round(s.pts[3]) === Math.round(500 * 1200 / W));
+  // pausa curta não endireita
+  const pen2 = pointer(wet);
+  pen2.down(200, 500);
+  for (let i = 1; i <= 10; i++) pen2.move(200 + i * 10, 500 + (i % 2) * 8, 1);
+  await sleep(200);
+  for (let i = 11; i <= 20; i++) pen2.move(200 + i * 10, 500 + (i % 2) * 8, 1);
+  pen2.up(400, 500);
+  check('pausa curta não endireita', all(app)[1]?.pts.length > 6);
+}
+
+// ---------- vídeo: duração do loop ----------
+{
+  const { loopSeconds, recordSeconds } = await import('../src/io/video.js');
+  const p = newProject();
+  p.layers[0].frames[0].push({ id: 1, kind: 'ink', w: 5, pts: [1, 1, 1] });
+  check('loop de 8 frames a 8 fps = 1 s', loopSeconds(p) === 1);
+  check('loop de 1 s grava 3 s', recordSeconds(p) === 3);
+  p.layers[1].frames = Array.from({ length: 12 }, () => []);
+  p.layers[1].fps = 8; p.layers[1].frames[0].push({ id: 2, kind: 'ink', w: 5, pts: [1, 1, 1] });
+  check('8 frames + 12 frames a 8 fps = ciclo de 3 s', loopSeconds(p) === 3, loopSeconds(p));
+  p.layers[2].frames = Array.from({ length: 7 }, () => [{ id: 3, kind: 'ink', w: 5, pts: [1, 1, 1] }]);
+  p.layers[2].fps = 6;
+  check('ciclo longo é cortado em 12 s', loopSeconds(p) === 12, loopSeconds(p));
+  const e = newProject();
+  check('projeto vazio usa o loop da tinta ativa', loopSeconds(e) === 1);
+}
+
+// ---------- máscaras: atalho de "só o traço novo" ----------
+{
+  const calls = { full: 0, strokes: 0, fills: 0 };
+  const mctx = new Proxy({}, {
+    get(t, k) {
+      if (k in t) return t[k];
+      if (k === 'fillRect') return () => { calls.full++; };
+      if (k === 'beginPath') return () => { calls.strokes++; };
+      if (k === 'getImageData') return (x, y, w, h) => { calls.fills++; return { data: new Uint8ClampedArray(w * h * 4) }; };
+      return () => {};
+    },
+    set(t, k, v) { t[k] = v; return true; },
+  });
+  globalThis.document = { createElement: () => ({ getContext: () => mctx }) };
+  const gl = new Proxy({}, { get: (t, k) => (typeof k === 'string' && k === k.toUpperCase() ? 0 : () => ({})) });
+  const { Masks } = await import('../src/render/masks.js');
+  const m = new Masks(gl);
+  const a = { id: 1, kind: 'ink', w: 5, pts: [10, 10, 1, 20, 20, 1] };
+  const fill = { id: 2, kind: 'fill', w: 1, pts: [50, 50, 1] };
+  const b = { id: 3, kind: 'ink', w: 5, pts: [30, 30, 1, 40, 40, 1] };
+  m.rebuild(0, 0, [a, fill]);
+  check('máscara nova desenha tudo', calls.full === 1 && calls.fills === 1);
+  m.rebuild(0, 0, [a, fill, b]);
+  check('traço novo no fim: não refaz o balde', calls.full === 1 && calls.fills === 1);
+  m.rebuild(0, 0, [a, fill, b]);
+  check('mesma lista de novo (mover a seleção): refaz tudo', calls.full === 2 && calls.fills === 2);
+  m.rebuild(0, 1, [a]);
+  m.rebuild(0, 0, [a, fill, b, a]);
+  check('outro frame no meio: refaz tudo', calls.full === 4);
+  m.rebuild(0, 0, [a, fill]);
+  check('desfazer (lista menor): refaz tudo', calls.full === 5);
+}
+
+// ---------- mover a seleção: cancelar e tocar sem mover ----------
+{
+  const { app, wet } = makeApp();
+  stroke(wet, 300, 300);
+  app.tool = 'lasso';
+  const l = pointer(wet);
+  l.down(250, 250);
+  for (const [x, y] of [[450, 250], [450, 400], [250, 400], [250, 260]]) l.move(x, y, 1);
+  l.up(250, 260);
+  app.tool = 'brush';
+  const x0 = all(app)[0].pts[0], depth = app.history.depth;
+  const mv = pointer(wet);
+  mv.down(320, 310); mv.move(420, 410, 1); mv.cancel(420, 410);
+  check('mover cancelado volta ao lugar', all(app)[0].pts[0] === x0 && app.history.depth === depth);
+  const t = pointer(wet);
+  t.down(320, 310); t.up(320, 310);
+  check('tocar na seleção sem mover não cria passo de desfazer', app.history.depth === depth);
+  const ok = pointer(wet);
+  ok.down(320, 310); ok.move(420, 410, 1); ok.up(420, 410);
+  check('mover de verdade cria um passo de desfazer', app.history.depth === depth + 1 && all(app)[0].pts[0] !== x0);
+  app.undo();
+  check('desfazer o mover volta ao lugar', all(app)[0].pts[0] === x0);
+  // 2 dedos cancelados no meio de um giro
+  app.selection = null; app.onSelectionChange();
+  app.tool = 'lasso';
+  const l2 = pointer(wet);
+  l2.down(250, 250);
+  for (const [x, y] of [[450, 250], [450, 400], [250, 400], [250, 260]]) l2.move(x, y, 1);
+  l2.up(250, 260);
+  app.tool = 'brush';
+  const d2 = app.history.depth;
+  const fa = pointer(wet, 'touch'), fb = pointer(wet, 'touch');
+  fa.down(300, 320); fb.down(400, 330); fb.move(380, 420); fb.move(360, 450);
+  fa.cancel(300, 320); fb.cancel(360, 450);
+  check('giro com 2 dedos cancelado volta ao lugar', all(app)[0].pts[0] === x0 && app.history.depth === d2);
 }
 
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);

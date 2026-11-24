@@ -17,8 +17,9 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
-- **v0.2.1 (24/11/2026):** Menu com arquivo `.grao`, cores à vista na pétala Tinta, setor Tempo. A v0.2.0
-  (papel em tela cheia e roda de canto) foi testada pelo Raphael no tablet; a v0.2.1 ainda não.
+- **v0.3.0 (24/11/2026):** balde, linha reta, exportar vídeo. **v0.2.1:** Menu com arquivo `.grao`, cores à
+  vista, setor Tempo. A v0.2.0 (papel em tela cheia e roda de canto) foi testada pelo Raphael no tablet; a 0.2.1
+  e a 0.3.0 ainda não.
   Relatório: `docs/relatorio-v0.2.md`. A Fase 0 completa (`docs/08-testes-fase-0.md`) ainda decide o ADR-001.
 - Plataforma: web (PWA) no Chrome do tablet — `docs/adr/ADR-001-plataforma-v0.1.md` (status: **Proposto**).
 - Escopo do MVP: `docs/02-decisao-mvp.md`. **Não adicione recursos fora dele** sem o Raphael pedir.
@@ -61,7 +62,8 @@ src/
   doc/history.js       desfazer/refazer por frame (listas "antes/depois")
   clock/clock.js       tempo virtual, velocidade, pausa, holds (molas), frame por camada, semente do ferver
   render/stroke.js     desenho do traço com pressão (igual na tela e na máscara)
-  render/masks.js      traço → textura R8 960×640 por (camada, frame)
+  render/masks.js      traço → textura R8 960×640 por (camada, frame); desenha só os traços novos quando dá
+  render/fill.js       balde: preenchimento por varredura dentro da máscara (função pura, testada)
   render/riso/         compositor WebGL2; riso.vert/riso.frag em GLSL ES 3.00
   input/input.js       Pointer Events no canvas: desenhar, recortar, laço, mover, gestos de 2 dedos
   ui/wheel.js          roda de canto no canvas #ui: botão, centro, setores, prato, velocidade, pétalas, chips
@@ -70,6 +72,7 @@ src/
   ui/debug.js          painel "Teste da Fase 0"
   io/storage.js        IndexedDB (um projeto atual), salvamento com debounce
   io/file.js           arquivo .grao: salvar (baixar), abrir (seletor do aparelho), conferir (sanitize)
+  io/video.js          exportar vídeo do loop (MediaRecorder: MP4 ou WebM), duração por ciclos inteiros
 tests/logic_test.mjs  teste de lógica sem navegador (Node do VS Code)
 tests/smoke_test.py   teste com Chrome e GPU (Playwright)
 ```
@@ -77,10 +80,11 @@ tests/smoke_test.py   teste com Chrome e GPU (Playwright)
 ### Contrato do objeto `app` (criado em `main.js`)
 
 Campos: `project`, `clock`, `history`, `masks`, `riso`, `selection` (`{l, f, ids:Set}` ou `null`),
-`lassoHeld`, `tool` (`brush`/`eraser`/`lasso`), `historyUntil`, `lowLatency`, `debug`, `ui` (roda), `sheet`, `input`.
+`lassoHeld`, `tool` (`brush`/`eraser`/`bucket`/`lasso`), `recording`, `historyUntil`, `lowLatency`, `debug`, `ui` (roda), `sheet`, `input`.
 Funções: `markDirty(l, f)` (refaz a máscara no próximo quadro), `requestSave()`, `undo()`, `redo()`,
 `onStrokeCommitted(target)`, `onSelectionChange()`, `duplicateSelectionToNextFrame()`, `deleteSelection()`,
-`newProject()`, `replaceProject(p)`, `saveNow()`, `exportPNG()`, `toast(msg)`. `undo()/redo()` devolvem
+`newProject()`, `replaceProject(p)`, `saveNow()`, `exportPNG()`, `exportVideo()`, `toast(msg)`.
+Tipos de traço: `ink` (pincel), `cut` (borracha), `fill` (balde: só o ponto; a área é feita na máscara). `undo()/redo()` devolvem
 `true/false` e mostram a leitura na roda. Ações ficam em `src/actions.js` (`installActions(app)`).
 Botões da caneta (`input.js`): botão 1 (`buttons & 2`) alterna `tool` entre `brush` e `eraser`; botão 2
 (`buttons & 4` ou `& 32`) liga `lassoHeld` e `clock.holds 'lasso'` enquanto apertado.

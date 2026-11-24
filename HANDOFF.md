@@ -50,7 +50,8 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 ## Fila
 
 > **v0.2.0 fechada em 24/11** (pedidos #001–#009 feitos). **v0.2.1 feita em 24/11** (#010–#013, a partir da D3,
-> a pedido do Raphael: "continue a produção e melhoria do app").
+> a pedido do Raphael: "continue a produção e melhoria do app"). **v0.3.0 feita em 24/11** (#014–#017: balde,
+> linha reta, exportar vídeo, correções). Nenhuma das duas foi testada no tablet ainda.
 >
 > **Relatório da v0.2 para a auditoria:** `docs/relatorio-v0.2.md` (o que saiu diferente, extras, pendências,
 > decisões). Sessão de animação só com a roda feita pelo Raphael em 24/11: funcionou tudo certo.
@@ -313,6 +314,49 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 - **Origem:** Raphael perguntou se dava para girar e escalar a seleção; já dava, mas ninguém descobre (D2).
 - **Resposta do VS Code:** junto dos chips aparece "2 dedos sobre a seleção: girar e escalar" nas 5 primeiras
   seleções feitas neste aparelho (contagem guardada no navegador).
+
+### #014 — Balde (T-022)
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.3.0
+- **Origem:** pedido do Raphael (24/11: "balde de tinta") e plano da v0.3.
+- **Resposta do VS Code:**
+  - Ferramenta **Balde** na pétala Ferramenta (Pincel, Borracha, Balde, Laço). Um toque preenche a área fechada com
+    a tinta da camada. Linhas com falhas de até ~4 px não vazam. Tocar em cima de uma linha não faz nada; tocar no
+    papel vazio pinta o frame inteiro (desfazer volta).
+  - Guardado como `{ kind: 'fill', pts: [x, y, 1] }` (decisão 4: só traços). A área é calculada na máscara
+    (`src/render/fill.js`, na ordem dos traços). Mover/duplicar as linhas leva o preenchimento junto; o laço pega
+    o balde pelo ponto tocado.
+  - Custo medido no PC: ~15 ms por balde numa máscara 960×640; no tablet deve ficar entre 3 e 5 vezes mais. A máscara
+    só refaz os baldes quando algo antes deles muda (traço novo no fim desenha só o novo).
+  - Botão da roda: miolo quadrado = Balde.
+  - **Testar no tablet:** desenhar um círculo fechado e tocar dentro com o Balde; um com uma falha pequena; mover o
+    círculo com o laço (o preenchimento vai junto); "Duplicar →" e ver o preenchimento no próximo frame; medir se o
+    loop engasga ao tocar com o balde (painel Teste da Fase 0).
+
+### #015 — Linha reta (T-023)
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.3.0
+- **Origem:** pedido do Raphael ("linha") e plano da v0.3 (segurar 0,5 s endireita).
+- **Resposta do VS Code:** durante o traço, se a caneta fica parada (tremida de até 4 unidades) por 0,5 s e o traço
+  tem pelo menos 20 unidades, ele vira uma linha reta do começo até ali, com espessura uniforme (pressão média);
+  leitura "Linha". Depois disso a ponta segue a caneta até soltar. Uma pausa curta (< 0,5 s) não endireita.
+  - **Testar no tablet:** riscar e parar 0,5 s antes de soltar; mover a ponta depois de endireitar; desenhar devagar
+    sem querer linha (não pode endireitar sozinho com frequência; se acontecer, aumentar o tempo).
+
+### #016 — Exportar vídeo do loop (parte do T-052)
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.3.0
+- **Origem:** pedido do Raphael (24/11: "exportação em gif e mov ou mp4 seria top"). Trazido da v0.6.
+- **Resposta do VS Code:** Menu → **Exportar vídeo do loop**. Grava o canvas riso em tempo real (MediaRecorder), com
+  o loop tocando desde o frame 1 a 1×, por ciclos inteiros (quando todas as tintas desenhadas voltam juntas ao frame
+  1), no mínimo 3 s e no máximo 12 s. **MP4 (H.264)** se o Chrome souber gravar, senão WebM. A roda e o traço molhado
+  ficam de fora. Ponto vermelho no botão da roda enquanto grava. **GIF não foi feito** (precisa de codificador
+  próprio; fica para a v0.6). **MOV não é possível** no navegador.
+  - **Testar no tablet:** exportar um loop de 1 s (deve dar um vídeo de 3 s) e ver se é MP4; abrir no Instagram ou na
+    galeria; conferir se o grão ferve no vídeo.
+
+### #017 — Mover a seleção: cancelado e toque parado
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.3.0
+- **Origem:** revisão do código pelo VS Code.
+- **Resposta do VS Code:** se o sistema cancelava o gesto no meio de um mover (caneta ou 2 dedos), a seleção ficava
+  no lugar novo sem passo de desfazer; agora volta ao lugar. Tocar na seleção sem mover não cria mais um passo vazio.
 
 ## Dúvidas do VS Code
 

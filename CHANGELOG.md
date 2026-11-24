@@ -4,6 +4,32 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [0.3.0] — 2026-11-24
+
+Ferramentas pedidas pelo Raphael (balde, linha) e exportar vídeo. Do plano da v0.3 ficam para a 0.3.1: zoom e mover
+o papel (T-020), pincéis Lápis/Marcador/Giz (T-021) e suavização (T-025).
+
+### Adicionado
+- **Balde** (pétala Ferramenta): um toque preenche a área fechada com a tinta da camada. Buracos pequenos na linha
+  (até ~4 px) não deixam vazar. O balde guarda só o ponto tocado e a área é refeita com a máscara: mover, girar ou
+  duplicar as linhas leva o preenchimento junto. Entra no laço e no desfazer (T-022, #014).
+- **Linha reta:** no fim de um traço, segurar a caneta parada 0,5 s endireita a linha (leitura "Linha"); depois, a
+  ponta da linha segue a caneta até soltar. Vale para Pincel e Borracha (T-023, #015).
+- **Exportar vídeo do loop** (Menu): grava o loop tocando desde o frame 1, em ciclos inteiros (mínimo 3 s, máximo
+  12 s), em **MP4** quando o Chrome sabe gravar, senão WebM. Ponto vermelho no botão da roda enquanto grava. Parte do
+  T-052, trazida da v0.6 (#016).
+- PNG e vídeo exportados usam o nome do projeto.
+
+### Corrigido
+- Mover a seleção (caneta ou 2 dedos) cancelado pelo sistema deixava a seleção fora do lugar, sem passo de desfazer.
+  Agora volta ao lugar (#017).
+- Tocar dentro da seleção sem mover criava um passo vazio no desfazer (#017).
+
+### Mudado
+- Máscaras: quando o mesmo frame recebe só traços novos no fim, desenha só os novos (sem refazer os baldes).
+  Mover/girar e desfazer continuam refazendo tudo.
+- Teste de lógica: 87 verificações (balde, linha reta, vídeo, máscaras, mover cancelado).
+
 ## [0.2.1] — 2026-11-24
 
 Atende às duas queixas do teste da b6 (D3 do `HANDOFF.md`): menu principal e cores escondidas.
