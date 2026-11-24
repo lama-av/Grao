@@ -287,6 +287,16 @@ GIF/MP4/MOV, transformar a seleção, balde, linha, caneta Bézier, opacidade e 
 **O que o chat precisa decidir:** antecipar o T-051 (arquivo) e a grade de tintas para uma v0.2.1? Renomear
 "Camadas" para "Tempo" até a v0.4? Como mostrar que 2 dedos giram a seleção?
 
+### D3 — Feedback do Raphael no teste da b6 (24/11), para o chat desenhar
+- **Cores escondidas:** "as cores ficam escondidas, não fica fácil identificar que tem mais que 4 cores para
+  utilizar". Hoje as 8 cores só aparecem no **toque longo** numa tinta da pétala Tinta. Limite a respeitar: no
+  máximo **4 tintas por projeto** (limite da riso impressa). Ele **não quer mais cores** (as 8 bastam). Falta
+  desenhar como mostrar que a cor de cada uma das 4 tintas pode ser trocada.
+- **Menu principal / salvar:** "a falta de um menu principal me incomoda"; não gosta de só ter salvamento
+  automático escondido. Pede um menu com Novo, Salvar, Abrir etc. Liga com a recomendação do D2 (antecipar o
+  T-051, arquivo `.grao`). Falta decidir: onde fica o menu (setor da roda? folha própria?), quais itens, e se
+  entra numa v0.2.1.
+
 ## Feitos
 
 _Pedidos concluídos, com a resposta do VS Code._
