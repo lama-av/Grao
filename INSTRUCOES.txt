@@ -1,6 +1,6 @@
 GRÃO — INSTRUÇÕES DE USO
 ========================
-Versão descrita: 0.1.0-b6 (prévia da v0.2: papel em tela cheia e roda de canto)
+Versão descrita: 0.2.0 (papel em tela cheia e roda de canto)
 Atualizado em: 24/11/2026
 Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
 
@@ -8,7 +8,7 @@ Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
 1. ABRIR
 --------
 - No tablet (Chrome): https://lama-av.github.io/Grao/
-- Ao abrir, aparece um aviso com a versão (ex.: "Grão 0.1.0-b6"). Se o número for
+- Ao abrir, aparece um aviso com a versão (ex.: "Grão 0.2.0-b7"). Se o número for
   antigo, o Chrome está usando a cópia guardada: espere 10 minutos ou limpe os dados
   do site (Chrome > cadeado ao lado do endereço > Configurações do site > Limpar dados).
 - Para instalar como app: menu do Chrome > "Adicionar à tela inicial".
@@ -28,7 +28,11 @@ reimpressão.
 -----------------
 Caneta
 - Encostar e riscar: desenha com a ferramenta atual (pressão muda a espessura).
-- Segurar o botão lateral da caneta e riscar: apaga (Borracha), só enquanto segura.
+- BOTÃO LATERAL 1: cada aperto ALTERNA entre Pincel e Borracha (no ar ou encostada).
+  Aparece "Borracha" ou "Pincel" perto do botão da roda.
+- BOTÃO LATERAL 2: SEGURE para fazer laço. Enquanto ele está apertado, o loop
+  para e a caneta contorna o desenho para selecionar. Soltou, volta ao normal.
+  (Se o botão 2 não fizer nada no seu tablet, rode o teste da caneta: seção 9.)
 - Com Laço: contorne o desenho para selecionar.
 - Com uma seleção ativa: encostar dentro da caixa e arrastar move a seleção.
 
@@ -43,8 +47,11 @@ Dedos (no papel)
 4. A RODA DE CANTO
 ------------------
 Recolhida: um botão redondo no canto inferior esquerdo (direito no modo Canhoto).
-Mostra a cor da tinta ativa, um anel de pontos com o frame atual aceso e um
-contorno fino quando o loop está parado.
+Mostra:
+- no miolo, a tinta ativa e a ferramenta: cheio = Pincel, vazado = Borracha,
+  tracejado em volta = Laço;
+- um anel de pontos com o frame atual aceso;
+- um contorno fino quando o loop está parado.
 
 - Tocar no botão: abre a roda.
 - Segurar 0,4 s e arrastar: leva o botão para outro canto. Fica salvo.
@@ -77,7 +84,8 @@ PÉTALAS (aparecem em arco, fora da roda)
 
 5. SELEÇÃO
 ----------
-- Escolha Laço na pétala Ferramenta e contorne o desenho com a caneta.
+- Segure o botão lateral 2 da caneta (ou escolha Laço na pétala Ferramenta) e
+  contorne o desenho com a caneta.
 - Com algo selecionado, o loop fica parado e aparecem dois botões perto da caixa:
     · "Duplicar →": copia a seleção para o próximo frame (bom para animar).
     · "Apagar": apaga o que está selecionado.
@@ -93,7 +101,8 @@ Mais (ajustes):
 - Auto: com o loop parado, cada traço terminado pula para o próximo frame
   (desenho quadro a quadro).
 - Fixar roda, Canhoto, Teste da Fase 0 (painel de números).
-- Exportar PNG (o frame atual) e Novo projeto (pede confirmação).
+- Exportar PNG (o frame atual) e Novo projeto (pergunta antes: "Apagar e
+  começar" ou "Cancelar").
 
 Camadas (por enquanto, só o TEMPO da camada ativa):
 - FPS (6, 8, 12 ou 24) e quantidade de frames (até 12).

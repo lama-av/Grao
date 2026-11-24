@@ -4,7 +4,7 @@
 // Não recebe eventos sozinha: o input.js pergunta "é seu?" (down) e repassa move/up.
 // Especificação: docs/10-plano-ate-v1.md, seção "A roda de canto". Textos: docs/11.
 
-import { INKS, DOC_W, WHEEL_STEP_DEG, HISTORY_MODE_MS } from '../config.js';
+import { INKS, PAPERS, DOC_W, WHEEL_STEP_DEG, HISTORY_MODE_MS } from '../config.js';
 
 const MARGIN = 16;
 const BTN_R = 32;                         // botão recolhido: 64 px
@@ -398,9 +398,20 @@ export function setupWheel(app, canvas) {
       ctx.fillStyle = i === f ? C.text : '#5a554c';
       ctx.fill();
     }
+    // Miolo: a tinta ativa e a ferramenta (cheio = Pincel, vazado = Borracha, tracejado = Laço).
     disc(c.x, c.y, 13);
-    ctx.fillStyle = ink;
-    ctx.fill();
+    if (app.tool === 'eraser' && !app.lassoHeld) {
+      ctx.fillStyle = (PAPERS[app.project.paper] || PAPERS.natural).hex;
+      ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = ink; ctx.stroke();
+    } else {
+      ctx.fillStyle = ink;
+      ctx.fill();
+    }
+    if (app.tool === 'lasso' || app.lassoHeld) {
+      disc(c.x, c.y, 17);
+      ctx.setLineDash([3, 3]); ctx.lineWidth = 1.5; ctx.strokeStyle = C.text; ctx.stroke(); ctx.setLineDash([]);
+    }
     if (app.clock.paused) {           // traço fino quando parado
       disc(c.x, c.y, BTN_R - 3);
       ctx.lineWidth = 1.5;
@@ -554,7 +565,7 @@ export function setupWheel(app, canvas) {
       now < app.historyUntil, now < readUntil ? readText : '', app.tool, settings().brush, sizePreview,
       dragPos && `${dragPos.x | 0},${dragPos.y | 0}`, app.sheet?.mode, app.history.canUndo, app.history.canRedo,
       sb && `${sb.x0 | 0},${sb.y0 | 0},${sb.x1 | 0},${sb.y1 | 0}`,
-      app.project.layers.map((L) => L.ink).join(','), hover,
+      app.project.layers.map((L) => L.ink).join(','), hover, app.lassoHeld, app.project.paper,
     ].join('|');
     if (!animating && sig === lastSig) return;
     lastSig = animating ? '' : sig;
@@ -589,5 +600,10 @@ export function setupWheel(app, canvas) {
 
   function rebuild() { collapse(); lastSig = ''; }
 
-  return { down, move, up, paperDown, update, rebuild, collapse, say, get corner() { return corner(); } };
+  return {
+    down, move, up, paperDown, update, rebuild, collapse, say,
+    get corner() { return corner(); },
+    get isOpen() { return open; },
+    get petal() { return petal; },
+  };
 }

@@ -2,6 +2,7 @@
 // Só existem com a caneta parada: fecham quando o papel ou a roda são tocados (ver wheel.paperDown).
 
 import { INKS, PAPERS, FPS_OPTIONS, MAX_FRAMES } from '../config.js';
+import { confirmDialog } from './dialog.js';
 
 export function setupSheet(app) {
   const el = document.createElement('div');
@@ -53,8 +54,13 @@ export function setupSheet(app) {
     paper.onchange = () => { app.project.paper = paper.value; app.requestSave(); };
     q('debug').onchange = (e) => app.debug.setVisible(e.target.checked);
     el.querySelector('[data-act="png"]').onclick = () => app.exportPNG();
-    el.querySelector('[data-act="new"]').onclick = () => {
-      if (confirm('Começar um projeto novo? O desenho atual será apagado deste aparelho.')) { close(); app.newProject(); }
+    el.querySelector('[data-act="new"]').onclick = async () => {
+      close();
+      const ok = await confirmDialog({
+        text: 'Começar um projeto novo? O desenho atual será apagado deste aparelho.',
+        ok: 'Apagar e começar',
+      });
+      if (ok) app.newProject();
     };
   }
 

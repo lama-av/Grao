@@ -69,6 +69,8 @@ Objetivo: saber se a versão web aguenta o tablet. Nenhum recurso novo.
 
 ### v0.2 — Tela limpa e roda de canto
 Objetivo: trocar a zona lateral pela roda de canto, com desfazer e refazer à mão.
+> **Fechada em 24/11/2026 (0.2.0).** Sessão de 20 min no tablet: "funcionou tudo certo". T-015 mudou a pedido
+> do Raphael: o botão 1 da caneta **alterna** Pincel/Borracha e o botão 2 segura o Laço. Relatório: `relatorio-v0.2.md`.
 - T-010 Papel em tela cheia; três canvases empilhados: riso (GPU) → interface (roda) → traço molhado (topo).
 - T-011 Roda recolhida: botão de canto com tinta, frame e tocando/parado; mover para outro canto.
 - T-012 Roda aberta: centro toca/pausa, anel de setores, prato do tempo, arco de velocidade; recolhe sozinha.

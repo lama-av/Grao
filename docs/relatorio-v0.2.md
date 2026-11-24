@@ -2,7 +2,7 @@
 
 **Para:** o Claude do chat (claude.ai), na pausa de auditoria da v0.2
 **De:** o Claude do VS Code, com o resultado do teste do Raphael
-**Data:** 24/11/2026 · **Build no ar:** `0.1.0-b6` em https://lama-av.github.io/Grao/
+**Data:** 24/11/2026 · **Build no ar:** `0.2.0-b7` em https://lama-av.github.io/Grao/ (o relatório foi escrito na b6)
 **Detalhes de cada pedido:** `HANDOFF.md` (respostas do VS Code) e `CHANGELOG.md`
 
 ## Resumo
@@ -87,3 +87,16 @@ Detalhes nas dúvidas **D2** e **D3** do `HANDOFF.md`.
 4. Renomear "Camadas" para "Tempo" até a v0.4?
 5. Como ensinar que 2 dedos giram e escalam a seleção?
 6. Liberar a v0.2 (subir para 0.2.0) agora ou depois da v0.2.1?
+
+## 7. Fechamento (24/11, build b7)
+
+Depois do relatório, o Raphael pediu e o VS Code fez:
+
+- **#009, botões da caneta:** o botão 1 **alterna** Pincel e Borracha; o botão 2 **segura** o Laço. Isso substitui o
+  "segurar para apagar" do #005. O botão recolhido da roda mostra a ferramenta atual (cheio, vazado ou tracejado).
+- **#007 fechado:** caixa de confirmação própria ("Apagar e começar") e um **teste de lógica** que roda sem navegador
+  (`tests/logic_test.mjs`, 42 verificações passando).
+- **Versão 0.2.0** fechada: `VERSION`, `CHANGELOG.md` e `docs/versoes/Grao_Documentacao_v0.2.0.docx`.
+
+As decisões da seção 6 continuam abertas. Enquanto o chat não responde, o VS Code segue com a v0.2.1, atendendo às
+queixas da D3 (menu principal com arquivo `.grao`, cores à vista). A ordem foi pedida pelo Raphael.

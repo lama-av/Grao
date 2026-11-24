@@ -4,27 +4,36 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
-### v0.2 em construção (build b6, prévia publicada)
-- b6: pétalas Tinta e Ferramenta aceitam **encostar, arrastar e soltar** sobre a pastilha (antes só toque parado); destaque na pastilha sob o dedo; o toque longo numa tinta também aceita arrastar até a cor (#008).
-- b6: `INSTRUCOES.txt` (como usar o Grão, atualizado a cada versão) e `docs/12-tintas-riso.md` (tintas riso pela Stencil Wiki: 81 tintas em Padrão, Edição especial e Sob encomenda, com hex).
-- Papel em tela cheia; a zona do polegar saiu. Interface nova: **roda de canto** desenhada num canvas por baixo do traço (ADR-002).
-- Roda recolhida (64 px): tinta ativa, frames e parado; segurar e arrastar leva a outro canto (fica salvo).
-- Roda aberta: centro toca/pausa; setores Desfazer, Refazer, Tinta, Ferramenta, Camadas, Mais; prato do tempo; arco de velocidade. Recolhe ao desenhar, salvo com "Fixar roda".
-- Refazer (novo). Leituras "Desfeito", "Refeito", "Nada para desfazer".
-- Pétala Tinta (toque longo troca a cor) e pétala Ferramenta: Pincel, Borracha (antigo Recorte), Laço fixo e Tamanho com prévia.
-- Folha Mais (ajustes) e folha Camadas (FPS e frames). Chips "Duplicar →" e "Apagar" junto da seleção. Painel de teste no canto oposto à roda.
-- Textos conforme o doc 11. Teste automático reescrito para a roda (ainda não rodado).
-- `teste-caneta.html`: botão "Copiar resultados".
+## [0.2.0] — 2026-11-24
+
+Tela limpa e roda de canto. Fechada depois da sessão de animação do Raphael no tablet ("funcionou tudo certo").
+Relatório da versão para a auditoria: `docs/relatorio-v0.2.md`.
 
 ### Adicionado
-- Caixa vermelha de erros na tela do app (fase de testes no tablet, onde não há console).
-- Aviso ao abrir com a versão e o estado da baixa latência (para saber se o tablet pegou a versão nova).
-- `teste-caneta.html`: teste da Fase 0 no tablet (valores de `buttons` da caneta, eventos do sistema, palma, latência normal × baixa latência).
-- `diag.html`: página de diagnóstico do WebGL do tablet, com testes por partes do compositor.
+- Papel em tela cheia; a zona do polegar saiu. Interface nova: **roda de canto** desenhada num canvas por baixo do traço (ADR-002).
+- Roda recolhida (64 px): tinta ativa, ferramenta (cheio = Pincel, vazado = Borracha, tracejado = Laço), frames e parado. Segurar e arrastar leva a outro canto (fica salvo).
+- Roda aberta: centro toca/pausa; setores Desfazer, Refazer, Tinta, Ferramenta, Camadas, Mais; prato do tempo; arco de velocidade (encaixa em 1× e 0×). Recolhe ao desenhar, salvo com "Fixar roda".
+- Refazer. Leituras "Desfeito", "Refeito", "Nada para desfazer", "Nada para refazer".
+- Pétala Tinta (toque longo troca a cor) e pétala Ferramenta: Pincel, Borracha (antigo Recorte), Laço fixo e Tamanho com prévia. Toque e toque, ou encostar, arrastar e soltar (#008).
+- **Botões da caneta (#009):** o botão lateral 1 **alterna** Pincel e Borracha a cada aperto (no ar ou encostada); o botão lateral 2 **segura o Laço** enquanto está apertado (o loop congela). Funciona com a ponta encostando depois do botão (o Chrome avisa isso por `pointermove`).
+- Folha Mais (ajustes) e folha Camadas (FPS e frames). Chips "Duplicar →" e "Apagar" junto da seleção. Painel de teste no canto oposto à roda.
+- Caixa de confirmação própria para "Novo projeto": "Apagar e começar" / "Cancelar" (doc 11).
+- `tests/logic_test.mjs`: teste de lógica que roda sem navegador (Node que vem com o VS Code): caneta, botões da caneta, laço, roda, pétalas, 2 dedos. 42 verificações passando.
+- `INSTRUCOES.txt` (como usar o Grão), `docs/12-tintas-riso.md` (tintas riso pela Stencil Wiki) e `docs/relatorio-v0.2.md`.
+- `teste-caneta.html` (Fase 0 no tablet, com "Copiar resultados") e `diag.html` (WebGL por partes). Caixa vermelha de erros e aviso de versão ao abrir.
+
+### Mudado
+- Ações do app (desfazer, seleção, projeto novo) saíram do `main.js` para `src/actions.js`, para o teste usar o mesmo código.
+- "Novo projeto" mantém o canto da roda e o modo Canhoto.
+- Botão lateral da caneta: antes **segurava** a Borracha; agora **alterna** (pedido do Raphael, 24/11).
 
 ### Corrigido
-- Canvas todo preto no tablet (Chrome do Android): o modo baixa latência do traço molhado deixava a camada de cima opaca. Agora vem desligado; para testá-lo, abrir com `?baixa=1` no endereço.
-- Publicado no GitHub Pages: https://lama-av.github.io/Grao/
+- Canvas todo preto no tablet (Chrome do Android): o modo baixa latência deixava a camada de cima opaca. Agora vem desligado; para testá-lo, abrir com `?baixa=1`.
+- Botão da caneta apertado com a caneta no ar podia começar um traço invisível (apagando no ar) ou acionar a roda: agora no ar ele só troca de ferramenta.
+
+### Falta
+- `tests/smoke_test.py` (Playwright, com GPU) não foi rodado nesta máquina; o teste de lógica cobre as regras.
+- Latência sem baixa latência ainda não foi medida com vídeo em câmera lenta.
 
 ## [0.1.0] — 2026-11-23
 

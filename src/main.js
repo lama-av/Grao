@@ -1,7 +1,8 @@
 // Grão v0.1 — ponto de entrada. Liga documento, relógio, compositor riso, entrada e interface.
 
 import { VERSION, BUILD, INKS, PAPERS, REPRINTS_PER_SECOND, hexToRgb } from './config.js';
-import { newProject, sanitize, cloneStroke } from './doc/project.js';
+import { sanitize } from './doc/project.js';
+import { installActions } from './actions.js';
 import { History } from './doc/history.js';
 import { Clock } from './clock/clock.js';
 import { Masks } from './render/masks.js';
@@ -43,9 +44,9 @@ async function start() {
   app.history = new History(app);
 
   app.markDirty = (l, f) => app.dirty.add(`${l}:${f}`);
-  const saveNow = () => saveProject(app.project).catch(() => app.toast('Não deu para salvar. O navegador recusou o espaço. Exporte um PNG para garantir.'));
-  app.requestSave = debounced(saveNow, 600);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
+  app.saveNow = () => saveProject(app.project).catch(() => app.toast('Não deu para salvar. O navegador recusou o espaço. Exporte um PNG para garantir.'));
+  app.requestSave = debounced(app.saveNow, 600);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) app.saveNow(); });
 
   app.toast = (msg) => {
     const el = document.getElementById('toast');
@@ -55,74 +56,7 @@ async function start() {
     app.toast.t = setTimeout(() => { el.hidden = true; }, 2500);
   };
 
-  app.undo = () => {
-    const ok = app.history.undo();
-    if (ok) app.onSelectionChange();
-    app.ui?.say(ok ? 'Desfeito' : 'Nada para desfazer');
-    return ok;
-  };
-  app.redo = () => {
-    const ok = app.history.redo();
-    if (ok) app.onSelectionChange();
-    app.ui?.say(ok ? 'Refeito' : 'Nada para refazer');
-    return ok;
-  };
-
-  // Auto: com o loop parado, cada traço terminado avança um frame (desenho quadro a quadro).
-  app.onStrokeCommitted = () => {
-    const c = app.clock;
-    if (app.project.settings.auto && c.paused && c.holds.size === 0) {
-      c.step(app.project.layers[app.project.activeLayer], 1);
-    }
-  };
-
-  // Uma seleção segura o loop parado, como o Laço: o desenho não foge enquanto você o ajusta.
-  app.onSelectionChange = () => {
-    if (app.selection) app.clock.holds.add('selection');
-    else app.clock.holds.delete('selection');
-    input.redrawOverlay();
-  };
-
-  app.duplicateSelectionToNextFrame = () => {
-    const sel = app.selection;
-    if (!sel) return;
-    const layer = app.project.layers[sel.l];
-    const src = layer.frames[sel.f].filter((s) => sel.ids.has(s.id));
-    const nf = (sel.f + 1) % layer.frames.length;
-    const before = layer.frames[nf].slice();
-    const copies = src.map((s) => cloneStroke(s, app.project.nextId++));
-    layer.frames[nf] = before.concat(copies);
-    app.history.push({ l: sel.l, f: nf, before, after: layer.frames[nf].slice() });
-    app.markDirty(sel.l, nf);
-    app.clock.step(layer, 1);
-    app.selection = { l: sel.l, f: nf, ids: new Set(copies.map((s) => s.id)) };
-    app.onSelectionChange();
-    app.requestSave();
-  };
-
-  app.deleteSelection = () => {
-    const sel = app.selection;
-    if (!sel) return;
-    const layer = app.project.layers[sel.l];
-    const before = layer.frames[sel.f].slice();
-    layer.frames[sel.f] = before.filter((s) => !sel.ids.has(s.id));
-    app.history.push({ l: sel.l, f: sel.f, before, after: layer.frames[sel.f].slice() });
-    app.markDirty(sel.l, sel.f);
-    app.selection = null;
-    app.onSelectionChange();
-    app.requestSave();
-  };
-
-  app.newProject = () => {
-    app.project = newProject(app.project.paper);
-    app.masks.clear();
-    app.history = new History(app);
-    app.selection = null;
-    app.clock.t = 0;
-    app.onSelectionChange();
-    app.ui.rebuild();
-    saveNow();
-  };
+  installActions(app);
 
   app.exportPNG = () => {
     draw(performance.now());               // desenha e lê no mesmo instante (o buffer ainda existe)

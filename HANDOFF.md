@@ -49,6 +49,8 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 
 ## Fila
 
+> **v0.2.0 fechada em 24/11** (pedidos #001–#009 feitos). A partir daqui, a fila é da v0.2.1.
+>
 > **Relatório da v0.2 para a auditoria:** `docs/relatorio-v0.2.md` (o que saiu diferente, extras, pendências,
 > decisões). Sessão de animação só com a roda feita pelo Raphael em 24/11: funcionou tudo certo.
 
@@ -161,7 +163,7 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - **Testar no tablet:** desfazer e refazer pela roda; tocar 2 dedos no papel; girar o prato logo após Desfazer.
 
 ### #005 — Pétalas de Tinta e Ferramenta; botões da caneta
-- **Status:** Fazendo · **Prioridade:** P2 · **Versão alvo:** 0.2.0
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.2.0
 - **Origem:** pedido do Raphael
 - **O que fazer:**
   - pétala é um arco de pastilhas fora da roda; some ao escolher ou ao tocar fora;
@@ -179,8 +181,8 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
     ativa, toque longo (0,5 s) abre as 8 cores para trocar a daquela tinta. Ferramenta: Pincel, Borracha (antigo
     Recorte), Laço fixo (com o Laço fixo, a caneta dentro da seleção move; fora, faz novo laço) e arco de
     Tamanho com prévia do círculo no centro do papel. Botão lateral que reporta `buttons & 2` segura a Borracha.
-  - **Falta:** o segundo botão segurar o Laço. Depende do valor de "botões" medido no
-    `teste-caneta.html` (Fase 0). O código já tem `app.lassoHeld` pronto para isso.
+  - **Fechado em 24/11 pelo #009:** o Raphael mudou o comportamento dos botões (botão 1 **alterna** Pincel e
+    Borracha; botão 2 **segura** o Laço). Ver #009.
   - **Testar no tablet:** trocar tinta e ferramenta (2 toques a partir da roda recolhida); segurar o botão da
     caneta e riscar (apaga); soltar volta ao Pincel.
 
@@ -210,7 +212,7 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
     chips irem junto.
 
 ### #007 — Textos e teste automático
-- **Status:** Fazendo · **Prioridade:** P2 · **Versão alvo:** 0.2.0
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.2.0
 - **O que fazer:**
   - aplicar o vocabulário e os textos de `docs/11-textos-da-interface.md` (Recorte → Borracha, mensagens de
     erro e confirmação);
@@ -229,6 +231,12 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
     bloqueado pelas permissões do Claude Code). Para rodar: `pip install playwright`, `playwright install
     chromium` e `CHROME=<caminho do chrome> python tests/smoke_test.py`.
   - A confirmação de Novo projeto ainda usa a caixa do navegador (botões OK/Cancelar, não "Apagar e começar").
+- **Resposta do VS Code (24/11, fechamento da v0.2.0):**
+  - Caixa de confirmação própria (`src/ui/dialog.js`): "Começar um projeto novo? O desenho atual será apagado
+    deste aparelho." · **Apagar e começar** (vermelho) · **Cancelar**.
+  - Novo `tests/logic_test.mjs`: roda sem navegador, com o Node que vem dentro do VS Code, e testa as regras
+    (caneta, botões, laço, roda, pétalas, 2 dedos). **42 verificações passando.** O `smoke_test.py` (Playwright,
+    com GPU) continua sem rodar aqui; a parte visual fica com o tablet.
 
 ### #008 — Pétalas não respondem a "encostar e arrastar"
 - **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.2.0
@@ -243,6 +251,26 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - Arquivo: `src/ui/wheel.js`. Teste automático não rodado (mesmo motivo do #007).
   - **Testar no tablet:** encostar em Tinta, arrastar até outra tinta e soltar; toque longo numa tinta, arrastar
     até uma cor e soltar; tocar em Ferramenta e tocar em Borracha.
+
+### #009 — Botões da caneta: alternar Pincel/Borracha e segurar o Laço
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.2.0
+- **Origem:** pedido do Raphael (24/11): "um botão da caneta trocar entre brush e borracha e o outro para o lasso".
+- **Resposta do VS Code (24/11, build b7):**
+  - **Botão lateral 1** (o Chrome reporta `buttons & 2`): cada aperto **alterna** Pincel ↔ Borracha, com a caneta
+    no ar ou encostada. Leitura "Borracha"/"Pincel" perto do botão da roda. Apertar durante um traço não corta o
+    traço: vale para o próximo.
+  - **Botão lateral 2** (`buttons & 4` ou `& 32`, conforme o aparelho; o valor exato do tablet não foi medido):
+    **segura o Laço** enquanto está apertado, e o loop congela (decisão 8). Encostar a ponta com o botão apertado
+    chega ao app como `pointermove`, não `pointerdown`; o `input.js` trata isso.
+  - Com a caneta no ar, apertar um botão **não** mexe na roda nem no papel (antes podia começar um traço no ar).
+  - O botão recolhido da roda mostra a ferramenta: miolo cheio = Pincel, vazado = Borracha, tracejado = Laço.
+  - Arquivos: `src/input/input.js`, `src/ui/wheel.js`. Teste: `tests/logic_test.mjs` (botão 1, botão 2 com 4 e
+    com 32, ponta encostando depois do botão, caneta saindo do alcance).
+  - **Decisão 1 ("um gesto, uma função"):** o botão 1 virou alternância, que é um estado. Para não ficar
+    escondido, o estado aparece no botão da roda. Se o chat preferir "segurar", é uma linha no `input.js`.
+  - **Testar no tablet:** apertar o botão 1 no ar e riscar (apaga); apertar de novo e riscar (desenha); segurar o
+    botão 2, encostar e contornar (laço); soltar o botão 2 (volta ao normal). Se o botão 2 não fizer nada, rodar
+    o `teste-caneta.html` e mandar o valor de "botões".
 
 ## Dúvidas do VS Code
 

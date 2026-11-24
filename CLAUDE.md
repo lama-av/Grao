@@ -17,8 +17,8 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
-- **v0.1.0 construída** (primeira build web/PWA). Ainda **não testada no tablet**: os resultados da Fase 0
-  (`docs/08-testes-fase-0.md`) vão decidir o ADR-001.
+- **v0.2.0 fechada em 24/11/2026** (papel em tela cheia e roda de canto), testada pelo Raphael no tablet.
+  Relatório: `docs/relatorio-v0.2.md`. A Fase 0 completa (`docs/08-testes-fase-0.md`) ainda decide o ADR-001.
 - Plataforma: web (PWA) no Chrome do tablet — `docs/adr/ADR-001-plataforma-v0.1.md` (status: **Proposto**).
 - Escopo do MVP: `docs/02-decisao-mvp.md`. **Não adicione recursos fora dele** sem o Raphael pedir.
 - O que falta e o que mudou: `CHANGELOG.md`.
@@ -39,9 +39,13 @@ design; dúvidas vão para a seção "Dúvidas do VS Code"; ao terminar, preench
 - Sem build e sem npm. Servir a pasta raiz por HTTP (o `fetch` dos shaders não funciona em `file://`).
 - VS Code: extensão Live Server → **Go Live** (porta 5500). No tablet: `http://IP-DO-PC:5500`.
 - Alternativa: `python -m http.server 8765` na raiz.
-- Teste automático: `python tests/smoke_test.py` (Playwright + Chrome; ajuste `executable_path`).
-  Ele simula caneta, toque, laço, mover, duplicar, desfazer com 2 dedos, roda e recarregar.
-  Rode depois de mudar `input/`, `ui/`, `doc/` ou `main.js`.
+- **Teste de lógica (roda nesta máquina, sem navegador):** o VS Code traz um Node dentro.
+  Git Bash: `ELECTRON_RUN_AS_NODE=1 "$LOCALAPPDATA/Programs/Microsoft VS Code/Code.exe" tests/logic_test.mjs`.
+  Testa caneta, botões da caneta, laço, roda, pétalas, 2 dedos com um DOM de mentira.
+  **Rode depois de mudar `input/`, `ui/`, `doc/`, `actions.js` ou `main.js`.** Teste novo de regra → entra nele.
+- Checar sintaxe de um módulo: copie para `.mjs` e rode o mesmo `Code.exe --check arquivo.mjs`.
+- Teste com navegador e GPU: `python tests/smoke_test.py` (Playwright + Chrome; variável `CHROME`). Não roda
+  nesta máquina (sem Playwright); a parte visual é conferida no tablet.
 - No console do navegador, `window.grao` é o objeto `app` (para inspecionar).
 
 ## Mapa do código
@@ -50,6 +54,7 @@ design; dúvidas vão para a seção "Dúvidas do VS Code"; ao terminar, preench
 index.html, styles.css, manifest.webmanifest, assets/icon.svg
 src/
   main.js              cria o objeto app, liga tudo, loop requestAnimationFrame
+  actions.js           ações do app (desfazer, seleção, duplicar, apagar, trocar/novo projeto); usado pelo teste
   config.js            constantes (documento 1200×800, tintas, papéis, FPS, passo da roda…)
   doc/project.js       projeto, traços, caixas, sanitize de arquivos carregados
   doc/history.js       desfazer/refazer por frame (listas "antes/depois")
@@ -60,9 +65,11 @@ src/
   input/input.js       Pointer Events no canvas: desenhar, recortar, laço, mover, gestos de 2 dedos
   ui/wheel.js          roda de canto no canvas #ui: botão, centro, setores, prato, velocidade, pétalas, chips
   ui/sheet.js          folhas HTML Mais e Camadas (só com a caneta parada)
+  ui/dialog.js         caixa de confirmação ("Apagar e começar" / "Cancelar")
   ui/debug.js          painel "Teste da Fase 0"
   io/storage.js        IndexedDB (um projeto atual), salvamento com debounce
-tests/smoke_test.py
+tests/logic_test.mjs  teste de lógica sem navegador (Node do VS Code)
+tests/smoke_test.py   teste com Chrome e GPU (Playwright)
 ```
 
 ### Contrato do objeto `app` (criado em `main.js`)
@@ -71,7 +78,10 @@ Campos: `project`, `clock`, `history`, `masks`, `riso`, `selection` (`{l, f, ids
 `lassoHeld`, `tool` (`brush`/`eraser`/`lasso`), `historyUntil`, `lowLatency`, `debug`, `ui` (roda), `sheet`, `input`.
 Funções: `markDirty(l, f)` (refaz a máscara no próximo quadro), `requestSave()`, `undo()`, `redo()`,
 `onStrokeCommitted(target)`, `onSelectionChange()`, `duplicateSelectionToNextFrame()`, `deleteSelection()`,
-`newProject()`, `exportPNG()`, `toast(msg)`. `undo()/redo()` devolvem `true/false` e mostram a leitura na roda.
+`newProject()`, `replaceProject(p)`, `saveNow()`, `exportPNG()`, `toast(msg)`. `undo()/redo()` devolvem
+`true/false` e mostram a leitura na roda. Ações ficam em `src/actions.js` (`installActions(app)`).
+Botões da caneta (`input.js`): botão 1 (`buttons & 2`) alterna `tool` entre `brush` e `eraser`; botão 2
+(`buttons & 4` ou `& 32`) liga `lassoHeld` e `clock.holds 'lasso'` enquanto apertado.
 Entrada: o `#wet` recebe tudo; `app.ui.down(e)` diz se o toque é da roda; senão `app.ui.paperDown()` e segue para o papel.
 
 Regras de fluxo:

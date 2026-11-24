@@ -108,6 +108,22 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   font-size: 14px;
 }
 
+/* ---------- caixa de confirmação (src/ui/dialog.js) ---------- */
+.dialog-back {
+  position: fixed; inset: 0; z-index: 20;
+  background: rgba(0, 0, 0, .45);
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none;
+}
+.dialog {
+  width: min(420px, calc(100vw - 32px));
+  background: #1f1d1a; border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px; display: flex; flex-direction: column; gap: 16px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, .5);
+}
+.dialog p { margin: 0; font-size: 16px; line-height: 1.45; }
+.btn.danger { background: #b3261e; border-color: #b3261e; color: #fff; }
+
 .fail { padding: 40px; max-width: 560px; line-height: 1.5; }
 
 [hidden] { display: none !important; }

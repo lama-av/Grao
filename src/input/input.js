@@ -14,6 +14,13 @@ const SELECTION_MARGIN_PX = 80; // ~2 cm de folga para pousar 2 dedos sobre sele
 const TAP_MS = 200;
 const TAP_MOVE_PX = 12;
 
+// Botões da caneta (valores de PointerEvent.buttons). A ponta encostada é 1.
+// Botão lateral 1: o Chrome reporta 2 (como o botão direito do mouse) → alterna Pincel / Borracha.
+// Botão lateral 2: o Chrome do Android reporta 4 (meio) ou 32 (borracha), conforme o aparelho → segura o Laço.
+const TIP = 1;
+const BTN_TOGGLE = 2;
+const BTN_LASSO = 4 | 32;
+
 export function setupInput(app, wetCanvas) {
   // No Chrome do Android, o canvas "desynchronized" vai direto para a tela sem misturar transparência:
   // as partes vazias ficam pretas e escondem o papel. Por isso fica desligado por padrão.
@@ -30,6 +37,7 @@ export function setupInput(app, wetCanvas) {
   const touches = new Map();
   let gesture = null;
   const uiPointers = new Set(); // ponteiros que começaram na roda: move/up vão para ela
+  let penBtns = 0;              // botões laterais vistos no último evento da caneta
 
   function resize() {
     const r = wetCanvas.getBoundingClientRect();
@@ -124,13 +132,54 @@ export function setupInput(app, wetCanvas) {
     app.requestSave();
   }
 
+  // ---------- botões da caneta ----------
+  // Lê os botões laterais em todo evento da caneta (no ar ou encostada) e age só na borda (apertou / soltou).
+  function penButtons(e) {
+    const b = e.buttons & (BTN_TOGGLE | BTN_LASSO);
+    const rise = b & ~penBtns;
+    penBtns = b;
+    if (rise & BTN_TOGGLE) toggleEraser();
+    setLassoHeld((b & BTN_LASSO) !== 0);
+  }
+
+  function toggleEraser() {
+    app.tool = app.tool === 'eraser' ? 'brush' : 'eraser';
+    app.ui?.say(app.tool === 'eraser' ? 'Borracha' : 'Pincel');
+  }
+
+  // Modo de mola: enquanto o botão do Laço estiver apertado, a caneta faz laço e o loop fica parado.
+  function setLassoHeld(on) {
+    if (app.lassoHeld === on) return;
+    app.lassoHeld = on;
+    if (on) { app.clock.holds.add('lasso'); app.ui?.say('Laço'); }
+    else app.clock.holds.delete('lasso');
+  }
+
+  // A caneta saiu do alcance (ou o app perdeu o foco): solta o Laço e zera a leitura dos botões.
+  function penAway() {
+    if (mode) return;
+    penBtns = 0;
+    setLassoHeld(false);
+  }
+
+  const tipOf = (e) => (e.buttons & TIP) !== 0 || (e.type === 'pointerdown' && e.button === 0 && e.buttons === 0);
+
   // ---------- caneta ----------
   wetCanvas.addEventListener('pointerdown', (e) => {
     app.debug?.pointer(e);
+    if (isPen(e)) {
+      penButtons(e);
+      // Botão lateral apertado com a caneta no ar: só troca de ferramenta, não toca na roda nem no papel.
+      if (!tipOf(e)) return;
+    }
+    beginContact(e);
+  });
+
+  // Ponta encostou (no pointerdown, ou num pointermove quando um botão lateral já estava apertado).
+  function beginContact(e) {
     if (app.ui?.down(e)) { capture(wetCanvas, e); uiPointers.add(e.pointerId); return; }
     app.ui?.paperDown(e);
     if (!isPen(e)) { touchDown(e); return; }
-    if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 2) return;
     capture(wetCanvas, e);
     const p = toDoc(e);
     const layer = app.project.layers[app.project.activeLayer];
@@ -152,20 +201,27 @@ export function setupInput(app, wetCanvas) {
     }
     if (app.selection) { app.selection = null; redrawOverlay(); app.onSelectionChange?.(); }
 
-    // Borracha: ferramenta escolhida na roda, ou botão lateral da caneta segurado (buttons & 2; 32 = ponta borracha).
-    const cut = app.tool === 'eraser' || (e.buttons & 2) || (e.buttons & 32) || e.button === 2;
+    const cut = app.tool === 'eraser';
     mode = 'draw';
     target = { l: app.project.activeLayer, f: app.clock.frameOf(layer) };
     stroke = newStroke(app.project, cut ? 'cut' : 'ink', app.project.settings.brush);
     stroke.pts.push(p.x, p.y, pressureOf(e));
     drawLastSegment(ctx, stroke, colorFor(stroke));
-  });
+  }
 
   wetCanvas.addEventListener('pointermove', (e) => {
+    if (isPen(e)) penButtons(e);
     if (uiPointers.has(e.pointerId)) { app.ui.move(e); return; }
     if (!isPen(e)) { touchMove(e); return; }
     if (e.pointerType === 'pen') app.debug?.pointer(e);
-    if (!mode) return;
+    const tip = (e.buttons & TIP) !== 0;
+    if (!mode) {
+      // Com um botão lateral apertado, o Chrome avisa a ponta encostando por pointermove, não por pointerdown.
+      if (tip && e.buttons !== TIP) beginContact(e);
+      return;
+    }
+    // Ponta levantou com um botão lateral ainda apertado: também chega como pointermove.
+    if (!tip && e.pressure === 0) { finishPen(e, false); return; }
     const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
     if (mode === 'draw') {
       const color = colorFor(stroke);
@@ -211,13 +267,15 @@ export function setupInput(app, wetCanvas) {
   }
 
   wetCanvas.addEventListener('pointerup', (e) => {
-    if (uiPointers.delete(e.pointerId)) { app.ui.up(e, false); return; }
-    if (isPen(e)) finishPen(e, false); else touchUp(e);
+    if (uiPointers.delete(e.pointerId)) { app.ui.up(e, false); if (isPen(e)) penButtons(e); return; }
+    if (isPen(e)) { finishPen(e, false); penButtons(e); } else touchUp(e);
   });
   wetCanvas.addEventListener('pointercancel', (e) => {
-    if (uiPointers.delete(e.pointerId)) { app.ui.up(e, true); return; }
-    if (isPen(e)) finishPen(e, true); else touchUp(e, true);
+    if (uiPointers.delete(e.pointerId)) { app.ui.up(e, true); if (isPen(e)) penAway(); return; }
+    if (isPen(e)) { finishPen(e, true); penAway(); } else touchUp(e, true);
   });
+  wetCanvas.addEventListener('pointerleave', (e) => { if (isPen(e) && e.pointerType === 'pen') penAway(); });
+  window.addEventListener('blur', penAway);
   wetCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
   function colorFor(s) {
