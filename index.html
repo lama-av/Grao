@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1b1a18">
+  <title>Grão</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="app">
+    <aside id="thumb" class="thumb" aria-label="Controles da mão livre"></aside>
+    <div class="stage-wrap">
+      <div class="stage">
+        <canvas id="gl"></canvas>
+        <canvas id="wet"></canvas>
+      </div>
+    </div>
+  </main>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script>
+    // Aberto com dois cliques (file://), o navegador bloqueia os módulos: avisa em vez de ficar em branco.
+    if (location.protocol === 'file:') {
+      document.body.innerHTML = '<div class="fail"><h1>Abra pelo Live Server</h1>' +
+        '<p>O Grão não abre com dois cliques no arquivo. No VS Code, abra a pasta GRÃO e clique em <b>Go Live</b> ' +
+        '(canto inferior direito). O endereço precisa começar com <b>http://</b>.</p></div>';
+    }
+  </script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

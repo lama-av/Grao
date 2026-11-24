@@ -1,0 +1,15 @@
+{
+  "name": "Grão",
+  "short_name": "Grão",
+  "description": "Caderno de animação em tempo real com estética risográfica.",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#1b1a18",
+  "theme_color": "#1b1a18",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
