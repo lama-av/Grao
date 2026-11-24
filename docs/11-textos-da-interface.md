@@ -83,3 +83,45 @@ apaga a tinta e mostra o papel).
 | Aviso: gravando | Gravando o loop: 3 s. Espere terminar. |
 | Sucesso: vídeo | Vídeo exportado (MP4). Procure em Downloads. |
 | Erro: vídeo | Não deu para gravar o vídeo. Tente de novo ou exporte um PNG. · Este navegador não grava vídeo. Use o Chrome atualizado. |
+
+## Textos da v0.3.2 e da v0.4 (decididos em 24/11)
+
+### Vocabulário novo
+
+| Use | Não use | Significa |
+| --- | --- | --- |
+| Camada | layer, folha | Folha de desenho; imprime com uma das 4 tintas (v0.4) |
+| Tinta | tambor, cor | Uma das 4 cores do projeto. "Tambor" só em documentação técnica |
+| Retícula | halftone, screen, trama | Como a tinta vira pontos |
+| Estocástica | FM, dither, aleatória | Pontos espalhados ao acaso (o grão) |
+| Reticulada | AM, pontos em grade, halftone | Pontos em grade, com ângulo |
+| Densidade | opacidade, tom, % de tinta | Quanto de tinta a retícula deixa (10–100%) |
+| Lineatura | lpi, resolução da retícula | Quantas linhas de pontos por polegada (na interface: "Lineatura · 60") |
+| Régua | timeline, linha do tempo | A faixa de frames que aparece ao arrastar 2 dedos |
+| Riscar · Mexer | desenho · edição | Os dois arcos da pétala Ferramenta |
+
+### Gestos (item "Gestos" do Menu)
+
+Título: **Gestos com 2 dedos**
+
+| Gesto | Texto |
+| --- | --- |
+| Tocar rápido | Desfaz o último passo. |
+| Arrastar para os lados | Anda no tempo, frame a frame. Com o papel inteiro na tela. |
+| Abrir ou fechar os dedos | Aproxima e afasta o papel. Com zoom, arrastar move o papel. |
+| Sobre a seleção | Move, gira e muda o tamanho do que foi selecionado. |
+
+Rodapé: "A palma apoiada é ignorada enquanto a caneta está perto da tela."
+
+### Leituras e avisos
+
+| Onde | Texto |
+| --- | --- |
+| Primeira abertura da 0.3.2 | Novo: 2 dedos para os lados andam no tempo |
+| Gesto de tempo | 3/8 (mesma leitura do prato) |
+| Camada travada (tentou desenhar) | Camada travada |
+| Limite de camadas | Máximo de 8 camadas. |
+| Apagar camada com desenho | Apagar a camada 3? O desenho dela some de todos os frames. · Apagar camada · Cancelar |
+| Folha da camada: rótulos | Tinta · Retícula · Estocástica · Reticulada · Densidade · Visível · Travar · Subir · Descer · Duplicar camada · Apagar camada |
+| Menu → Impressão | Lineatura · 40 · 60 · 85 |
+| Leitura com muitas camadas | C2 · 3/8 |

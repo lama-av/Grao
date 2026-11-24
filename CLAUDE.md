@@ -24,7 +24,9 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 - Plataforma: web (PWA) no Chrome do tablet — `docs/adr/ADR-001-plataforma-v0.1.md` (status: **Proposto**).
 - Escopo do MVP: `docs/02-decisao-mvp.md`. **Não adicione recursos fora dele** sem o Raphael pedir.
 - O que falta e o que mudou: `CHANGELOG.md`.
-- Plano até a v1.0, fluxo de trabalho e pausas de auditoria: `docs/10-plano-ate-v1.md`.
+- Plano até a v1.0, fluxo de trabalho e pausas de auditoria: `docs/10-plano-ate-v1.md`. **A ordem das versões
+  agora é a do `docs/13-conselho-v0.3.md`** (0.3.2 gestos → 0.4 camadas e retícula → 0.5 tempo → …).
+- Gestos de 2 dedos: `docs/adr/ADR-003-gestos-de-dois-dedos.md` (máquina em `src/input/gestures.js`).
 - Vocabulário e textos da interface: `docs/11-textos-da-interface.md`.
 - Tintas riso (hex, Pantone, fontes): `docs/12-tintas-riso.md`.
 - **Instruções de uso para o Raphael: `INSTRUCOES.txt`** (raiz). Toda mudança visível de comportamento atualiza
@@ -110,14 +112,21 @@ Regras de fluxo:
    desenha e faz laço; o tempo fica na roda, no canto da mão livre. A roda é desenhada no canvas `#ui`, por baixo
    do traço molhado, nunca em DOM por cima dele.
 4. **Traços são a fonte; máscaras são cache.** Salve só traços (JSON). Máscaras são refeitas.
-5. **Cada camada é uma tinta.** O motor riso tem 5 etapas (ver `docs/05-motor-riso.md`); o v0.1 faz uma passada só.
+5. **4 tintas por projeto (como os tambores da riso); cada camada imprime com uma delas** (a partir da v0.4; até
+   então, camada = tinta). Riso é sempre sobreimpressão: nada de modos de mistura. O motor riso tem 5 etapas
+   (ver `docs/05-motor-riso.md`).
 6. **Pincéis só com pressão por padrão.** A inclinação deste tablet liga fácil demais.
 7. **O loop nunca para.** Salvar, exportar e gerar cache não podem travar a animação.
 8. **Modos de mola trazem a pausa junto.** Segurar Laço, encostar na roda ou ter uma seleção ativa
    congela o loop (`clock.holds`); soltar retoma. A roda só anda no tempo; a velocidade fica no fader.
 9. **Desfazer abre a roda de histórico por 3 s.** Leituras ficam no centro da roda.
-10. **2 dedos transformam a seleção só se pousarem sobre ela** (caixa + 80 px de folga); toque rápido de 2 dedos = desfazer.
+10. **Gestos de 2 dedos (ADR-003), decididos uma vez por gesto:** sobre a seleção (caixa + 80 px) = transformar;
+    toque rápido = desfazer; pinça = zoom; arrastar com o papel em 100% = tempo (48 px = 1 frame); arrastar com
+    zoom = mover o papel. Toques com a caneta perto da tela (até 300 ms) ou largos demais são palma: ignorados
+    (menos na roda).
 11. **Grão / Palco / Prensa são produtos separados.** MIDI (clock na 1.1), modo ao vivo e impressão não entram no Grão v0.1.
+12. **Retícula é por camada:** estocástica (padrão, o grão) ou reticulada (pontos em grade, ângulo por tinta),
+    com densidade. É aplicada no compositor; os traços não guardam retícula.
 
 ## Metas de desempenho (v0.1)
 

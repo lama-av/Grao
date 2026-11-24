@@ -49,17 +49,271 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 
 ## Fila
 
-> **v0.2.0 fechada em 24/11** (pedidos #001–#009 feitos). **v0.2.1 feita em 24/11** (#010–#013, a partir da D3,
-> a pedido do Raphael: "continue a produção e melhoria do app"). **v0.3.0 feita em 24/11** (#014–#017: balde,
-> linha reta, exportar vídeo, correções). **v0.3.1 feita em 24/11** (#019–#021: zoom, pincéis, suavização).
-> Nenhuma dessas foi testada no tablet ainda.
+> **Estado (24/11):** v0.2.0 testada no tablet. v0.2.1, v0.3.0 e v0.3.1 feitas, **ainda sem teste no tablet**.
 >
-> **Relatório da v0.2 para a auditoria:** `docs/relatorio-v0.2.md` (o que saiu diferente, extras, pendências,
-> decisões). Sessão de animação só com a roda feita pelo Raphael em 24/11: funcionou tudo certo.
+> **Novo roteiro até a v1.0** (decidido no chat em 24/11, conselho de design): `docs/13-conselho-v0.3.md`.
+> Ele substitui a ordem de versões do doc 10. Arquitetura dos gestos: `docs/adr/ADR-003-gestos-de-dois-dedos.md`.
+>
+> **Ordem:** faça a **v0.3.2** (#022–#026, depois #034, por fim #027) e **PARE** no #027. A v0.4 (#028–#032) só começa quando o Raphael
+> trouxer o resultado do teste no tablet e o chat liberar (o chat marca no topo desta fila: "v0.4 liberada").
 
-> **v0.2 — Tela limpa e roda de canto.** Especificação completa em `docs/10-plano-ate-v1.md` (seção "A roda de
-> canto") e textos em `docs/11-textos-da-interface.md`. Faça os pedidos na ordem. Ao terminar todos, suba
-> `VERSION` para 0.2.0 e gere o docx da versão.
+### Roteiro até a v1.0
+
+| Versão | Nome | Pedidos | Situação |
+| --- | --- | --- | --- |
+| 0.3.2 | Gestos, Vermelho vivo e auditoria | #022–#026, #034, #027 | **A fazer agora** (o #027 por último) |
+| ⏸ | Teste no tablet + auditoria no chat | — | Raphael |
+| 0.4.0 | Camadas, retícula e uso sem internet | #028–#033, #035, #032 | Escrita, **espera liberação** |
+| 0.5.0 | Tempo: tira de frames com miniaturas, inserir/duplicar/apagar/mover frame, exposição, copiar e colar entre frames, papel-cebola configurável | o chat escreve depois da auditoria da 0.4 | Roteiro |
+| 0.6.0 | Projetos: galeria, GIF, sequência de PNG (o uso sem internet foi para a 0.4) | idem | Roteiro |
+| 0.7.0 | Riso completo: sobreimpressão por passada, desalinhamento que cresce com o número de passadas, formas de ponto da retícula, Prova de impressão, **separações por tinta em escala de cinza (preto 5–100%, 300–600 dpi), prontas para mandar à gráfica riso**, imperfeições opcionais (marcas de rolo, transferência de tinta) | idem | Roteiro |
+| 0.8.0 | Primeira vez (projeto de boas-vindas), textos, acessibilidade, teste com 3 pessoas | idem | Roteiro |
+| 0.9.0 | Beta: sessão de 1 h, meia resolução automática, correções | idem | Roteiro |
+| 1.0.0 | Lançamento (critérios no doc 10) | — | Roteiro |
+
+### #022 — Módulo de gestos de 2 dedos (sem mudar o comportamento)
+- **Status:** A fazer · **Prioridade:** P1 · **Versão alvo:** 0.3.2
+- **Origem:** ADR-003
+- **Problema:** a lógica de 2 dedos está espalhada no `input.js` (21 KB); o gesto novo de tempo e o filtro de palma
+  precisam de um lugar próprio e testável.
+- **O que fazer:**
+  - criar `src/input/gestures.js`, máquina de estados pura (sem DOM), como no diagrama do ADR-003: DECIDINDO →
+    TRANSFORMAR | DESFAZER | PAPEL (e TEMPO no #023);
+  - limites em `config.js`: `GESTURE_DECIDE_PX = 24`, `PINCH_RATIO = 0.10`, `TAP_MS = 200`, `TAP_MOVE_PX = 12`;
+  - `input.js` repassa os toques e executa a intenção; a intenção é decidida uma vez e não muda até os 2 dedos
+    saírem.
+- **Não fazer:** mudar o que o usuário sente hoje em TRANSFORMAR, PAPEL (pinça/arrastar com zoom) e DESFAZER.
+- **Pronto quando:**
+  - [ ] teste de lógica cobre os 3 caminhos atuais pela máquina e continua passando
+  - [ ] `input.js` não tem mais regra de decisão de 2 dedos
+- **Arquivos prováveis:** novo `src/input/gestures.js`, `src/input/input.js`, `src/config.js`, `tests/logic_test.mjs`
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #023 — Arrastar 2 dedos para os lados anda no tempo
+- **Status:** A fazer · **Prioridade:** P1 · **Versão alvo:** 0.3.2
+- **Origem:** pedido do Raphael ("arrastar com 2 dedos para esquerda ou direita move na timeline, tal qual na rodinha")
+- **O que fazer:**
+  - intenção **TEMPO** na máquina do #022: os 2 dedos andam juntos (distância estável), o movimento é mais
+    horizontal que vertical **e** o papel está em 100% (`isFit(view)`);
+  - a cada `SCRUB_PX_PER_FRAME = 48` px horizontais acumulados: `clock.step(camada ativa, ±1)`; direita = para
+    frente (mesmo sentido do prato girando no horário); pode andar vários frames num movimento rápido;
+  - enquanto os dedos estão na tela: `clock.holds.add('scrub')`; ao soltar: remove (o loop retoma se não estava
+    pausado); `pointercancel` volta ao frame de antes do gesto;
+  - **régua de frames** no `#ui`: faixa fina na borda de baixo do papel, centralizada, com um tique por frame da
+    camada ativa e o frame atual aceso; aparece no começo do gesto e some 400 ms depois de soltar;
+  - leitura passageira "3/8" no botão da roda (mesmo texto da roda aberta);
+  - com zoom, arrastar continua movendo o papel (PAPEL); a pinça continua dando zoom.
+- **Não fazer:** inércia (o tempo não continua andando depois de soltar); usar a roda de histórico neste gesto.
+- **Pronto quando:**
+  - [ ] em 100%, arrastar 2 dedos 48 px para a direita avança 1 frame; para a esquerda volta 1
+  - [ ] com zoom, o mesmo movimento move o papel
+  - [ ] o loop fica parado durante o gesto e retoma ao soltar
+  - [ ] a régua aparece e some; o teste de lógica cobre TEMPO, a fronteira com PAPEL e o cancelamento
+- **Arquivos prováveis:** `src/input/gestures.js`, `src/input/input.js`, `src/ui/wheel.js` (régua e leitura), `src/config.js`
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #024 — Palma não vira gesto
+- **Status:** A fazer · **Prioridade:** P1 · **Versão alvo:** 0.3.2
+- **Origem:** ADR-003 (rejeição de palma fraca no XPPen)
+- **O que fazer:**
+  - filtro antes da máquina de gestos: ignorar um toque que começa com a caneta encostada, pairando ou que saiu há
+    menos de `PEN_GUARD_MS = 300` ms;
+  - ignorar toques com `width` ou `height` maior que `PALM_CONTACT_PX = 40` (quando o navegador informar);
+  - toque ignorado fica ignorado até sair;
+  - **exceção:** toques na área da roda (botão, roda aberta, pétalas, folhas) nunca são filtrados;
+  - mostrar no painel Teste da Fase 0: "toques ignorados: N" e a largura/altura do último toque.
+- **Pronto quando:**
+  - [ ] desenhando com a palma apoiada, nenhum zoom, desfazer ou passo de tempo acontece por acidente
+  - [ ] a mão livre usa a roda normalmente com a caneta perto da tela
+- **Arquivos prováveis:** `src/input/gestures.js`, `src/input/input.js`, `src/ui/debug.js`
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #025 — Item "Gestos" no Menu
+- **Status:** A fazer · **Prioridade:** P2 · **Versão alvo:** 0.3.2
+- **Origem:** conselho (Norman): gestos de 2 dedos são invisíveis
+- **O que fazer:**
+  - item **Gestos** no Menu, na seção Desenho e roda; abre uma lista curta, sem imagens, com os textos de
+    `docs/11-textos-da-interface.md` (seção "Gestos");
+  - na primeira vez que o app abre depois da atualização, uma leitura de 3 s no botão da roda: "Novo: 2 dedos
+    para os lados andam no tempo" (só uma vez por aparelho).
+- **Pronto quando:**
+  - [ ] a lista mostra os 4 gestos de 2 dedos e fecha ao tocar fora
+- **Arquivos prováveis:** `src/ui/sheet.js`, `src/ui/wheel.js`
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #026 — Pétala Ferramenta em dois arcos
+- **Status:** A fazer · **Prioridade:** P2 · **Versão alvo:** 0.3.2
+- **Origem:** conselho (Rams): 7 ferramentas numa fila só
+- **O que fazer:**
+  - arco de dentro **Riscar**: Pincel, Lápis, Marcador, Giz; arco de fora **Mexer**: Borracha, Balde, Laço;
+  - o arco de Tamanho continua e mostra o tamanho da ferramenta ativa;
+  - rótulos dos arcos para leitor de tela: "Riscar" e "Mexer" (não precisam aparecer escritos se não couber).
+- **Não fazer:** ferramenta nova; mudar o botão 1 da caneta.
+- **Pronto quando:**
+  - [ ] trocar qualquer ferramenta continua levando no máximo 2 toques da roda recolhida
+  - [ ] todos os alvos com pelo menos 48 px
+- **Arquivos prováveis:** `src/ui/wheel.js`
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #034 — Tinta Vermelho vivo (9ª cor da paleta)
+- **Status:** A fazer · **Prioridade:** P2 · **Versão alvo:** 0.3.2
+- **Origem:** pedido do Raphael (24/11), para permitir o "falso CMYK" da riso (Azul, Vermelho vivo, Amarelo, Preto).
+- **O que fazer:**
+  - acrescentar **no fim** de `INKS` em `config.js`: `{ name: 'Vermelho vivo', hex: '#F15060' }` (Riso Bright Red,
+    Pantone 185 U; hex da Stencil Wiki/riso-colors, como as outras; o Risotrip usa `#DC424C` para simular a mesma
+    tinta, fica anotado no doc 12). No fim para não mudar o índice das tintas dos projetos salvos;
+  - o arco de cores da pétala Tinta passa a ter 9 cores, mantendo alvos de pelo menos 48 px (se não couber num
+    arco, o arco cresce de ângulo; não diminuir os alvos);
+  - `sanitize` aceita o índice 8; projeto de versão antiga continua abrindo igual.
+- **Não fazer:** outras cores. **A paleta do Grão fecha em 9 tintas** (decisão de 24/11).
+- **Pronto quando:**
+  - [ ] Vermelho vivo escolhível em qualquer das 4 tintas; aparece certo na tela, no PNG e no vídeo
+  - [ ] teste de lógica cobre o índice 8 no arquivo `.grao`
+- **Arquivos prováveis:** `src/config.js`, `src/ui/wheel.js`, `src/doc/project.js`, `docs/12-tintas-riso.md`
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #027 — Fechar a 0.3.2 e preparar o teste no tablet (PARE aqui)
+- **Status:** A fazer · **Prioridade:** P1 · **Versão alvo:** 0.3.2
+- **O que fazer:**
+  - `VERSION` 0.3.2, `CHANGELOG.md`, `INSTRUCOES.txt`, docx da versão;
+  - escrever `docs/relatorio-v0.3.md` (como o da v0.2): o que mudou de 0.2.1 a 0.3.2, o que saiu diferente dos
+    pedidos e um **roteiro de teste no tablet** com estes itens, cada um com espaço para "ok / problema":
+    1. Menu: salvar e abrir `.grao`; 2. cores à vista na pétala Tinta; 3. balde (inclusive com linha de outra
+    tinta); 4. linha reta; 5. exportar vídeo e abrir o arquivo; 6. zoom e mover o papel; 7. os 4 pincéis e a
+    suavização; 8. gesto de tempo com 2 dedos; 9. palma apoiada desenhando por 2 min; 10. painel Teste da
+    Fase 0: quadros/s desenhando, tempo do quadro ao usar o balde, toques ignorados; 11. Vermelho vivo e a
+    combinação Azul + Vermelho vivo + Amarelo + Preto; 12. **latência do traço**: vídeo em câmera lenta do
+    celular (240 fps) com o `teste-caneta.html`, contando os quadros entre a ponta e o traço. Este item decide o
+    ADR-001 (web ou nativo) antes da v0.4, que pesa mais na GPU. Anotar também os números de desempenho de hoje
+    (base para comparar a v0.4).
+  - **Depois disso, pare.** Não comece o #028.
+- **Pronto quando:**
+  - [ ] relatório e roteiro escritos; docx da 0.3.2 gerado
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #028 — Camadas separadas das tintas (modelo e migração) — ESPERA LIBERAÇÃO
+- **Status:** Bloqueado (espera a auditoria da 0.3.2) · **Prioridade:** P1 · **Versão alvo:** 0.4.0
+- **Origem:** doc 10 (T-030, T-034), doc 13 (decisão 6)
+- **O que fazer:**
+  - o projeto tem **4 tintas** (`project.inks`, os "tambores", cada uma com uma das 8 cores) e **até 8 camadas**;
+  - cada camada: `ink` (0–3), `fps`, `frames`, `visible`, `locked`, `screen` (ver #030), `name` opcional;
+  - ordem de impressão = ordem das camadas (a de baixo imprime primeiro); o compositor junta as camadas por tinta;
+  - migração: projetos antigos abrem com 4 camadas, cada uma com a sua tinta, sem mudança visual;
+  - o desfazer cobre criar, apagar, reordenar, trocar tinta, visível e travar (T-033);
+  - camada travada não aceita traço, balde nem seleção (leitura "Camada travada").
+- **Pronto quando:**
+  - [ ] projeto da 0.3.x abre igual
+  - [ ] 8 camadas com 4 tintas desenham, tocam e exportam
+  - [ ] teste de lógica cobre migração, limites (8 camadas, 4 tintas) e desfazer de camadas
+- **Arquivos prováveis:** `src/doc/project.js`, `src/render/riso/*`, `src/render/masks.js`, `src/schedule.js`, `src/actions.js`
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #029 — Setor "Camadas" na roda — ESPERA LIBERAÇÃO
+- **Status:** Bloqueado · **Prioridade:** P1 · **Versão alvo:** 0.4.0
+- **O que fazer:**
+  - o setor **Tinta** vira **Camadas** (mesma posição);
+  - pétala Camadas: arco de pastilhas, uma por camada, de baixo para cima na ordem de impressão, cada uma pintada
+    com a cor da sua tinta; pastilha apagada = camada invisível; cadeado pequeno = travada; toque = ativa;
+    último item "+" cria camada (some com 8);
+  - **toque longo numa pastilha** abre a folha da camada (HTML, só com a caneta parada): Tinta (as 4 do projeto,
+    com o arco das 9 cores para trocar a cor do tambor, como hoje), Retícula (#030), Visível, Travar, Subir,
+    Descer, Duplicar camada, Apagar camada (com confirmação se tiver desenho);
+  - o botão da roda recolhida continua mostrando a cor da tinta da camada ativa;
+  - Menu → Impressão → **Tintas prontas**: "Falso CMYK" (Azul, Vermelho vivo, Amarelo, Preto) e "Do projeto"
+    (volta ao que estava); trocar as tintas entra no desfazer e não mexe nos desenhos.
+- **Pronto quando:**
+  - [ ] criar, ativar, esconder, travar, reordenar e apagar camada pela roda em até 2 toques (+ toque longo para a folha)
+  - [ ] textos conforme o doc 11
+- **Arquivos prováveis:** `src/ui/wheel.js`, `src/ui/sheet.js`
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #030 — Retícula por camada: estocástica e reticulada — ESPERA LIBERAÇÃO
+- **Status:** Bloqueado · **Prioridade:** P1 · **Versão alvo:** 0.4.0
+- **Origem:** pedido do Raphael ("existem 2 tipos de retícula quando trabalhando em riso, a estocástica e a
+  reticulada, isso também deve ser implementado"); doc 13 (decisão 7)
+- **O que fazer:**
+  - `layer.screen = { type: 'stochastic' | 'am', density: 0.05..1 }`; padrão `stochastic`, `density` 1;
+  - **Estocástica** (padrão): pontos espalhados ao acaso, como o grão atual; `density` define quantos pontos de
+    tinta sobram (100% = área cheia com o grão de hoje; 30% = tom claro pontilhado). Os pontos acompanham o
+    "ferver";
+  - **Reticulada:** pontos redondos em grade; tamanho do ponto proporcional à densidade; **ângulo por tinta**
+    (padrão: tinta 1 = 15°, 2 = 75°, 3 = 0°, 4 = 45°, para o moiré típico de riso); **lineatura do projeto** em
+    pontos por polegada do documento impresso em A4 (padrão 60 lpi, opções 40 / 60 / 85 no Menu → Impressão);
+    a grade é medida em unidades do documento (acompanha o zoom, como o grão); o desalinhamento por tinta continua
+    valendo;
+  - shader: uma função de retícula por tipo, escolhida por uniforme por camada; a máscara continua R8 (a retícula é
+    aplicada no compositor, não salva nos traços);
+  - folha da camada: "Retícula" com dois botões (Estocástica · Reticulada) e um controle "Densidade" (5–100%, como as gráficas riso pedem os arquivos);
+  - **comportamento da riso de verdade nas pontas da densidade** (fontes: Secret Riso Club e Risotrip):
+    - abaixo de 10% a riso falha: os pontos somem de forma irregular. Nas duas retículas, abaixo de 10% uma parte
+      dos pontos cai ao acaso (muda com o "ferver");
+    - áreas cheias imprimem irregulares: a variação de cobertura do filme começa a crescer em 50% e fica forte
+      acima de 85% (cobertura desigual, variação de tom);
+  - **desalinhamento calibrado:** o papel do Grão equivale a um A4 deitado (1200 unidades = 297 mm). A riso aceita
+    2 a 3 mm de variação entre cores; o controle Desalinhamento no máximo passa a deslocar até 3 mm (≈ 12 unidades
+    do documento), e o padrão (0,5) fica em ~1,5 mm;
+  - **sem moiré de pixel:** a 60 lpi num A4 a retícula tem ~700 pontos na largura e a tela tem 2160 px (≈3 px por
+    ponto em 100%). Desenhar o ponto com borda suavizada (`fwidth` no shader); se ainda criar moiré com os pixels
+    da tela em 100%, anotar em Dúvidas com print, sem inventar solução visual;
+  - PNG e vídeo exportados mostram a retícula igual à tela em 100%.
+- **Não fazer:** formas de ponto (linha, elipse), lineatura por camada, ângulo editável (ficam para a v0.7).
+- **Pronto quando:**
+  - [ ] as duas retículas aparecem no tablet sem passar de 8 ms no compositor (medir no painel)
+  - [ ] duas camadas reticuladas de tintas diferentes mostram ângulos diferentes
+  - [ ] densidade 10% fica clara e legível nas duas retículas
+- **Arquivos prováveis:** `src/render/riso/riso.frag`, `src/render/riso/riso.js`, `src/doc/project.js`, `src/ui/sheet.js`, `docs/05-motor-riso.md`
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #031 — Tempo por camada (polimetria) — ESPERA LIBERAÇÃO
+- **Status:** Bloqueado · **Prioridade:** P2 · **Versão alvo:** 0.4.0
+- **O que fazer:** a folha Tempo mostra FPS e frames **da camada ativa** (hoje é da tinta ativa); o prato, a régua
+  do #023 e o gesto de tempo andam na camada ativa; a leitura mostra o nome ou número da camada junto ("C2 · 3/8")
+  quando houver mais de 4 camadas.
+- **Pronto quando:** [ ] duas camadas com loops de tamanhos diferentes tocam juntas e o gesto de tempo anda na ativa
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #033 — Balde com trapping (avança por baixo da linha) — ESPERA LIBERAÇÃO
+- **Status:** Bloqueado · **Prioridade:** P2 · **Versão alvo:** 0.4.0
+- **Origem:** Risotrip: com o desalinhamento de 2 a 3 mm, gráficas usam "trapping" (uma cor invade um pouco a
+  vizinha) para não aparecer filete branco entre as cores.
+- **Problema:** o balde para exatamente na linha. Quando a linha é de outra tinta e o desalinhamento desloca as
+  tintas, aparece um filete de papel entre a linha e o preenchimento.
+- **O que fazer:**
+  - o preenchimento do balde cresce **0,5 mm (≈ 2 unidades do documento) por baixo das linhas que o seguraram**,
+    só por cima de pixels de linha, nunca vazando para fora da área;
+  - vale para paredes da mesma tinta e de outras tintas;
+  - Menu → Impressão: "Trapping" ligado por padrão (desligar mostra o filete, que também é um efeito de riso).
+- **Pronto quando:**
+  - [ ] com desalinhamento no máximo, linha preta + preenchimento rosa não mostram filete branco
+  - [ ] desligado, o filete aparece; o preenchimento continua sem vazar
+- **Arquivos prováveis:** `src/render/fill.js`, `src/render/masks.js`, `src/ui/sheet.js`
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #035 — Abrir sem internet (service worker) — ESPERA LIBERAÇÃO
+- **Status:** Bloqueado · **Prioridade:** P2 · **Versão alvo:** 0.4.0
+- **Origem:** revisão do conselho (24/11): o Grão já é usado no tablet pelo GitHub Pages; sem rede ele não abre.
+  Era o T-053 da v0.6, trazido para cá.
+- **O que fazer:**
+  - service worker que guarda todos os arquivos do app (lista gerada a partir da `VERSION`);
+  - versão nova publicada: o app baixa em segundo plano e mostra no botão da roda "Nova versão. Toque para
+    atualizar." só quando o loop estiver parado; nunca recarrega sozinho;
+  - nada muda para os desenhos (continuam no IndexedDB do aparelho).
+- **Pronto quando:**
+  - [ ] no tablet, com o Wi-Fi desligado, o app instalado abre e desenha
+  - [ ] uma versão nova aparece depois de tocar no aviso, sem perder o desenho
+- **Arquivos prováveis:** novo `sw.js` na raiz, `src/main.js`, `manifest.webmanifest`
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+### #032 — Fechar a 0.4.0 (PARE aqui) — ESPERA LIBERAÇÃO
+- **Status:** Bloqueado · **Prioridade:** P1 · **Versão alvo:** 0.4.0
+- **O que fazer:** depois do #033 e do #035: `VERSION` 0.4.0, CHANGELOG, `INSTRUCOES.txt`, docx, `docs/relatorio-v0.4.md` com roteiro de
+  teste (camadas, retículas, polimetria, desempenho com 8 camadas). Atualizar `docs/05-motor-riso.md` com a
+  retícula. Parar e esperar a auditoria.
+- **Resposta do VS Code:** _(preenchido pelo VS Code)_
+
+---
+
+### Pedidos já feitos (v0.2.0 a v0.3.1)
 
 ### #001 — Papel em tela cheia e canvas de interface
 - **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.2.0

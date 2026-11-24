@@ -57,6 +57,9 @@ as versões, a lista de tarefas e as pausas para testar, auditar e dar feedback.
 
 ## Versões e tarefas
 
+> **Atualizado em 24/11:** a ordem e o conteúdo das versões a partir da 0.3.2 estão no
+> [doc 13](13-conselho-v0.3.md) e nos pedidos do `HANDOFF.md`. A lista abaixo fica como histórico do plano original.
+
 Legenda: 🧪 teste no tablet · ⏸ pausa de auditoria · 💬 feedback no chat · **T-xxx** = tarefa (vira pedido no HANDOFF).
 
 ### v0.1.1 — Fase 0: medir antes de mudar

@@ -25,7 +25,7 @@ da wiki. Nada a trocar.
 | --- | --- | --- | --- | --- |
 | Black | `#000000` | BLACK U |  | Preto |
 | Blue | `#0078BF` | 3005 U |  | Azul |
-| Bright Red | `#F15060` | 185 U |  |  |
+| Bright Red | `#F15060` | 185 U |  | **Vermelho vivo** (9ª tinta, #034; o Risotrip simula com `#DC424C`) |
 | Brown | `#925F52` | 7526 U |  |  |
 | Burgundy | `#914E72` | 235 U |  |  |
 | Flat Gold | `#BB8B41` | 1245 U |  |  |
