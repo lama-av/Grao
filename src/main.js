@@ -20,6 +20,7 @@ import { makeZip } from './io/zip.js';
 import { frameAtTick, printOrder, inkOf } from './doc/project.js';
 import { rasterFrame } from './render/masks.js';
 import { rebuildDirty } from './schedule.js';
+import { createQuality } from './quality.js';
 import { createView, fitView } from './view.js';
 
 // Desalinhamento calibrado (#030): o papel equivale a um A4 deitado (297 mm). A riso aceita 2 a 3 mm entre cores;
@@ -84,6 +85,9 @@ async function start() {
   const saveLater = debounced(app.saveNow, 600);
   app.requestSave = () => { saveGen++; app.unsaved = true; saveLater(); };
   document.addEventListener('visibilitychange', () => { if (document.hidden) app.saveNow(); });
+  window.addEventListener('pagehide', () => app.saveNow());
+  // Pede ao navegador para não apagar os projetos quando faltar espaço (#061). Sem resposta = segue igual.
+  navigator.storage?.persist?.().catch(() => {});
 
   app.toast = (msg) => {
     const el = document.getElementById('toast');
@@ -177,10 +181,11 @@ async function start() {
 
   app.masks.rebuildAll(app.project);
 
-  // O canvas da GPU acompanha o tamanho do palco.
+  // O canvas da GPU acompanha o tamanho do palco, na qualidade atual (#060).
+  app.quality = createQuality();
   function resizeGl() {
     const r = glCanvas.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const dpr = Math.min(window.devicePixelRatio || 1, app.quality.scale);
     glCanvas.width = Math.max(1, Math.round(r.width * dpr));
     glCanvas.height = Math.max(1, Math.round(r.height * dpr));
   }
@@ -393,8 +398,10 @@ async function start() {
 
   let last = performance.now();
   function frame(now) {
-    const dt = Math.min(0.1, (now - last) / 1000);
+    const dtMs = now - last;
+    const dt = Math.min(0.1, dtMs / 1000);
     last = now;
+    if (app.quality.sample(dtMs, app.project.settings.autoQuality !== false)) resizeGl();
     app.clock.tick(dt);
     rebuildDirty(app, now);
     draw(now);

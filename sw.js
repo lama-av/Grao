@@ -28,6 +28,7 @@ const FILES = [
   'src/io/video.js',
   'src/io/zip.js',
   'src/main.js',
+  'src/quality.js',
   'src/render/fill.js',
   'src/render/masks.js',
   'src/render/riso/riso.frag',

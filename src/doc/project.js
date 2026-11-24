@@ -97,6 +97,7 @@ export function newProject(paper = 'natural') {
       autoDir: 'forward', autoStop: false, // Auto: avança ou volta; para no último frame (#041)
       onion: { before: 1, after: 1, strength: 0.4 },   // papel-cebola: frames antes/depois (0–2), intensidade (#040)
       flaws: { rollers: false, transfer: false },        // imperfeições opcionais: marcas de rolo, transferência (#053)
+      autoQuality: true,                                  // qualidade automática do compositor (#060)
     },
   };
   for (let d = 0; d < DRUMS; d++) p.layers.push(newLayer(p, d));
@@ -248,7 +249,7 @@ export function sanitize(p) {
     set.sizes[k] = Math.round(num(sz[k], SIZE_MIN, SIZE_MAX, num(set.sizes[k], SIZE_MIN, SIZE_MAX, DEFAULT_SIZES[k])));
   }
   set.smooth = num(s.smooth, 0, 1, 0);
-  for (const k of ['ferver', 'auto', 'lefty', 'pinWheel', 'trapping']) if (typeof s[k] === 'boolean') set[k] = s[k];
+  for (const k of ['ferver', 'auto', 'lefty', 'pinWheel', 'trapping', 'autoQuality']) if (typeof s[k] === 'boolean') set[k] = s[k];
   set.wheelCorner = ['bl', 'br', 'tl', 'tr'].includes(s.wheelCorner) ? s.wheelCorner : null;
   set.lpi = LPI_OPTIONS.includes(s.lpi) ? s.lpi : 60;
   set.autoDir = s.autoDir === 'back' ? 'back' : 'forward';

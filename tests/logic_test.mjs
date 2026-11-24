@@ -1177,5 +1177,23 @@ for (const code of [4]) {
   check('3 dicas da primeira vez', HINTS.length === 3 && HINTS.map((h) => h.id).join() === 'draw,wheel,time');
 }
 
+// ---------- v0.9: qualidade automática (#060) ----------
+{
+  const { createQuality, LEVELS } = await import('../src/quality.js');
+  const q = createQuality();
+  let changed = false;
+  for (let i = 0; i < 90; i++) changed = q.sample(30) || changed;
+  check('qualidade: quadros lentos (30 ms) descem um nível', changed && q.scale === LEVELS[1]);
+  for (let i = 0; i < 90 * 5; i++) q.sample(12);
+  check('qualidade: rápido por menos de 10 s ainda não sobe', q.scale === LEVELS[1]);
+  for (let i = 0; i < 90; i++) q.sample(12);
+  check('qualidade: rápido por ~10 s sobe de volta', q.scale === LEVELS[0]);
+  for (let i = 0; i < 90 * 10; i++) q.sample(40);
+  check('qualidade: nunca abaixo do último nível', q.scale === LEVELS.at(-1));
+  for (let i = 0; i < 90; i++) q.sample(1000);
+  check('qualidade: aba voltando de segundo plano não conta', q.scale === LEVELS.at(-1));
+  check('qualidade: desligada volta ao máximo', q.sample(16, false) === true && q.scale === LEVELS[0]);
+}
+
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);
 process.exit(fails ? 1 : 0);

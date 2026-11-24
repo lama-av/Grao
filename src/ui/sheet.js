@@ -86,6 +86,7 @@ export function setupSheet(app) {
         <label>Intensidade do papel-cebola <input type="range" data-k="onionStrength" min="0.1" max="0.8" step="0.05"></label>
         <label class="check"><input type="checkbox" data-k="pinWheel"> Fixar roda</label>
         <label class="check"><input type="checkbox" data-k="lefty"> Canhoto</label>
+        <label class="check"><input type="checkbox" data-k="autoQuality"> Qualidade automática (se o tablet engasgar)</label>
         <label class="check"><input type="checkbox" data-k="debug"> Teste da Fase 0</label>
         <button class="btn small" data-act="gestures">Gestos</button>
         <button class="btn small" data-act="fit"${app.view && !isFit(app.view) ? '' : ' disabled'}>Encaixar papel (100%)</button>
@@ -101,6 +102,8 @@ export function setupSheet(app) {
     q('mis').value = s.mis;
     q('smooth').value = s.smooth || 0;
     for (const k of ['ferver', 'auto', 'pinWheel', 'lefty', 'trapping', 'autoStop']) q(k).checked = !!s[k];
+    q('autoQuality').checked = s.autoQuality !== false;
+    q('autoQuality').onchange = (e) => { s.autoQuality = e.target.checked; app.requestSave(); };
     q('autoBack').checked = s.autoDir === 'back';
     q('autoBack').onchange = (e) => { s.autoDir = e.target.checked ? 'back' : 'forward'; app.requestSave(); };
     q('autoStop').onchange = (e) => { s.autoStop = e.target.checked; app.requestSave(); };

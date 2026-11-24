@@ -34,6 +34,7 @@ export function setupDebug(app, box) {
       `pressão: ${p.pressure?.toFixed(3) ?? '—'}`,
       `inclinação: x ${p.tiltX ?? '—'}  y ${p.tiltY ?? '—'}`,
       `pontos por evento: ${p.coalesced ?? '—'}`,
+      `qualidade do riso: ${String(app.quality?.scale ?? 1).replace('.', ',')}× (automática: ${app.project.settings.autoQuality === false ? 'não' : 'sim'})`,
       `toques ignorados (palma): ${app.input?.gestures?.stats.ignored ?? 0}`,
       `último toque: ${app.input?.gestures?.stats.lastW ?? '—'} × ${app.input?.gestures?.stats.lastH ?? '—'} px`,
     ].join('\n');
