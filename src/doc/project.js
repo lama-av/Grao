@@ -11,8 +11,9 @@ import { DEFAULT_FRAMES, DEFAULT_INKS, INKS, PAPERS, FPS_OPTIONS, MAX_FRAMES, LP
 export const DRUMS = 4;                   // a riso imprime com 4 tambores por projeto
 export const MAX_LAYERS = 8;
 export const SCREEN_TYPES = ['stochastic', 'am'];   // retícula estocástica (padrão) ou reticulada
+export const DOT_SHAPES = ['round', 'line', 'ellipse'];   // forma do ponto da reticulada (v0.7, #050)
 export const DENSITY_MIN = 0.05;
-const defaultScreen = () => ({ type: 'stochastic', density: 1 });
+const defaultScreen = () => ({ type: 'stochastic', density: 1, dot: 'round' });
 
 // Camada nova no tambor `ink`.
 export function newLayer(project, ink = 0, fps = 8, nframes = DEFAULT_FRAMES) {
@@ -57,6 +58,15 @@ export function newUid() {
 }
 const validUid = (u) => typeof u === 'string' && /^[a-z0-9-]{4,40}$/.test(u);
 
+// Ordem de impressão dos tambores (v0.7, #048): na ordem das camadas, de baixo para cima (a primeira camada de
+// cada tambor decide); tambores sem camada vão no fim. Devolve 4 índices de tambor.
+export function printOrder(project) {
+  const order = [];
+  for (const L of project.layers) if (!order.includes(L.ink)) order.push(L.ink);
+  for (let d = 0; d < DRUMS; d++) if (!order.includes(d)) order.push(d);
+  return order;
+}
+
 // Cor (entrada de INKS) com que a camada imprime.
 export const inkOf = (project, layer) => INKS[project.inks[layer.ink]] || INKS[0];
 
@@ -86,6 +96,7 @@ export function newProject(paper = 'natural') {
       lpi: 60, trapping: true,            // lineatura da retícula reticulada (#030) e trapping do balde (#033)
       autoDir: 'forward', autoStop: false, // Auto: avança ou volta; para no último frame (#041)
       onion: { before: 1, after: 1, strength: 0.4 },   // papel-cebola: frames antes/depois (0–2), intensidade (#040)
+      flaws: { rollers: false, transfer: false },        // imperfeições opcionais: marcas de rolo, transferência (#053)
     },
   };
   for (let d = 0; d < DRUMS; d++) p.layers.push(newLayer(p, d));
@@ -207,6 +218,7 @@ export function sanitize(p) {
         layer.screen = {
           type: SCREEN_TYPES.includes(sc.type) ? sc.type : 'stochastic',
           density: num(sc.density, DENSITY_MIN, 1, 1),
+          dot: DOT_SHAPES.includes(sc.dot) ? sc.dot : 'round',
         };
       }
     }
@@ -239,6 +251,8 @@ export function sanitize(p) {
   set.wheelCorner = ['bl', 'br', 'tl', 'tr'].includes(s.wheelCorner) ? s.wheelCorner : null;
   set.lpi = LPI_OPTIONS.includes(s.lpi) ? s.lpi : 60;
   set.autoDir = s.autoDir === 'back' ? 'back' : 'forward';
+  const fl = s.flaws && typeof s.flaws === 'object' ? s.flaws : {};
+  set.flaws = { rollers: fl.rollers === true, transfer: fl.transfer === true };
   if (typeof s.autoStop === 'boolean') set.autoStop = s.autoStop;
   const on = s.onion && typeof s.onion === 'object' ? s.onion : {};
   set.onion = {

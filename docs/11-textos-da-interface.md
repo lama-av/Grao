@@ -156,6 +156,17 @@ Rodapé: "A palma apoiada é ignorada enquanto a caneta está perto da tela."
 | Aviso: exportando | Exportando 24 quadros. Espere terminar. |
 | Sucesso | GIF exportado. Procure em Downloads. · PNGs exportado. Procure em Downloads. |
 | Erro | Não deu para exportar. Tente uma escala menor ou menos voltas. |
+
+## Textos da v0.7 (escritos pelo VS Code, 24/11)
+
+| Onde | Texto |
+| --- | --- |
+| Folha da camada: ponto | Ponto · Redondo · Linha · Elipse |
+| Menu → Impressão | Marcas de rolo · Transferência (fantasma do verso) · Prova de impressão |
+| Prova | Prova de impressão · nome · data · tintas · papel · Salvar prova (PNG) · Fechar |
+| Exportar | Separações (gráfica) |
+| Avisos | Separando 3 tintas. Espere terminar. · Separações exportadas. Procure em Downloads. · Prova salva. Procure em Downloads. |
+| Erros | Não deu para fazer a prova. Tente de novo. · Não deu para separar as tintas. Tente de novo. |
 | Apagar camada com desenho | Apagar a camada 3? O desenho dela some de todos os frames. · Apagar camada · Cancelar |
 | Folha da camada: rótulos | Tinta · Retícula · Estocástica · Reticulada · Densidade · Visível · Travar · Subir · Descer · Duplicar camada · Apagar camada |
 | Menu → Impressão | Lineatura · 40 · 60 · 85 |

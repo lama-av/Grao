@@ -469,6 +469,49 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 ### #047 — Fechar a 0.6.0
 - **Status:** Feito · **Resposta do VS Code:** `VERSION` 0.6.0 (b14), CHANGELOG, docx; 236 verificações.
 
+### #048 — Sobreimpressão por passada
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.7.0 · **Origem:** doc 13, T-060, Secret Riso Club
+- **Resposta do VS Code:** ordem de impressão = ordem das camadas (a primeira camada de cada tinta decide; tintas sem
+  camada no fim). No shader, cada passada faz `cor *= mix(1, tinta, k)` e depois cobre um pouco o que está embaixo:
+  `cor = mix(cor, papel × tinta, opaco × k)`. `opaque` por tinta em `config.js` (Amarelo 0,06 … Preto 0,35), a olho.
+  **Testar:** Amarelo sobre Azul e Azul sobre Amarelo (subir/descer camada) dão verdes um pouco diferentes.
+
+### #049 — Desalinhamento cresce com as passadas
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.7.0 · **Origem:** Secret Riso Club
+- **Resposta do VS Code:** o deslocamento sorteado de cada tinta é multiplicado por 45%, 70%, 88% e 100% conforme a
+  passada dela. O máximo continua 3 mm (controle Desalinhamento).
+
+### #050 — Formas de ponto da retícula
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.7.0 · **Origem:** #030 ("ficam para a v0.7")
+- **Resposta do VS Code:** `screen.dot`: `round` | `line` | `ellipse`. Linha = faixas na direção do ângulo da tinta,
+  largura proporcional ao tom; elipse com raios 1,25 × 0,8 (mesma área). Botões na folha da camada (só com
+  Reticulada). Lineatura por camada e ângulo editável continuam fora.
+
+### #051 — Prova de impressão
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.7.0 · **Origem:** doc 13 (Ingels: "ritual de fechamento")
+- **Resposta do VS Code:** Menu → Impressão → **Prova de impressão**. Renderiza o frame atual em 2400 × 1600 fora da
+  tela, com as imperfeições ligadas, e mostra a folha sozinha num fundo escuro, com "Prova de impressão · nome", data,
+  tintas usadas e papel. Botões: Salvar prova (PNG) · Fechar.
+
+### #052 — Separações por tinta para a gráfica
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.7.0 · **Origem:** doc 13 (Risotrip, Secret Riso Club)
+- **Resposta do VS Code:** Exportar → **Separações (gráfica)**. Para cada tinta com camada visível: PNG cinza (preto =
+  tinta), 3508 × 2339 (300 dpi num A4 deitado; o papel do Grão é 3:2, então a altura é 198 mm), valores abaixo de 5%
+  viram papel, densidade da camada multiplica o tom, várias camadas da mesma tinta se juntam (máximo). Sem grão, sem
+  retícula, sem desalinhamento (a gráfica faz). Rasterização na CPU direto dos traços (`rasterFrame` em
+  `render/masks.js`), com baldes e paredes refeitos na escala certa. 600 dpi ficou de fora (7016 px passa do limite
+  de textura comum em celular). Nome: `projeto_tinta1_Rosa-fluor_300dpi.png`.
+  **Testar:** exportar e abrir no PC; conferir que o traço está nítido a 100%.
+
+### #053 — Imperfeições opcionais
+- **Status:** Feito · **Prioridade:** P3 · **Versão alvo:** 0.7.0 · **Origem:** Secret Riso Club
+- **Resposta do VS Code:** Menu → Impressão: **Marcas de rolo** (faixas claras a cada ~35 mm onde a soma das tintas
+  passa de 80%) e **Transferência** (as máscaras espelhadas, a 7%, como a tinta da folha de cima no verso da de
+  baixo). Desligadas por padrão; valem na tela, no vídeo, no GIF e na prova.
+
+### #054 — Fechar a 0.7.0
+- **Status:** Feito · **Resposta do VS Code:** `VERSION` 0.7.0 (b15), CHANGELOG, doc 05, docx; 249 verificações.
+
 ### Pedidos já feitos (v0.2.0 a v0.3.1)
 
 ### #001 — Papel em tela cheia e canvas de interface

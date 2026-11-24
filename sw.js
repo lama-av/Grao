@@ -6,7 +6,7 @@
 // A CADA VERSÃO: atualizar VERSION abaixo (= VERSION-BUILD do src/config.js) e a lista FILES se entrar arquivo novo.
 // O teste de lógica confere as duas coisas.
 
-const VERSION = '0.6.0-b14';
+const VERSION = '0.7.0-b15';
 const CACHE = `grao-${VERSION}`;
 const FILES = [
   './',

@@ -17,6 +17,8 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
+- **v0.7.0 (24/11/2026):** sobreimpressão por passada, pontos linha/elipse, Prova de impressão, separações 300 dpi,
+  imperfeições opcionais.
 - **v0.6.0 (24/11/2026):** galeria de projetos, exportar GIF e sequência de PNG, folha Exportar.
 - **v0.5.0 (24/11/2026):** tira de frames, operações de frame, exposição, copiar/colar, papel-cebola configurável.
 - **v0.4.0 (24/11/2026):** camadas separadas das tintas (ADR-004), retícula, trapping, abrir sem internet (`sw.js`).

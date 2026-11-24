@@ -1,5 +1,7 @@
 #version 300 es
-// Motor riso do Grão (v0.4) — uma passada, até 8 camadas e 4 tintas (tambores).
+// Motor riso do Grão (v0.7) — uma passada de GPU, até 8 camadas e 4 tintas (tambores).
+// v0.7: sobreimpressão na ordem de impressão (cada tinta cobre um pouco a de baixo), formas de ponto da reticulada,
+// separações por tinta (cinza, sem retícula) e imperfeições opcionais (marcas de rolo, transferência).
 // Etapas (docs/05-motor-riso.md): desalinhamento por tinta, retícula por camada (estocástica ou reticulada),
 // borda orgânica, película irregular e composição multiplicativa sobre o papel com fibras.
 // Camadas da mesma tinta se juntam (o mesmo tambor não escurece onde se sobrepõe); tintas diferentes multiplicam.
@@ -25,6 +27,11 @@ uniform float uLayerOn[8];    // 1 = camada existe e está visível
 uniform float uLayerInk[8];   // tambor da camada (0..3)
 uniform float uLayerType[8];  // retícula: 0 = estocástica, 1 = reticulada
 uniform float uLayerDens[8];  // densidade da retícula (0,05..1)
+uniform float uLayerDot[8];   // forma do ponto da reticulada: 0 redondo, 1 linha, 2 elipse
+uniform float uOrder[4];      // tambores na ordem de impressão (o primeiro imprime primeiro)
+uniform float uOpaque[4];     // quanto cada tinta cobre o que está embaixo (0 = transparente)
+uniform float uSep;           // -1 = imagem normal; 0..3 = separação desse tambor (cinza, para a gráfica)
+uniform vec2 uFlaw;           // imperfeições: (marcas de rolo, transferência), 0 ou 1
 uniform vec3 uInk[4];         // cor de cada tambor
 uniform vec2 uOff[4];         // desalinhamento por tambor (em uv)
 uniform float uAngle[4];      // ângulo da reticulada por tambor (radianos)
@@ -60,7 +67,7 @@ float vnoise(vec2 p) {
 
 // Cobertura impressa de uma camada neste ponto (0 = papel, 1 = tinta cheia).
 // c = valor da máscara (tom do traço), dp = ponto em unidades do documento, s = semente da camada.
-float coverage(float c, vec2 dp, float s, float type, float dens, float ang) {
+float coverage(float c, vec2 dp, float s, float type, float dens, float ang, float dotShape) {
   if (c <= 0.002) return 0.0;
   vec2 o = vec2(s * 17.13, s * 9.71);
   float n  = vnoise(dp * 0.55 + o);          // grão em cachos (~2 unidades)
@@ -75,15 +82,19 @@ float coverage(float c, vec2 dp, float s, float type, float dens, float ang) {
     k *= 1.0 - smoothstep(dens - 0.06, dens + 0.06, m) * step(dens, 0.999);
     cellId = floor(dp * 0.9);
   } else {
-    // Reticulada: grade girada pelo ângulo da tinta; ponto redondo com área = tom (c × densidade).
+    // Reticulada: grade girada pelo ângulo da tinta; ponto com área = tom (c × densidade).
+    // Formas (v0.7): redondo; linha (faixas, largura = tom); elipse (raios 1,25 e 0,8, mesma área do redondo).
     float ca = cos(ang), sa = sin(ang);
     vec2 g = mat2(ca, sa, -sa, ca) * dp / uCell;
     cellId = floor(g);
     vec2 f = fract(g) - 0.5;
     float t = clamp(c * dens, 0.0, 1.0);
-    float r = sqrt(t / 3.14159265);
+    float r, dd;
+    if (dotShape < 0.5) { r = sqrt(t / 3.14159265); dd = length(f); }
+    else if (dotShape < 1.5) { r = t * 0.5; dd = abs(f.y); cellId.x = 0.0; }
+    else { r = sqrt(t / 3.14159265); dd = length(f * vec2(0.8, 1.25)); }
     float aa = 0.75 * uPxDoc / uCell;        // meio pixel, em células: borda suave sem moiré duro
-    k = 1.0 - smoothstep(r - aa, r + aa, length(f));   // limites em ordem crescente (GLSL: invertido é indefinido)
+    k = 1.0 - smoothstep(r - aa, r + aa, dd);   // limites em ordem crescente (GLSL: invertido é indefinido)
     k *= clamp(r / aa, 0.0, 1.0);            // ponto menor que um pixel: desbota em vez de escurecer o tom
     k = max(k, smoothstep(0.80, 0.97, t));   // tons muito altos: os pontos se juntam em área cheia
   }
@@ -106,14 +117,42 @@ vec4 drumMask(float ink) {
 // Uma camada: lê a máscara com o desalinhamento do seu tambor; devolve a cobertura no canal do tambor.
 vec4 layerK(sampler2D M, int i, vec2 uv, vec2 dp) {
   int d = int(uLayerInk[i] + 0.5);
-  float k = coverage(texture(M, uv + uOff[d]).r, dp, uSeed + float(i) + 1.0, uLayerType[i], uLayerDens[i], uAngle[d]);
+  float k = coverage(texture(M, uv + uOff[d]).r, dp, uSeed + float(i) + 1.0, uLayerType[i], uLayerDens[i], uAngle[d], uLayerDot[i]);
   return k * drumMask(uLayerInk[i]);
+}
+
+// Separação (v0.7, #052): tom contínuo da camada no tambor pedido (máscara × densidade), sem grão nem retícula:
+// a gráfica riso gera a retícula dela a partir do cinza.
+float sepK(sampler2D M, int i, vec2 uv) {
+  if (abs(uLayerInk[i] - uSep) > 0.5) return 0.0;
+  return texture(M, uv).r * uLayerDens[i];
+}
+
+// Transferência (#053): a tinta da folha de cima marca o verso da de baixo; aparece espelhada e bem fraca.
+vec4 ghostK(sampler2D M, int i, vec2 uv) {
+  return texture(M, vec2(1.0 - uv.x, uv.y)).r * drumMask(uLayerInk[i]);
 }
 
 void main() {
   vec2 st = vec2(gl_FragCoord.x / uRes.x, 1.0 - gl_FragCoord.y / uRes.y);   // ponto da tela (0..1)
   vec2 uv = (st - uView.yz) / uView.x;    // ponto do papel sob este pixel (zoom)
   vec2 dp = uv * uDoc;
+
+  // Separação de um tambor: cinza (preto = tinta), 5% a 100% (abaixo de 5% a riso não imprime).
+  if (uSep > -0.5) {
+    float v = 0.0;
+    if (uLayerOn[0] > 0.5) v = max(v, sepK(uMask0, 0, uv));
+    if (uLayerOn[1] > 0.5) v = max(v, sepK(uMask1, 1, uv));
+    if (uLayerOn[2] > 0.5) v = max(v, sepK(uMask2, 2, uv));
+    if (uLayerOn[3] > 0.5) v = max(v, sepK(uMask3, 3, uv));
+    if (uLayerOn[4] > 0.5) v = max(v, sepK(uMask4, 4, uv));
+    if (uLayerOn[5] > 0.5) v = max(v, sepK(uMask5, 5, uv));
+    if (uLayerOn[6] > 0.5) v = max(v, sepK(uMask6, 6, uv));
+    if (uLayerOn[7] > 0.5) v = max(v, sepK(uMask7, 7, uv));
+    v = v < 0.05 ? 0.0 : min(v, 1.0);
+    outColor = vec4(vec3(1.0 - v), 1.0);
+    return;
+  }
 
   // Papel: cor, textura, fibras horizontais e impurezas.
   float t = vnoise(dp * 0.9) * 0.6 + vnoise(dp * 0.07) * 0.4;
@@ -141,10 +180,39 @@ void main() {
   if (uLayerOn[5] > 0.5) kd = max(kd, layerK(uMask5, 5, uv, dp));
   if (uLayerOn[6] > 0.5) kd = max(kd, layerK(uMask6, 6, uv, dp));
   if (uLayerOn[7] > 0.5) kd = max(kd, layerK(uMask7, 7, uv, dp));
-  col *= mix(vec3(1.0), uInk[0], kd.x);
-  col *= mix(vec3(1.0), uInk[1], kd.y);
-  col *= mix(vec3(1.0), uInk[2], kd.z);
-  col *= mix(vec3(1.0), uInk[3], kd.w);
+  // Transferência (opcional): fantasma espelhado e fraco das tintas.
+  if (uFlaw.y > 0.5) {
+    vec4 gk = vec4(0.0);
+    if (uLayerOn[0] > 0.5) gk = max(gk, ghostK(uMask0, 0, uv));
+    if (uLayerOn[1] > 0.5) gk = max(gk, ghostK(uMask1, 1, uv));
+    if (uLayerOn[2] > 0.5) gk = max(gk, ghostK(uMask2, 2, uv));
+    if (uLayerOn[3] > 0.5) gk = max(gk, ghostK(uMask3, 3, uv));
+    if (uLayerOn[4] > 0.5) gk = max(gk, ghostK(uMask4, 4, uv));
+    if (uLayerOn[5] > 0.5) gk = max(gk, ghostK(uMask5, 5, uv));
+    if (uLayerOn[6] > 0.5) gk = max(gk, ghostK(uMask6, 6, uv));
+    if (uLayerOn[7] > 0.5) gk = max(gk, ghostK(uMask7, 7, uv));
+    gk *= 0.07 * (0.6 + 0.4 * vnoise(dp * 0.05));
+    col *= mix(vec3(1.0), uInk[0], gk.x);
+    col *= mix(vec3(1.0), uInk[1], gk.y);
+    col *= mix(vec3(1.0), uInk[2], gk.z);
+    col *= mix(vec3(1.0), uInk[3], gk.w);
+  }
+
+  // Sobreimpressão na ordem de impressão: cada passada multiplica sobre o que já está no papel e cobre um pouco
+  // (uOpaque) a tinta de baixo. Por isso a ordem muda a cor, como na riso de verdade.
+  for (int p = 0; p < 4; p++) {
+    int d = int(uOrder[p] + 0.5);
+    float k = kd[d];
+    col *= mix(vec3(1.0), uInk[d], k);
+    col = mix(col, uPaper * uInk[d], uOpaque[d] * k);
+  }
+
+  // Marcas de rolo (opcional): faixas claras onde a folha está muito carregada de tinta (~a cada 35 mm).
+  if (uFlaw.x > 0.5) {
+    float load = clamp(kd.x + kd.y + kd.z + kd.w - 0.8, 0.0, 1.0);
+    float band = smoothstep(0.86, 1.0, abs(sin(dp.y * 0.0223 + vnoise(vec2(dp.x * 0.01, 3.0)) * 1.5)));
+    col = mix(col, mix(col, uPaper, 0.35), band * load);
+  }
 
   outColor = vec4(col, 1.0);
 }

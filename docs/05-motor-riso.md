@@ -17,8 +17,8 @@ O Grão pula 1–3.
 
 | # | Etapa | O que faz |
 | --- | --- | --- |
-| 1 | Sobreimpressão | A tinta clara continua sob a escura, para o desalinhamento não abrir fios brancos de papel |
-| 2 | Desalinhamento | Cada tinta se desloca alguns décimos de mm, com valor sorteado a cada reimpressão |
+| 1 | Sobreimpressão | Na ordem de impressão (v0.7): cada passada multiplica e cobre um pouco a de baixo (`opaque` por tinta); a ordem muda a cor. Trapping do balde (v0.4) evita fios brancos |
+| 2 | Desalinhamento | Cada tinta se desloca até 3 mm (A4), sorteado a cada reimpressão; cresce com a passada: 45%, 70%, 88%, 100% (v0.7) |
 | 3 | Trama (retícula) | Por camada (v0.4): **estocástica** (grão em cachos, como a difusão de erro da riso) ou **reticulada** (pontos redondos em grade, ângulo por tinta). Ver "Retícula" abaixo |
 | 4 | Espalhamento | Desfoque pequeno + corte: bordas orgânicas |
 | 5 | Papel | Cor do papel com fibras e impurezas; tintas multiplicadas da mais clara para a mais escura |
@@ -44,6 +44,13 @@ Comportamento da riso de verdade (Secret Riso Club, Risotrip):
 
 Sem moiré de pixel: a 60 lpi a célula tem ~3 px da tela do tablet em 100%. A borda do ponto é suavizada em meio
 pixel por um uniforme (`uPxDoc`, unidades do documento por pixel), sem derivadas.
+
+## Separações, prova e imperfeições (v0.7)
+
+- **Separações:** um PNG cinza por tinta (preto = tinta, 5–100%), 300 dpi no A4, sem grão nem retícula; refeito dos
+  traços na CPU (`rasterFrame`). É o arquivo que a gráfica riso pede (Risotrip).
+- **Prova de impressão:** o frame atual em 2400 × 1600, parado, com tudo ligado.
+- **Imperfeições** (desligadas): marcas de rolo nas áreas muito carregadas; transferência (fantasma espelhado do verso).
 
 ## Escala física
 

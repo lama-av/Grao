@@ -11,6 +11,47 @@ import { drawStroke } from './stroke.js';
 import { floodFill } from './fill.js';
 import { wallsFor } from '../doc/project.js';
 
+// Rasteriza (CPU) o frame f da camada l em qualquer escala (unidades do documento → px), com baldes e paredes
+// de outras camadas, como a máscara de tela. Usado nas separações para a gráfica (v0.7, #052): a máscara de tela
+// tem 960 px (~80 dpi num A4); aqui o traço é refeito a 300 dpi, nítido. Devolve RGBA (canal R = cobertura).
+export function rasterFrame(project, l, f, scale) {
+  const w = Math.round(DOC_W * scale), h = Math.round(DOC_H * scale);
+  const make = () => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c.getContext('2d', { willReadFrequently: true }); };
+  const ctx = make();
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, w, h);
+  const k = scale / MASK_SCALE;                      // os limites do balde foram medidos em px da máscara
+  const gap = Math.max(2, Math.round(2 * k));
+  const trap = project.settings?.trapping === false ? 0 : Math.max(1, Math.round(2 * k));
+  let walls;
+  const wallsOf = () => {
+    if (walls !== undefined) return walls;
+    const wc = make();
+    wc.fillStyle = '#000';
+    wc.fillRect(0, 0, w, h);
+    let any = false;
+    for (const wl of wallsFor(project, l, f)) {
+      for (const s of project.layers[wl.l].frames[wl.f] || []) {
+        if (s.kind === 'fill') continue;
+        drawStroke(wc, s, scale, null, true);
+        any = any || s.kind === 'ink';
+      }
+    }
+    if (!any) { walls = null; return null; }
+    const d = wc.getImageData(0, 0, w, h).data;
+    walls = new Uint8Array(w * h);
+    for (let i = 0, j = 0; i < walls.length; i++, j += 4) walls[i] = d[j] >= 128 ? 1 : 0;
+    return walls;
+  };
+  for (const s of project.layers[l].frames[f] || []) {
+    if (s.kind === 'fill') {
+      const img = ctx.getImageData(0, 0, w, h);
+      if (floodFill(img.data, w, h, s.pts[0] * scale, s.pts[1] * scale, gap, wallsOf(), trap)) ctx.putImageData(img, 0, 0);
+    } else drawStroke(ctx, s, scale, null, true);
+  }
+  return { data: ctx.getImageData(0, 0, w, h).data, w, h };
+}
+
 export class Masks {
   constructor(gl) {
     this.gl = gl;

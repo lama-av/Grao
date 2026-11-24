@@ -1,6 +1,6 @@
 GRÃO — INSTRUÇÕES DE USO
 ========================
-Versão descrita: 0.6.0 (galeria de projetos, GIF, PNGs)
+Versão descrita: 0.7.0 (riso completo: sobreimpressão, prova, separações)
 Atualizado em: 24/11/2026
 Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
 
@@ -8,7 +8,7 @@ Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
 1. ABRIR
 --------
 - No tablet (Chrome): https://lama-av.github.io/Grao/
-- Ao abrir, aparece um aviso com a versão (ex.: "Grão 0.6.0-b14"). Se o número for
+- Ao abrir, aparece um aviso com a versão (ex.: "Grão 0.7.0-b15"). Se o número for
   antigo, o Chrome está usando a cópia guardada: espere 10 minutos ou limpe os dados
   do site (Chrome > cadeado ao lado do endereço > Configurações do site > Limpar dados).
 - Para instalar como app: menu do Chrome > "Adicionar à tela inicial".

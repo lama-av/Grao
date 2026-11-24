@@ -66,6 +66,9 @@ export function setupSheet(app) {
         <label class="check"><input type="checkbox" data-k="ferver"> Ferver</label>
         <div class="lp-row"><span>Lineatura</span><div class="lp-lpi"></div></div>
         <label class="check"><input type="checkbox" data-k="trapping"> Trapping (balde avança por baixo da linha)</label>
+        <label class="check"><input type="checkbox" data-k="rollers"> Marcas de rolo</label>
+        <label class="check"><input type="checkbox" data-k="transfer"> Transferência (fantasma do verso)</label>
+        <button class="btn small" data-act="proof">Prova de impressão</button>
         <div class="sheet-title">Tintas prontas</div>
         <div class="row">
           <button class="btn small" data-act="cmyk">Falso CMYK</button>
@@ -139,6 +142,11 @@ export function setupSheet(app) {
       app.markAllFills?.();                 // os baldes são refeitos com ou sem trapping
     };
     act('cmyk').onclick = () => { app.applyFalseCmyk(); buildMenu(); };
+    q('rollers').checked = !!s.flaws?.rollers;
+    q('transfer').checked = !!s.flaws?.transfer;
+    q('rollers').onchange = (e) => { s.flaws = { ...s.flaws, rollers: e.target.checked }; app.requestSave(); };
+    q('transfer').onchange = (e) => { s.flaws = { ...s.flaws, transfer: e.target.checked }; app.requestSave(); };
+    act('proof').onclick = () => { close(); app.printProof(); };
     act('inks-back').onclick = () => { app.restoreProjectInks(); buildMenu(); };
     q('lefty').onchange = (e) => { s.lefty = e.target.checked; app.requestSave(); position(); };
     paper.onchange = () => { app.project.paper = paper.value; app.requestSave(); };
@@ -287,6 +295,10 @@ export function setupSheet(app) {
         </div>
         <label>Densidade <span class="dens-val">${dens}%</span>
           <input type="range" data-k="density" min="5" max="100" step="1" value="${dens}"></label>
+        ${L.screen.type === 'am' ? `<div class="lp-row"><span>Ponto</span>
+          <button class="btn small${L.screen.dot === 'round' ? ' on' : ''}" data-dot="round">Redondo</button>
+          <button class="btn small${L.screen.dot === 'line' ? ' on' : ''}" data-dot="line">Linha</button>
+          <button class="btn small${L.screen.dot === 'ellipse' ? ' on' : ''}" data-dot="ellipse">Elipse</button></div>` : ''}
       </div>
       <div class="sheet-group">
         <label class="check"><input type="checkbox" data-k="visible"${L.visible ? ' checked' : ''}> Visível</label>
@@ -304,6 +316,7 @@ export function setupSheet(app) {
     el.querySelectorAll('[data-color]').forEach((b) => { b.onclick = () => { app.setDrumColor(L.ink, +b.dataset.color); buildLayer(); }; });
     act('stochastic').onclick = () => { app.setLayerScreen(i, { type: 'stochastic' }); buildLayer(); };
     act('am').onclick = () => { app.setLayerScreen(i, { type: 'am' }); buildLayer(); };
+    el.querySelectorAll('[data-dot]').forEach((b) => { b.onclick = () => { app.setLayerScreen(i, { dot: b.dataset.dot }); buildLayer(); }; });
     // Densidade: muda ao vivo enquanto arrasta; entra no desfazer uma vez, ao soltar.
     let densBefore = null;
     q('density').oninput = (e) => {
@@ -392,15 +405,17 @@ export function setupSheet(app) {
       <div class="sheet-group">
         <div class="row">${opt('format', 'gif', 'GIF', c.format === 'gif')}${opt('format', 'video', 'Vídeo', c.format === 'video', !app.canRecordVideo)}</div>
         <div class="row">${opt('format', 'png', 'PNGs (.zip)', c.format === 'png')}${opt('format', 'frame', 'PNG do frame', c.format === 'frame')}</div>
+        <div class="row">${opt('format', 'sep', 'Separações (gráfica)', c.format === 'sep')}</div>
       </div>
       <div class="sheet-group">
         <div class="lp-row"><span>Escala</span>${opt('scale', '0.5', '50%', c.scale === 0.5, !anim)}${opt('scale', '1', '100%', c.scale === 1, !anim)}${opt('scale', '2', '200%', c.scale === 2, c.format !== 'png')}</div>
-        <div class="lp-row"><span>Voltas</span>${opt('laps', '1', '1', c.laps === 1, c.format === 'frame')}${opt('laps', '2', '2', c.laps === 2, c.format === 'frame')}${opt('laps', '3', '3', c.laps === 3, c.format === 'frame')}</div>
+        <div class="lp-row"><span>Voltas</span>${opt('laps', '1', '1', c.laps === 1, !anim && c.format !== 'video')}${opt('laps', '2', '2', c.laps === 2, !anim && c.format !== 'video')}${opt('laps', '3', '3', c.laps === 3, !anim && c.format !== 'video')}</div>
         <div class="sheet-note">${{
           gif: 'GIF em laço, com o grão fervendo. 50% = 600 × 400.',
           png: 'Um PNG por quadro, num arquivo .zip (para editar em outro programa). 100% = 1200 × 800.',
           video: 'Grava o loop tocando, na resolução da tela, em MP4 (ou WebM).',
           frame: 'Uma imagem do frame que está na tela.',
+          sep: 'Um PNG cinza por tinta (preto = tinta, 5% a 100%), 300 dpi num A4, sem grão nem retícula: é o arquivo que a gráfica riso pede. Frame atual.',
         }[c.format]}</div>
       </div>
       <button class="btn" data-act="go">Exportar</button>`;
@@ -410,6 +425,7 @@ export function setupSheet(app) {
     el.querySelector('[data-act="go"]').onclick = () => {
       close();
       if (c.format === 'frame') app.exportPNG();
+      else if (c.format === 'sep') app.exportSeparations();
       else if (c.format === 'video') app.exportVideo({ laps: c.laps });
       else app.exportAnimation(c.format, { scale: c.scale, laps: c.laps });
     };

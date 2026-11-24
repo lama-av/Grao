@@ -3,7 +3,7 @@
 // Regras (CLAUDE.md): mudou traços de um frame → history.push + markDirty + requestSave; mudou a seleção →
 // onSelectionChange; traço que entrou no histórico nunca é alterado no lugar (troca por cloneStroke).
 
-import { newProject, cloneStroke, newLayer, MAX_LAYERS, DRUMS, SCREEN_TYPES, DENSITY_MIN, inkOf, expoOf, MAX_EXPO } from './doc/project.js';
+import { newProject, cloneStroke, newLayer, MAX_LAYERS, DRUMS, SCREEN_TYPES, DOT_SHAPES, DENSITY_MIN, inkOf, expoOf, MAX_EXPO } from './doc/project.js';
 import { INKS, MAX_FRAMES } from './config.js';
 import { History } from './doc/history.js';
 import { markAll } from './schedule.js';
@@ -179,8 +179,9 @@ export function installActions(app) {
     const sc = L(i).screen;
     const type = SCREEN_TYPES.includes(screen.type) ? screen.type : sc.type;
     const density = Number.isFinite(screen.density) ? Math.min(1, Math.max(DENSITY_MIN, screen.density)) : sc.density;
-    if (type === sc.type && density === sc.density) return false;
-    L(i).screen = { type, density };
+    const dot = DOT_SHAPES.includes(screen.dot) ? screen.dot : (sc.dot || 'round');
+    if (type === sc.type && density === sc.density && dot === sc.dot) return false;
+    L(i).screen = { type, density, dot };
     return true;
   });
 

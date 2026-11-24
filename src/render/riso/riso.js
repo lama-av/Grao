@@ -20,7 +20,8 @@ export async function createRiso(canvas) {
     'uPrev2', 'uNext2'];
   const U = {};
   const names = [...SAMPLERS, 'uRes', 'uDoc', 'uLayerOn', 'uLayerInk', 'uLayerType', 'uLayerDens', 'uInk', 'uOff',
-    'uAngle', 'uCell', 'uPxDoc', 'uPaper', 'uFiber', 'uIncl', 'uTex', 'uGrain', 'uSeed', 'uOnion', 'uView', 'uOnionW'];
+    'uAngle', 'uCell', 'uPxDoc', 'uPaper', 'uFiber', 'uIncl', 'uTex', 'uGrain', 'uSeed', 'uOnion', 'uView', 'uOnionW',
+    'uLayerDot', 'uOrder', 'uOpaque', 'uSep', 'uFlaw'];
   for (const n of names) U[n] = gl.getUniformLocation(program, n) ?? gl.getUniformLocation(program, n + '[0]');
 
   gl.useProgram(program);
@@ -29,7 +30,8 @@ export async function createRiso(canvas) {
   let lastMs = 0;
 
   // s = {
-  //   layers: [{ mask, ink (0..3), type (0 estocástica | 1 reticulada), density, on }] (até 8),
+  //   layers: [{ mask, ink (0..3), type (0 estocástica | 1 reticulada), density, dot (0..2), on }] (até 8),
+  //   order: [4 tambores na ordem de impressão], opaque: [4], sep: -1 | 0..3, flaws: [rolo, transferência],
   //   prev, next, prev2, next2, onionW [4], empty (textura vazia), inks: [[r,g,b] x4], offsets: [8 floats], angles: [4 rad],
   //   cell (unidades do documento), paper: {rgb, fiber, incl, tex}, grain, seed, onion, view: {s, ox, oy}
   // }
@@ -43,11 +45,12 @@ export async function createRiso(canvas) {
     gl.bindVertexArray(vao);
     const on = new Float32Array(MAX_DRAW_LAYERS), ink = new Float32Array(MAX_DRAW_LAYERS);
     const type = new Float32Array(MAX_DRAW_LAYERS), dens = new Float32Array(MAX_DRAW_LAYERS).fill(1);
+    const dot = new Float32Array(MAX_DRAW_LAYERS);
     for (let i = 0; i < MAX_DRAW_LAYERS; i++) {
       const L = s.layers[i];
       gl.activeTexture(gl.TEXTURE0 + i);
       gl.bindTexture(gl.TEXTURE_2D, L ? L.mask : s.empty);
-      if (L) { on[i] = L.on ? 1 : 0; ink[i] = L.ink; type[i] = L.type; dens[i] = L.density; }
+      if (L) { on[i] = L.on ? 1 : 0; ink[i] = L.ink; type[i] = L.type; dens[i] = L.density; dot[i] = L.dot || 0; }
     }
     gl.activeTexture(gl.TEXTURE8); gl.bindTexture(gl.TEXTURE_2D, s.prev);
     gl.activeTexture(gl.TEXTURE9); gl.bindTexture(gl.TEXTURE_2D, s.next);
@@ -60,6 +63,11 @@ export async function createRiso(canvas) {
     gl.uniform1fv(U.uLayerInk, ink);
     gl.uniform1fv(U.uLayerType, type);
     gl.uniform1fv(U.uLayerDens, dens);
+    gl.uniform1fv(U.uLayerDot, dot);
+    gl.uniform1fv(U.uOrder, s.order || [0, 1, 2, 3]);
+    gl.uniform1fv(U.uOpaque, s.opaque || [0, 0, 0, 0]);
+    gl.uniform1f(U.uSep, s.sep ?? -1);
+    gl.uniform2fv(U.uFlaw, s.flaws || [0, 0]);
     gl.uniform3fv(U.uInk, s.inks.flat());
     gl.uniform2fv(U.uOff, s.offsets);
     gl.uniform1fv(U.uAngle, s.angles);

@@ -16,7 +16,8 @@ import { downloadBlob, baseNameFor } from './io/file.js';
 import { videoFormat, recordSeconds, recordCanvas, fmtSeconds, planFrames } from './io/video.js';
 import { GifWriter } from './io/gif.js';
 import { makeZip } from './io/zip.js';
-import { frameAtTick } from './doc/project.js';
+import { frameAtTick, printOrder, inkOf } from './doc/project.js';
+import { rasterFrame } from './render/masks.js';
 import { rebuildDirty } from './schedule.js';
 import { createView, fitView } from './view.js';
 
@@ -158,12 +159,14 @@ async function start() {
   new ResizeObserver(resizeGl).observe(glCanvas);
   resizeGl();
 
-  // Desalinhamento: pequeno deslocamento por tinta, novo a cada reimpressão.
-  function offsets(seed, amount) {
+  // Desalinhamento: pequeno deslocamento por tinta, novo a cada reimpressão. v0.7 (#049): cresce com as passadas
+  // (o papel passa de novo pela máquina a cada tinta): 1ª passada 45%, depois 70%, 88% e 100% do máximo.
+  const PASS_FACTOR = [0.45, 0.7, 0.88, 1];
+  function offsets(seed, amount, passOf = [0, 1, 2, 3]) {
     const out = [];
     for (let i = 0; i < 4; i++) {
       const a = hash(seed * 4 + i) * Math.PI * 2;
-      const r = hash(seed * 4 + i + 0.5) * amount * MAX_MIS_UV;
+      const r = hash(seed * 4 + i + 0.5) * amount * MAX_MIS_UV * PASS_FACTOR[passOf[i]];
       out.push(Math.cos(a) * r, Math.sin(a) * r * 1.5); // 1,5 = proporção 3:2 em uv
     }
     return out;
@@ -171,9 +174,13 @@ async function start() {
 
   // Parâmetros do compositor. Sem `at`: o tempo do relógio (tela). Com `at` (segundos): exportação — frame de cada
   // camada naquele tempo, semente do ferver pelo tempo (o GIF sai igual a cada exportação), sem papel-cebola.
-  function drawParams(now, at = null) {
+  const DOTS = { round: 0, line: 1, ellipse: 2 };
+  function drawParams(now, at = null, sep = -1) {
     const p = app.project;
     const s = p.settings;
+    const order = printOrder(p);
+    const passOf = [];
+    order.forEach((d, i) => { passOf[d] = i; });
     const active = p.layers[p.activeLayer];
     const frameOf = (layer) => (at === null ? app.clock.frameOf(layer) : frameAtTick(layer, Math.floor(at * layer.fps + 1e-6)));
     const fa = frameOf(active);
@@ -186,8 +193,13 @@ async function start() {
         ink: layer.ink,
         type: layer.screen.type === 'am' ? 1 : 0,
         density: layer.screen.density,
+        dot: DOTS[layer.screen.dot] || 0,
         on: layer.visible,
       })),
+      order,
+      opaque: p.inks.map((i) => (INKS[i] || INKS[0]).opaque ?? 0.1),
+      sep,
+      flaws: [s.flaws?.rollers ? 1 : 0, s.flaws?.transfer ? 1 : 0],
       empty: app.masks.empty,
       prev: app.masks.get(active.id, (fa - 1 + n) % n),
       next: app.masks.get(active.id, (fa + 1) % n),
@@ -195,7 +207,7 @@ async function start() {
       next2: app.masks.get(active.id, (fa + 2) % n),
       onionW: onionWeights(s.onion, n),
       inks: p.inks.map((i) => hexToRgb((INKS[i] || INKS[0]).hex)),
-      offsets: offsets(seed, s.mis),
+      offsets: offsets(seed, s.mis, passOf),
       angles: SCREEN_ANGLES,
       cell: DOC_W / (s.lpi * A4_INCHES),       // lineatura: linhas de pontos por polegada no A4
       paper: { rgb: hexToRgb(paper.hex), fiber: paper.fiber, incl: paper.incl, tex: paper.tex },
@@ -207,6 +219,100 @@ async function start() {
   }
 
   function draw(now) { riso.draw(drawParams(now)); }
+
+  // ---------- Prova de impressão (v0.7, #051) ----------
+  // O frame atual vira uma folha riso parada, em alta resolução (2400 × 1600), com as imperfeições ligadas no Menu.
+  // Fecha a animação como um ritual: a folha aparece sozinha na tela, com nome, data e tintas.
+  app.printProof = async () => {
+    if (app.exporting || app.recording) return;
+    app.exporting = true;
+    app.ui?.collapse(); app.sheet?.close();
+    try {
+      while (app.dirty.size) rebuildDirty(app, performance.now(), () => 0);
+      await nextFrame();
+      const w = 2400, h = 1600;
+      const target = riso.createTarget(w, h);
+      riso.draw(drawParams(performance.now(), app.clock.t), target);
+      const rgba = riso.read(target);
+      riso.destroyTarget(target);
+      const cv = Object.assign(document.createElement('canvas'), { width: w, height: h });
+      cv.getContext('2d').putImageData(new ImageData(rgba, w, h), 0, 0);
+      const blob = await new Promise((r) => cv.toBlob(r, 'image/png'));
+      showProof(blob);
+    } catch (err) {
+      console.warn('Grão: prova falhou', err);
+      app.toast('Não deu para fazer a prova. Tente de novo.');
+    } finally {
+      app.exporting = false;
+    }
+  };
+  function showProof(blob) {
+    const url = URL.createObjectURL(blob);
+    const p = app.project;
+    const used = [...new Set(p.layers.filter((L) => L.visible && L.frames.some((f) => f.length)).map((L) => inkOf(p, L).name))];
+    const back = document.createElement('div');
+    back.className = 'proof';
+    back.innerHTML = `
+      <figure class="proof-card">
+        <img alt="Prova de impressão">
+        <figcaption><b></b><span></span></figcaption>
+        <div class="row"><button class="btn" data-act="save">Salvar prova (PNG)</button><button class="btn" data-act="close">Fechar</button></div>
+      </figure>`;
+    back.querySelector('img').src = url;
+    back.querySelector('b').textContent = `Prova de impressão · ${p.name}`;
+    back.querySelector('span').textContent = `${new Date().toLocaleDateString('pt-BR')} · ${used.join(', ') || 'sem tinta'} · ${PAPERS[p.paper].name}`;
+    back.querySelector('[data-act="save"]').onclick = () => { downloadBlob(blob, `${baseNameFor(p)}_prova.png`); app.toast('Prova salva. Procure em Downloads.'); };
+    back.querySelector('[data-act="close"]').onclick = () => { back.remove(); URL.revokeObjectURL(url); };
+    document.body.appendChild(back);
+  }
+
+  // ---------- Separações para a gráfica (v0.7, #052) ----------
+  // Um PNG em escala de cinza por tinta (preto = tinta, 5% a 100%), a 300 dpi num A4 (3508 × 2339), com o nome da
+  // tinta no arquivo, num .zip. Sem grão e sem retícula: a riso faz a retícula dela. Frame atual de cada camada.
+  app.exportSeparations = async () => {
+    if (app.exporting || app.recording) return;
+    app.exporting = true;
+    app.ui?.collapse(); app.sheet?.close();
+    const p = app.project, name = baseNameFor(p);
+    const scale = 3508 / DOC_W;
+    try {
+      const files = [];
+      const drums = [...new Set(p.layers.filter((L) => L.visible).map((L) => L.ink))].sort();
+      app.toast(`Separando ${drums.length} tinta${drums.length > 1 ? 's' : ''}. Espere terminar.`);
+      for (const d of drums) {
+        let acc = null, w = 0, h = 0;
+        for (let l = 0; l < p.layers.length; l++) {
+          const L = p.layers[l];
+          if (!L.visible || L.ink !== d) continue;
+          await nextFrame();
+          const r = rasterFrame(p, l, app.clock.frameOf(L), scale);
+          w = r.w; h = r.h;
+          acc = acc || new Uint8ClampedArray(w * h);
+          const dens = L.screen.density;
+          for (let i = 0, j = 0; i < acc.length; i++, j += 4) { const v = r.data[j] * dens; if (v > acc[i]) acc[i] = v; }
+        }
+        if (!acc) continue;
+        const img = new ImageData(w, h);
+        for (let i = 0, j = 0; i < acc.length; i++, j += 4) {
+          const v = acc[i] < 13 ? 0 : acc[i];          // abaixo de 5% a riso não imprime
+          img.data[j] = img.data[j + 1] = img.data[j + 2] = 255 - v; img.data[j + 3] = 255;
+        }
+        const cv = Object.assign(document.createElement('canvas'), { width: w, height: h });
+        cv.getContext('2d').putImageData(img, 0, 0);
+        await nextFrame();
+        const blob = await new Promise((r) => cv.toBlob(r, 'image/png'));
+        const ink = (INKS[p.inks[d]] || INKS[0]).name.normalize('NFD').replace(/[^A-Za-z0-9 ]/g, '').replace(/ +/g, '-');
+        files.push({ name: `${name}_tinta${d + 1}_${ink}_300dpi.png`, data: new Uint8Array(await blob.arrayBuffer()) });
+      }
+      downloadBlob(new Blob([makeZip(files)], { type: 'application/zip' }), `${name}_separacoes.zip`);
+      app.toast('Separações exportadas. Procure em Downloads.');
+    } catch (err) {
+      console.warn('Grão: separações falharam', err);
+      app.toast('Não deu para separar as tintas. Tente de novo.');
+    } finally {
+      app.exporting = false;
+    }
+  };
 
   // Exportação quadro a quadro (#044, #045, #046): desenha cada quadro fora da tela, um por quadro da tela (o loop
   // continua), e monta o GIF ou o .zip de PNGs. Papel e roda ficam esperando (como na gravação de vídeo).

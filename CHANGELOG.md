@@ -4,6 +4,28 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [0.7.0] — 2026-11-24
+
+Riso completo. Pedidos #048–#054 (escritos pelo VS Code a partir do roteiro do doc 13).
+
+### Adicionado
+- **Sobreimpressão por passada** (#048): as tintas imprimem na ordem das camadas (de baixo para cima); cada passada
+  multiplica sobre o papel e cobre um pouco a tinta de baixo (preto cobre mais, amarelo e fluorescentes quase nada).
+  A ordem das camadas agora muda a cor, como na riso.
+- **Desalinhamento que cresce com as passadas** (#049): 1ª tinta 45% do máximo, depois 70%, 88% e 100%.
+- **Formas de ponto da reticulada** (#050): Redondo, Linha, Elipse (folha da camada).
+- **Prova de impressão** (#051): Menu → Impressão. O frame atual vira uma folha riso parada em 2400 × 1600, com nome,
+  data, tintas e papel; "Salvar prova (PNG)".
+- **Separações para a gráfica** (#052): Exportar → Separações. Um PNG cinza por tinta (preto = tinta, 5% a 100%),
+  300 dpi num A4 (3508 × 2339), nome da tinta no arquivo, num .zip; sem grão e sem retícula. O desenho é refeito em
+  alta resolução direto dos traços (a máscara da tela daria só ~80 dpi).
+- **Imperfeições opcionais** (#053, desligadas por padrão): Marcas de rolo (faixas claras onde a folha está muito
+  carregada) e Transferência (fantasma espelhado e fraco do verso).
+
+### Mudado
+- Teste de lógica: 249 verificações, com uma checagem estática do shader (uniforms declarados, chaves, número de
+  texturas), já que não há compilador de GLSL nesta máquina.
+
 ## [0.6.0] — 2026-11-24
 
 Projetos e exportação. Pedidos #043–#047 (escritos pelo VS Code a partir do roteiro).

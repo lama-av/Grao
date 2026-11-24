@@ -1121,5 +1121,47 @@ for (const code of [4]) {
   check('uid inválido é trocado', san(bad).uid !== '<script>' && /^[a-z0-9-]+$/.test(san(bad).uid));
 }
 
+// ---------- v0.7: riso completo (#048–#053) ----------
+{
+  const { printOrder, sanitize: san, newProject: np } = await import('../src/doc/project.js');
+  const { INKS } = await import('../src/config.js');
+  const p = np();
+  check('ordem de impressão: na ordem das camadas', printOrder(p).join() === '0,1,2,3');
+  p.layers.reverse();
+  check('ordem de impressão segue a camada de baixo de cada tinta', printOrder(p).join() === '3,2,1,0');
+  p.layers = [p.layers[0], p.layers[0]];
+  check('tintas sem camada vão para o fim da ordem', printOrder(p).join() === '3,0,1,2');
+  check('toda tinta tem cobertura (sobreimpressão) entre 0 e 0,5', INKS.every((k) => k.opaque > 0 && k.opaque < 0.5));
+  const q = np(); q.layers[0].screen = { type: 'am', density: 0.5, dot: 'losango' }; q.settings.flaws = { rollers: 1, transfer: true };
+  const s = san(JSON.parse(JSON.stringify(q)));
+  check('forma de ponto inválida vira redondo; imperfeições conferidas', s.layers[0].screen.dot === 'round' && s.settings.flaws.rollers === false && s.settings.flaws.transfer === true);
+  check('imperfeições desligadas por padrão', np().settings.flaws.rollers === false && np().settings.flaws.transfer === false);
+  const { app } = makeApp();
+  app.setLayerScreen(0, { type: 'am', dot: 'line' });
+  check('forma do ponto: linha', app.project.layers[0].screen.dot === 'line' && app.project.layers[0].screen.type === 'am');
+  app.undo();
+  check('desfazer a forma do ponto', app.project.layers[0].screen.dot === 'round' && app.project.layers[0].screen.type === 'stochastic');
+}
+{
+  // checagem estática do shader (não há compilador de GLSL nesta máquina)
+  const fs = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const path = await import('node:path');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const frag = fs.readFileSync(path.join(root, 'src/render/riso/riso.frag'), 'utf8');
+  const js = fs.readFileSync(path.join(root, 'src/render/riso/riso.js'), 'utf8');
+  const code = frag.replace(/\/\/.*$/gm, '');
+  const declared = new Set([...code.matchAll(/uniform\s+\w+\s+(\w+)/g)].map((m) => m[1]));
+  const wanted = [...js.matchAll(/'(u[A-Z]\w*)'/g)].map((m) => m[1]);
+  const missing = wanted.filter((n) => !declared.has(n));
+  check('shader: todo uniform que o riso.js usa está declarado no .frag', !missing.length, missing.join(', '));
+  const count = (ch) => code.split(ch).length - 1;
+  check('shader: chaves e parênteses fecham', count('{') === count('}') && count('(') === count(')'));
+  const samplers = [...code.matchAll(/uniform\s+sampler2D\s+\w+/g)].length;
+  check('shader: até 16 texturas (limite mínimo do WebGL2)', samplers <= 16, samplers);
+  check('shader: começa com #version 300 es e tem precisão', frag.startsWith('#version 300 es') && /precision\s+highp\s+float/.test(code));
+  check('shader: nenhum smoothstep com limites invertidos óbvios (r + aa, r - aa)', !/smoothstep\(\s*r\s*\+\s*aa\s*,\s*r\s*-\s*aa/.test(code));
+}
+
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);
 process.exit(fails ? 1 : 0);
