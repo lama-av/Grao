@@ -116,7 +116,7 @@ Objetivo: editar a animação sem sair do papel.
 ### v0.6 — Projetos e exportação
 Objetivo: não perder nada e tirar a animação do app.
 - T-050 Galeria de projetos (criar, duplicar, renomear, apagar com confirmação).
-- T-051 Arquivo `.grao` para backup e importação.
+- T-051 Arquivo `.grao` para backup e importação. **Feito na v0.2.1** (Menu: Salvar arquivo / Abrir arquivo).
 - T-052 Exportar GIF, MP4 (ou WebM) e sequência de PNG; escolher escala e número de voltas do loop.
 - T-053 Service worker: abre sem internet.
 - 🧪 Exportar e postar um loop. ⏸ Auditoria.

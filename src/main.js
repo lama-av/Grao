@@ -44,8 +44,22 @@ async function start() {
   app.history = new History(app);
 
   app.markDirty = (l, f) => app.dirty.add(`${l}:${f}`);
-  app.saveNow = () => saveProject(app.project).catch(() => app.toast('Não deu para salvar. O navegador recusou o espaço. Exporte um PNG para garantir.'));
-  app.requestSave = debounced(app.saveNow, 600);
+  // Salvamento automático no navegador. O Menu mostra "Salvando…" / "Salvo neste aparelho às 14:32".
+  app.savedAt = 0;
+  app.unsaved = false;
+  app.saveError = false;
+  app.saveNow = () => saveProject(app.project).then(() => {
+    app.savedAt = Date.now();
+    app.unsaved = false;
+    app.saveError = false;
+    app.sheet?.refreshStatus();
+  }).catch(() => {
+    app.saveError = true;
+    app.sheet?.refreshStatus();
+    app.toast('Não deu para salvar. O navegador recusou o espaço. Salve um arquivo para garantir.');
+  });
+  const saveLater = debounced(app.saveNow, 600);
+  app.requestSave = () => { app.unsaved = true; saveLater(); };
   document.addEventListener('visibilitychange', () => { if (document.hidden) app.saveNow(); });
 
   app.toast = (msg) => {

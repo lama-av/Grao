@@ -9,7 +9,7 @@ Como o Grão fala. Vale para botões, leituras, avisos, erros e documentação p
 | Ateliê | Calmo, de quem está desenhando junto | "Desfeito" | "Ação desfeita com sucesso!" |
 | Direto | Curto, verbo primeiro | "Apagar seleção" | "Deseja realmente apagar os itens selecionados?" |
 | De ofício | Usa termos de animação e de impressão que animadores conhecem | "Frame", "Ferver", "Retícula" | "Quadro-chave de vetor", "Ruído procedural" |
-| Sem culpa | Erro é do sistema, com saída | "Não deu para salvar. Exporte um PNG para garantir." | "Erro: operação inválida." |
+| Sem culpa | Erro é do sistema, com saída | "Não deu para salvar. Salve um arquivo para garantir." | "Erro: operação inválida." |
 
 Tom: na maior parte do tempo, **confiante e mínimo** (a pessoa está no meio do desenho). Mais explicativo só
 na primeira vez e nos erros. Sério só antes de apagar algo que não volta.
@@ -22,14 +22,17 @@ na primeira vez e nos erros. Sério só antes de apagar algo que não volta.
 | Camada | layer, folha | Folha de desenho com uma tinta (separada da tinta a partir da v0.4) |
 | Frame | quadro, keyframe | Um desenho do loop |
 | Loop | animação, timeline | A sequência que repete |
-| Roda | menu, dial | A roda de canto |
+| Roda | dial | A roda de canto |
+| Menu | mais, opções, configurações | O botão da roda com arquivo e ajustes (desde a v0.2.1) |
+| Tempo | camadas (até a v0.4) | FPS e frames da tinta ativa |
 | Prato | anel do tempo, jog | O anel externo da roda, que move o tempo |
 | Velocidade | fps global, playback | O arco que acelera, freia ou inverte o loop |
 | Pincel, Borracha, Laço, Balde | ferramenta de seleção, eraser | Ferramentas |
 | Desfazer, Refazer | voltar, undo | Histórico |
 | Ferver | tremer, boil | Reimprimir o grão 8 vezes por segundo |
 | Papel | fundo, background | A base com fibras e cor |
-| Exportar | baixar, salvar como | Gerar arquivo para fora do app |
+| Exportar | baixar, salvar como | Gerar imagem ou vídeo para fora do app (PNG, GIF…) |
+| Salvar arquivo, Abrir arquivo | exportar projeto, importar, baixar | Guardar o projeto num `.grao` e abrir de volta |
 
 "Recorte" deixa de ser nome de ferramenta: a ferramenta é **Borracha** (o comportamento continua o mesmo,
 apaga a tinta e mostra o papel).
@@ -55,9 +58,18 @@ apaga a tinta e mostra o papel).
 | Chips de seleção | Duplicar → · Apagar |
 | Aviso: remover frame com desenho | Esse frame tem desenho. Apague antes de remover. |
 | Aviso: limite de frames | Máximo de 12 frames por camada. |
-| Erro: salvar | Não deu para salvar. O navegador recusou o espaço. Exporte um PNG para garantir. |
+| Erro: salvar | Não deu para salvar. O navegador recusou o espaço. Salve um arquivo para garantir. |
 | Erro: sem WebGL2 | O Grão não abriu. Este navegador não desenha com a GPU. Use o Chrome atualizado. |
 | Erro: aberto pelo arquivo | Abra pelo Live Server. O endereço precisa começar com http:// |
 | Confirmação: novo projeto | Começar um projeto novo? O desenho atual será apagado deste aparelho. · Apagar e começar · Cancelar |
 | Sucesso: exportar | PNG exportado |
-| Folha Mais (rótulos) | Grão · Desalinhamento · Ferver · Papel · Fixar roda · Canhoto · Teste da Fase 0 · Exportar PNG · Novo projeto |
+| Menu (rótulos) | Nome do projeto · Salvar arquivo · Abrir arquivo · Novo projeto · Exportar PNG · Impressão · Papel · Grão · Desalinhamento · Ferver · Desenho e roda · Auto · Fixar roda · Canhoto · Teste da Fase 0 |
+| Menu: estado do salvamento | Salvando… · Salvo neste aparelho às 14:32 · Não deu para salvar neste aparelho. Salve um arquivo. |
+| Aviso: arquivo salvo | Arquivo salvo. Procure em Downloads. |
+| Confirmação: abrir arquivo | Abrir "nome"? O desenho atual será trocado. Salve um arquivo antes, se quiser guardar. · Abrir · Cancelar |
+| Erro: abrir arquivo | Não deu para abrir. Esse arquivo não é um projeto do Grão. |
+| Sucesso: abrir | Projeto aberto |
+| Pétala Tinta (rótulos) | Tintas · Cor da tinta |
+| Folha Tempo | Tempo da tinta Rosa flúor · FPS · Frames · Cada tinta tem o próprio loop. Duração: 1 s. |
+| Dica de 2 dedos | 2 dedos sobre a seleção: girar e escalar |
+| Leitura: botão da caneta | Borracha · Pincel · Laço |

@@ -245,5 +245,62 @@ for (const code of [4, 32]) {
   check('toque rápido de 2 dedos desfaz', all(app).length === 0);
 }
 
+// ---------- arco de cores da pétala Tinta ----------
+{
+  const { app, wet } = makeApp();
+  tap(wet, ...BTN);
+  tap(wet, ...at(58, 180));
+  check('pétala Tinta aberta', app.ui.petal === 'ink');
+  const colorArc = (j) => at(270, -45 - (14 * 7) / 2 + 14 * j);
+  tap(wet, ...colorArc(6));
+  check('tocar numa cor do arco troca a cor da tinta ativa', app.project.layers[0].ink === 6, app.project.layers[0].ink);
+  check('a pétala continua aberta depois de trocar a cor', app.ui.petal === 'ink');
+  const d = pointer(wet, 'touch');
+  d.down(...colorArc(4)); d.move(...colorArc(5)); d.move(...colorArc(7)); d.up(...colorArc(7));
+  check('arrastar no arco e soltar troca a cor', app.project.layers[0].ink === 7);
+}
+
+// ---------- arquivo .grao ----------
+{
+  const { projectToText, projectFromText, fileNameFor } = await import('../src/io/file.js');
+  const { app, wet } = makeApp();
+  stroke(wet, 300, 200);
+  app.project.name = 'Meu loop: ação!';
+  app.project.layers[2].ink = 6;
+  const back = projectFromText(projectToText(app.project));
+  check('salvar e abrir devolve os mesmos traços', JSON.stringify(back.layers) === JSON.stringify(app.project.layers));
+  check('salvar e abrir devolve nome e papel', back.name === 'Meu loop: ação!' && back.paper === app.project.paper);
+  check('nome de arquivo sem acento nem símbolo', fileNameFor(app.project) === 'Meu-loop-acao.grao', fileNameFor(app.project));
+  check('texto que não é JSON não abre', projectFromText('isso não é um projeto') === null);
+  check('JSON de outra coisa não abre', projectFromText('{"format":"outro","layers":[]}') === null);
+  // arquivo estragado: traços ruins somem, o resto é aproveitado
+  const bad = JSON.parse(projectToText(app.project));
+  bad.layers[0].frames[0].push({ id: 'x', kind: 'ink', w: 5, pts: [1, 2, 3] });          // id inválido
+  bad.layers[0].frames[0].push({ id: 900, kind: 'ink', w: 5, pts: [1, 2] });           // pts incompleto
+  bad.layers[0].frames[0].push({ id: 901, kind: 'tinta', w: 5, pts: [1, 2, 3] });      // tipo desconhecido
+  bad.layers[0].frames[0].push({ id: 902, kind: 'ink', w: 5, pts: [1, 2, 0.5] });      // válido
+  bad.layers[1].ink = 99; bad.layers[1].fps = 7;
+  bad.layers.length = 2;                                                                 // faltam 2 tintas
+  bad.nextId = 3; bad.activeLayer = 9; bad.paper = 'papelão';
+  bad.settings.brush = 9999; bad.settings.wheelCorner = 'meio';
+  const fixed = projectFromText(JSON.stringify(bad));
+  const f0 = fixed.layers[0].frames[0];
+  check('arquivo estragado: só os traços bons ficam', f0.length === 2 && f0[1].id === 902, f0.map((s) => s.id).join(','));
+  check('arquivo estragado: tinta e FPS inválidos voltam ao padrão', fixed.layers[1].ink === 1 && fixed.layers[1].fps === 8);
+  check('arquivo estragado: sempre 4 tintas', fixed.layers.length === 4);
+  check('arquivo estragado: próximo id passa do maior id', fixed.nextId === 903, fixed.nextId);
+  check('arquivo estragado: tinta ativa, papel e ajustes conferidos',
+    fixed.activeLayer === 0 && fixed.paper === 'natural' && fixed.settings.brush === 40 && fixed.settings.wheelCorner === null);
+  // abrir troca o projeto e recomeça o histórico
+  app.replaceProject(back);
+  check('abrir arquivo troca o projeto', app.project === back);
+  check('abrir arquivo recomeça o histórico', !app.history.canUndo);
+  // novo projeto mantém o canto da roda e o modo Canhoto
+  app.project.settings.wheelCorner = 'tr'; app.project.settings.lefty = true;
+  app.newProject();
+  check('novo projeto mantém canto da roda e Canhoto', app.project.settings.wheelCorner === 'tr' && app.project.settings.lefty);
+  check('novo projeto começa vazio', all(app).length === 0);
+}
+
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);
 process.exit(fails ? 1 : 0);

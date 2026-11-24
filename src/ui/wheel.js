@@ -13,6 +13,8 @@ const R_SPEED0 = 126, R_SPEED1 = 174;     // arco de velocidade: 48 px de espess
 const SPEED_SPAN = 60;                    // graus
 const PETAL_R = 206, PILL_R = 26;         // pastilhas de 52 px
 const PETAL_STEP = 17;                    // graus entre pastilhas
+const COLOR_R = 270, COLOR_PILL_R = 22;   // arco das 8 cores da tinta ativa (pétala Tinta), pastilhas de 44 px
+const COLOR_STEP = 14;
 const SIZE_R0 = 240, SIZE_R1 = 288;       // arco de tamanho (pétala Ferramenta)
 const BRUSH_MIN = 2, BRUSH_MAX = 40;
 const ANIM_MS = 150;
@@ -30,8 +32,8 @@ const SECTORS = [
   { id: 'undo', label: 'Desfazer', a: -120 },
   { id: 'redo', label: 'Refazer', a: -60 },
   { id: 'tool', label: 'Ferramenta', a: 0 },
-  { id: 'more', label: 'Mais', a: 60 },
-  { id: 'layers', label: 'Camadas', a: 120 },
+  { id: 'more', label: 'Menu', a: 60 },
+  { id: 'layers', label: 'Tempo', a: 120 },
   { id: 'ink', label: 'Tinta', a: 180 },
 ];
 
@@ -57,6 +59,8 @@ export function setupWheel(app, canvas) {
   let sizePreview = false;
   let dragPos = null;         // botão sendo arrastado para outro canto
   let hover = '';             // pastilha sob o dedo durante um arraste (destaque)
+  let hadSelection = false;
+  let showHint = false;       // dica "2 dedos: girar e escalar" junto dos chips (só nas primeiras seleções)
   let readText = '', readUntil = 0;
   let lastSpeedTap = 0;
   let lastSig = '';
@@ -91,25 +95,38 @@ export function setupWheel(app, canvas) {
   }
   const docScale = () => W / DOC_W;   // unidades do documento -> px de tela
 
-  function petalItems() {
+  // Arco de pastilhas centrado na direção do canto.
+  function placeArc(items, radius, stepDeg, pillR) {
     const c = wheelCenter(), base = BASE[corner()];
+    const start = base - (stepDeg * (items.length - 1)) / 2;
+    items.forEach((it, k) => {
+      const a = (start + stepDeg * k) * RAD;
+      it.x = c.x + Math.cos(a) * radius;
+      it.y = c.y + Math.sin(a) * radius;
+      it.r = pillR;
+    });
+    return items;
+  }
+
+  function petalItems() {
     let items = [];
     const p = app.project;
     if (petal === 'ink') {
-      items = p.layers.map((L, i) => ({ kind: 'ink', i, color: INKS[L.ink].hex, on: i === p.activeLayer }));
+      // as 4 tintas do projeto (perto) e as 8 cores possíveis para a tinta ativa (fora): tudo à vista
+      const inks = p.layers.map((L, i) => ({ kind: 'ink', i, color: INKS[L.ink].hex, on: i === p.activeLayer }));
+      const cur = p.layers[p.activeLayer].ink;
+      const colors = INKS.map((k, j) => ({
+        kind: 'color', j, color: k.hex, on: j === cur,
+        used: j !== cur && p.layers.some((L) => L.ink === j),
+      }));
+      return placeArc(inks, PETAL_R, PETAL_STEP, PILL_R).concat(placeArc(colors, COLOR_R, COLOR_STEP, COLOR_PILL_R));
     } else if (petal === 'inkcolor') {
       const cur = p.layers[petalLayer].ink;
       items = INKS.map((k, j) => ({ kind: 'inkcolor', j, color: k.hex, on: j === cur }));
     } else if (petal === 'tool') {
       items = TOOLS.map(([t, label]) => ({ kind: 'tool', tool: t, label, on: app.tool === t }));
     }
-    const start = base - (PETAL_STEP * (items.length - 1)) / 2;
-    items.forEach((it, k) => {
-      const a = (start + PETAL_STEP * k) * RAD;
-      it.x = c.x + Math.cos(a) * PETAL_R;
-      it.y = c.y + Math.sin(a) * PETAL_R;
-    });
-    return items;
+    return placeArc(items, PETAL_R, PETAL_STEP, PILL_R);
   }
 
   function sectorAt(a) {
@@ -146,7 +163,7 @@ export function setupWheel(app, canvas) {
     const { d, a } = polar(p, c);
     if (petal) {
       for (const it of petalItems()) {
-        if (Math.hypot(p.x - it.x, p.y - it.y) <= PILL_R + 4) return { kind: 'pill', item: it };
+        if (Math.hypot(p.x - it.x, p.y - it.y) <= it.r + 4) return { kind: 'pill', item: it };
       }
       if (petal === 'tool' && d >= SIZE_R0 - 4 && d <= SIZE_R1 + 4 && Math.abs(angDiff(a, base)) <= SPEED_SPAN / 2 + 4) {
         return { kind: 'size' };
@@ -226,6 +243,9 @@ export function setupWheel(app, canvas) {
     } else if (it.kind === 'inkcolor') {
       p.layers[petalLayer].ink = it.j;
       petal = null;
+    } else if (it.kind === 'color') {
+      p.layers[p.activeLayer].ink = it.j;     // a pétala fica aberta para ver o resultado e trocar de novo
+      say(INKS[it.j].name);
     } else if (it.kind === 'tool') {
       app.tool = it.tool;
       petal = null;
@@ -488,18 +508,27 @@ export function setupWheel(app, canvas) {
   function drawPetal(c, base) {
     for (const it of petalItems()) {
       if (hover === pillKey(it)) {          // destaque da pastilha sob o dedo
-        disc(it.x, it.y, PILL_R + 7);
+        disc(it.x, it.y, it.r + 7);
         ctx.lineWidth = 3; ctx.strokeStyle = C.text; ctx.stroke();
       }
-      disc(it.x, it.y, PILL_R);
+      disc(it.x, it.y, it.r);
       if (it.color) {
         ctx.fillStyle = it.color; ctx.fill();
         ctx.lineWidth = it.on ? 4 : 1.5; ctx.strokeStyle = it.on ? C.text : C.bg; ctx.stroke();
+        if (it.used) {                      // cor já usada por outra tinta do projeto
+          disc(it.x, it.y, 4); ctx.fillStyle = C.bg; ctx.fill();
+        }
       } else {
         ctx.fillStyle = it.on ? C.text : C.plate; ctx.fill();
         ctx.lineWidth = 1; ctx.strokeStyle = C.line; ctx.stroke();
         text(it.label, it.x, it.y, 10, it.on ? C.bg : C.text);
       }
+    }
+    if (petal === 'ink') {
+      const a0 = (base - (COLOR_STEP * (INKS.length - 1)) / 2) * RAD;
+      const a1 = (base - (PETAL_STEP * 3) / 2 - PETAL_STEP) * RAD;   // logo antes da 1ª tinta
+      label('Cor da tinta', c.x + Math.cos(a0) * (COLOR_R + 36), c.y + Math.sin(a0) * (COLOR_R + 36));
+      label('Tintas', c.x + Math.cos(a1) * PETAL_R, c.y + Math.sin(a1) * PETAL_R);
     }
     if (petal === 'tool') {
       ring(c, SIZE_R0, SIZE_R1, base - SPEED_SPAN / 2, base + SPEED_SPAN / 2);
@@ -516,6 +545,16 @@ export function setupWheel(app, canvas) {
     }
   }
 
+  // Rótulo pequeno com fundo, legível sobre qualquer papel ou tinta.
+  function label(t, x, y) {
+    ctx.font = '600 11px system-ui, sans-serif';
+    const w = ctx.measureText(t).width + 12;
+    ctx.beginPath();
+    ctx.roundRect(x - w / 2, y - 10, w, 20, 10);
+    ctx.fillStyle = 'rgba(27,26,24,0.85)'; ctx.fill();
+    text(t, x, y, 11, C.muted);
+  }
+
   function drawSelection() {
     const chips = chipRects();
     if (!chips) return;
@@ -526,11 +565,19 @@ export function setupWheel(app, canvas) {
     ctx.strokeStyle = '#222';
     ctx.strokeRect(box.x0, box.y0, box.x1 - box.x0, box.y1 - box.y0);
     ctx.restore();
-    for (const [r, label] of [[chips.dup, 'Duplicar →'], [chips.del, 'Apagar']]) {
+    for (const [r, t] of [[chips.dup, 'Duplicar →'], [chips.del, 'Apagar']]) {
       ctx.beginPath();
       ctx.roundRect(r.x, r.y, r.w, r.h, 10);
       ctx.fillStyle = 'rgba(27,26,24,0.92)'; ctx.fill();
-      text(label, r.x + r.w / 2, r.y + r.h / 2, 14, C.text, 500);
+      text(t, r.x + r.w / 2, r.y + r.h / 2, 14, C.text, 500);
+    }
+    if (showHint) {
+      const t = '2 dedos sobre a seleção: girar e escalar';
+      ctx.font = '600 11px system-ui, sans-serif';
+      const w = ctx.measureText(t).width + 12;
+      const x = clamp(chips.dup.x + w / 2, w / 2 + 8, W - w / 2 - 8);
+      const below = chips.dup.y + chips.dup.h + 16;
+      label(t, x, below + 10 > H ? chips.dup.y - 16 : below);
     }
   }
 
@@ -553,6 +600,19 @@ export function setupWheel(app, canvas) {
     text(readText, x, y, 13, C.text);
   }
 
+  // Dica de 2 dedos: aparece nas 5 primeiras seleções deste aparelho.
+  const HINT_KEY = 'grao.dica2dedos', HINT_TIMES = 5;
+  function hintCount() { try { return +localStorage.getItem(HINT_KEY) || 0; } catch { return HINT_TIMES; } }
+  function noteSelection(has) {
+    if (has && !hadSelection) {
+      const n = hintCount();
+      showHint = n < HINT_TIMES;
+      if (showHint) { try { localStorage.setItem(HINT_KEY, String(n + 1)); } catch { /* sem armazenamento */ } }
+    }
+    if (!has) showHint = false;
+    hadSelection = has;
+  }
+
   // Redesenha só quando algo visível mudou (o canvas cobre a tela inteira).
   function update() {
     const now = performance.now();
@@ -560,12 +620,13 @@ export function setupWheel(app, canvas) {
     const animating = k < 1;
     const { n, f, ink } = frameInfo();
     const sb = app.input?.selectionBounds();
+    noteSelection(!!sb);
     const sig = [
       W, H, open, petal, petalLayer, corner(), n, f, ink, app.clock.paused, app.clock.speed, plateHeld,
       now < app.historyUntil, now < readUntil ? readText : '', app.tool, settings().brush, sizePreview,
       dragPos && `${dragPos.x | 0},${dragPos.y | 0}`, app.sheet?.mode, app.history.canUndo, app.history.canRedo,
       sb && `${sb.x0 | 0},${sb.y0 | 0},${sb.x1 | 0},${sb.y1 | 0}`,
-      app.project.layers.map((L) => L.ink).join(','), hover, app.lassoHeld, app.project.paper,
+      app.project.layers.map((L) => L.ink).join(','), hover, app.lassoHeld, app.project.paper, showHint,
     ].join('|');
     if (!animating && sig === lastSig) return;
     lastSig = animating ? '' : sig;

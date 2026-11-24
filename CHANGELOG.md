@@ -4,6 +4,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [0.2.1] — 2026-11-24
+
+Atende às duas queixas do teste da b6 (D3 do `HANDOFF.md`): menu principal e cores escondidas.
+
+### Adicionado
+- **Menu** (antigo setor "Mais"): nome do projeto, **Salvar arquivo**, **Abrir arquivo**, Novo projeto e Exportar PNG no topo; depois Impressão (Papel, Grão, Desalinhamento, Ferver) e Desenho e roda (Auto, Fixar roda, Canhoto, Teste da Fase 0). Mostra "Salvando…" / "Salvo neste aparelho às 14:32" (#010).
+- **Arquivo de projeto `.grao`:** Salvar arquivo baixa o projeto inteiro (vai para Downloads no tablet); Abrir arquivo escolhe um `.grao` no aparelho e pergunta antes de trocar o desenho atual. T-051 trazido da v0.6 para cá (#010).
+- **Cores à vista na pétala Tinta:** além das 4 tintas, um segundo arco mostra as 8 cores possíveis para a tinta ativa; tocar troca a cor e a pétala fica aberta. Um ponto marca a cor que outra tinta já usa. O toque longo continua funcionando (#011).
+- Dica "2 dedos sobre a seleção: girar e escalar" junto dos chips, nas 5 primeiras seleções do aparelho (#013).
+
+### Mudado
+- Setor "Camadas" virou **Tempo** (a folha só tem FPS e frames da tinta ativa, e agora mostra a duração do loop). As camadas de verdade chegam na v0.4 (#012).
+- Abrir um projeto confere cada campo: traço estragado é descartado, valores inválidos voltam ao padrão, sempre 4 tintas.
+- Aviso de erro de salvar sugere "Salve um arquivo" em vez de "Exporte um PNG".
+- O aviso (toast) nunca recebe toques: antes podia roubar a caneta embaixo, no centro da tela.
+- Teste de lógica: 60 verificações (arquivo `.grao`, arquivo estragado, arco de cores, projeto novo).
+
 ## [0.2.0] — 2026-11-24
 
 Tela limpa e roda de canto. Fechada depois da sessão de animação do Raphael no tablet ("funcionou tudo certo").

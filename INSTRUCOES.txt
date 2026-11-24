@@ -1,6 +1,6 @@
 GRÃO — INSTRUÇÕES DE USO
 ========================
-Versão descrita: 0.2.0 (papel em tela cheia e roda de canto)
+Versão descrita: 0.2.1 (menu com arquivo .grao e cores à vista)
 Atualizado em: 24/11/2026
 Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
 
@@ -8,7 +8,7 @@ Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
 1. ABRIR
 --------
 - No tablet (Chrome): https://lama-av.github.io/Grao/
-- Ao abrir, aparece um aviso com a versão (ex.: "Grão 0.2.0-b7"). Se o número for
+- Ao abrir, aparece um aviso com a versão (ex.: "Grão 0.2.1-b8"). Se o número for
   antigo, o Chrome está usando a cópia guardada: espere 10 minutos ou limpe os dados
   do site (Chrome > cadeado ao lado do endereço > Configurações do site > Limpar dados).
 - Para instalar como app: menu do Chrome > "Adicionar à tela inicial".
@@ -58,7 +58,7 @@ Mostra:
 
 Roda aberta, de dentro para fora:
 - CENTRO: toca / pausa. Leituras rápidas aparecem aqui ("3/8", "1,5×", "Desfeito").
-- 6 BOTÕES: Desfazer, Refazer, Ferramenta, Mais, Camadas, Tinta.
+- 6 BOTÕES: Desfazer, Refazer, Ferramenta, Menu, Tempo, Tinta.
 - PRATO DO TEMPO (anel com os pontos dos frames): encostar congela o loop; girar
   30° anda 1 frame. Soltar volta a tocar.
 - ARCO DE VELOCIDADE (por fora): de −2× a 2×. Encaixa em 1× e em 0×.
@@ -68,11 +68,16 @@ Desfazer abre o MODO HISTÓRICO por 3 s: o prato fica rosa e girar o prato
 desfaz / refaz passo a passo.
 
 A roda recolhe sozinha quando você desenha ou toca o papel, a não ser que
-"Fixar roda" esteja ligado na folha Mais.
+"Fixar roda" esteja ligado no Menu.
 
 PÉTALAS (aparecem em arco, fora da roda)
-- Tinta: escolhe a camada/tinta em que você desenha.
-    · Toque longo (0,5 s) numa tinta: abre as 8 cores para trocar a cor dela.
+- Tinta: mostra dois arcos.
+    · Perto da roda, as 4 TINTAS do projeto: toque numa para desenhar com ela.
+      (4 é o limite, como na riso impressa: cada tinta é um cilindro.)
+    · Mais longe, as 8 CORES possíveis para a tinta ativa: toque numa para
+      trocar a cor da tinta. A pétala fica aberta para você ver o resultado.
+      Um ponto escuro no meio = cor que outra tinta já usa.
+    · Atalho: toque longo (0,5 s) numa tinta abre as cores daquela tinta.
 - Ferramenta: Pincel, Borracha, Laço e o arco de Tamanho (mostra o tamanho do
   pincel num círculo no meio do papel).
 - Dá para escolher de dois jeitos:
@@ -89,39 +94,47 @@ PÉTALAS (aparecem em arco, fora da roda)
 - Com algo selecionado, o loop fica parado e aparecem dois botões perto da caixa:
     · "Duplicar →": copia a seleção para o próximo frame (bom para animar).
     · "Apagar": apaga o que está selecionado.
-- Mover: caneta dentro da caixa. Girar e escalar: 2 dedos sobre a seleção.
+- Mover: caneta dentro da caixa. Girar e escalar: 2 dedos sobre a seleção
+  (nas primeiras vezes aparece uma dica junto dos botões).
 - Tocar fora solta a seleção.
 
 
-6. FOLHAS
----------
-Mais (ajustes):
-- Grão, Desalinhamento (registro fora do lugar), Ferver (grão que muda a cada
-  reimpressão), Papel (Natural, Jornal, Kraft, Reciclado).
-- Auto: com o loop parado, cada traço terminado pula para o próximo frame
-  (desenho quadro a quadro).
-- Fixar roda, Canhoto, Teste da Fase 0 (painel de números).
-- Exportar PNG (o frame atual) e Novo projeto (pergunta antes: "Apagar e
-  começar" ou "Cancelar").
+6. MENU E TEMPO
+---------------
+Menu (botão "Menu" da roda):
+- No topo, o PROJETO:
+    · Nome do projeto (vira o nome do arquivo).
+    · Linha de estado: "Salvo neste aparelho às 14:32" (ou "Salvando…").
+    · Salvar arquivo: baixa o projeto como arquivo .grao (vai para Downloads).
+    · Abrir arquivo: escolhe um .grao do tablet. Pergunta antes de trocar o
+      desenho atual.
+    · Novo projeto: pergunta antes ("Apagar e começar" ou "Cancelar").
+    · Exportar PNG: imagem do frame atual.
+- Impressão: Papel (Natural, Jornal, Kraft, Reciclado), Grão, Desalinhamento
+  (registro fora do lugar), Ferver (grão que muda a cada reimpressão).
+- Desenho e roda: Auto (com o loop parado, cada traço pula para o próximo
+  frame), Fixar roda, Canhoto, Teste da Fase 0 (painel de números).
 
-Camadas (por enquanto, só o TEMPO da camada ativa):
-- FPS (6, 8, 12 ou 24) e quantidade de frames (até 12).
-- Cada camada pode ter um loop de tamanho diferente.
-- Ainda não dá para criar, esconder ou reordenar camadas: isso está planejado
-  para a v0.4, quando "camada" e "tinta" passam a ser coisas separadas.
+Tempo (botão "Tempo" da roda), sempre da tinta ativa:
+- FPS (6, 8, 12 ou 24) e quantidade de frames (até 12). Mostra a duração do
+  loop em segundos.
+- Cada tinta tem o próprio loop: dá para ter loops de tamanhos diferentes.
+- Camadas de verdade (criar, esconder, reordenar) estão planejadas para a v0.4.
 
 
 7. SALVAR
 ---------
 - Tudo é salvo sozinho no navegador (um projeto por vez). Recarregar não perde.
-- Limpar os dados do site APAGA o projeto. Exporte um PNG antes, se for limpar.
-- Arquivo de projeto (.grao), galeria e exportar GIF/vídeo: planejados para a v0.6.
+- Para guardar de verdade ou levar para outro aparelho: Menu > Salvar arquivo.
+  O arquivo .grao fica em Downloads e abre de volta em Menu > Abrir arquivo.
+- Limpar os dados do site APAGA o projeto do navegador. Salve um arquivo antes.
+- Galeria de projetos e exportar GIF/vídeo: planejados para a v0.6.
 
 
 8. DICA RÁPIDA PARA ANIMAR UM LOOP
 ----------------------------------
 1. Abra a roda e toque no centro para parar o loop.
-2. Ligue "Auto" na folha Mais.
+2. Ligue "Auto" no Menu.
 3. Desenhe: a cada traço o frame avança. Os frames vizinhos aparecem
    claros (papel-cebola) enquanto está parado.
 4. Toque no centro de novo para ver o loop tocando.

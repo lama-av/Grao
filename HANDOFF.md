@@ -49,7 +49,8 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 
 ## Fila
 
-> **v0.2.0 fechada em 24/11** (pedidos #001–#009 feitos). A partir daqui, a fila é da v0.2.1.
+> **v0.2.0 fechada em 24/11** (pedidos #001–#009 feitos). **v0.2.1 feita em 24/11** (#010–#013, a partir da D3,
+> a pedido do Raphael: "continue a produção e melhoria do app").
 >
 > **Relatório da v0.2 para a auditoria:** `docs/relatorio-v0.2.md` (o que saiu diferente, extras, pendências,
 > decisões). Sessão de animação só com a roda feita pelo Raphael em 24/11: funcionou tudo certo.
@@ -272,6 +273,47 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
     botão 2, encostar e contornar (laço); soltar o botão 2 (volta ao normal). Se o botão 2 não fizer nada, rodar
     o `teste-caneta.html` e mandar o valor de "botões".
 
+### #010 — Menu principal e arquivo `.grao`
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.2.1
+- **Origem:** D3 (Raphael, 24/11: "a falta de um menu principal me incomoda"). Desenho feito pelo VS Code, a
+  pedido do Raphael ("continue a produção"); o chat pode revisar.
+- **Resposta do VS Code:**
+  - O setor "Mais" virou **Menu**. Topo: nome do projeto, estado do salvamento ("Salvo neste aparelho às 14:32"),
+    **Salvar arquivo**, **Abrir arquivo**, **Novo projeto**, **Exportar PNG**. Embaixo, agrupados: Impressão e
+    Desenho e roda.
+  - Salvar arquivo baixa `Nome-do-projeto.grao` (JSON só com traços). Abrir arquivo usa o seletor do Android (sem
+    filtro de tipo, porque o Android esconde extensões desconhecidas), confere o arquivo e pergunta: "Abrir “nome”?
+    O desenho atual será trocado. Salve um arquivo antes, se quiser guardar." · **Abrir** · **Cancelar**.
+  - `sanitize` passou a conferir cada campo (traço estragado sai, valores fora da faixa voltam ao padrão).
+  - Arquivos: `src/ui/sheet.js`, novo `src/io/file.js`, `src/doc/project.js`, `src/main.js`, `styles.css`.
+  - **Testar no tablet:** dar nome, Salvar arquivo e achar o `.grao` em Downloads; Novo projeto; Abrir arquivo e
+    escolher o `.grao` (o desenho volta); tentar abrir uma foto (aviso de erro, nada muda).
+
+### #011 — Cores à vista na pétala Tinta
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.2.1
+- **Origem:** D3 (Raphael: "as cores ficam escondidas, não fica fácil identificar que tem mais que 4 cores").
+- **Resposta do VS Code:**
+  - Pétala Tinta = 2 arcos: perto, as **4 tintas** (rótulo "Tintas"); fora, as **8 cores** possíveis para a tinta
+    ativa (rótulo "Cor da tinta", pastilhas de 44 px). Tocar numa cor troca a cor da tinta ativa e a pétala fica
+    aberta. Um ponto escuro marca a cor que outra tinta já usa. O limite de 4 tintas por projeto continua.
+  - O toque longo numa tinta continua abrindo as cores daquela tinta (atalho).
+  - Arquivo: `src/ui/wheel.js`.
+  - **Testar no tablet:** abrir Tinta e ver os 2 arcos; tocar em outra cor (a tinta muda e a pétala continua);
+    tocar em outra tinta (ativa e fecha).
+
+### #012 — "Camadas" vira "Tempo"
+- **Status:** Feito · **Prioridade:** P3 · **Versão alvo:** 0.2.1
+- **Origem:** Raphael (24/11): "não entendi o sistema de camadas, não são camadas de fato". Recomendação da D2.
+- **Resposta do VS Code:** setor e folha renomeados para **Tempo**. A folha diz "Tempo da tinta Rosa flúor",
+  mostra FPS, frames e a duração do loop ("1 s"), e explica que cada tinta tem o próprio loop. Quando as camadas
+  de verdade chegarem (v0.4), o nome volta a ser discutido.
+
+### #013 — Dica de 2 dedos na seleção
+- **Status:** Feito · **Prioridade:** P3 · **Versão alvo:** 0.2.1
+- **Origem:** Raphael perguntou se dava para girar e escalar a seleção; já dava, mas ninguém descobre (D2).
+- **Resposta do VS Code:** junto dos chips aparece "2 dedos sobre a seleção: girar e escalar" nas 5 primeiras
+  seleções feitas neste aparelho (contagem guardada no navegador).
+
 ## Dúvidas do VS Code
 
 _Perguntas que travaram um pedido. O Raphael leva para o chat, e a resposta volta como edição do pedido._
@@ -318,6 +360,10 @@ GIF/MP4/MOV, transformar a seleção, balde, linha, caneta Bézier, opacidade e 
 **O que o chat precisa decidir:** antecipar o T-051 (arquivo) e a grade de tintas para uma v0.2.1? Renomear
 "Camadas" para "Tempo" até a v0.4? Como mostrar que 2 dedos giram a seleção?
 
+**Atualização (24/11):** a pedido do Raphael, o VS Code fez o arquivo `.grao` (#010), o nome "Tempo" (#012) e a
+dica de 2 dedos (#013). As 8 tintas ficam (decisão do Raphael). Exportar GIF/MP4, Bézier e modos de mistura seguem
+como na tabela.
+
 ### D3 — Feedback do Raphael no teste da b6 (24/11), para o chat desenhar
 - **Cores escondidas:** "as cores ficam escondidas, não fica fácil identificar que tem mais que 4 cores para
   utilizar". Hoje as 8 cores só aparecem no **toque longo** numa tinta da pétala Tinta. Limite a respeitar: no
@@ -327,6 +373,8 @@ GIF/MP4/MOV, transformar a seleção, balde, linha, caneta Bézier, opacidade e 
   automático escondido. Pede um menu com Novo, Salvar, Abrir etc. Liga com a recomendação do D2 (antecipar o
   T-051, arquivo `.grao`). Falta decidir: onde fica o menu (setor da roda? folha própria?), quais itens, e se
   entra numa v0.2.1.
+- **Resolvida pelo VS Code (24/11), a pedido do Raphael:** #010 (Menu com arquivo `.grao`, no lugar do setor
+  "Mais") e #011 (arco das 8 cores sempre visível na pétala Tinta). O chat pode revisar o desenho na auditoria.
 
 ## Feitos
 

@@ -1,13 +1,16 @@
 // Documento: projeto, tintas (camadas), frames e traços.
 // Só traços são salvos; máscaras são cache (ver docs/04-design-sistema-v0.1.md).
 
-import { DEFAULT_FRAMES, DEFAULT_INKS } from '../config.js';
+import { DEFAULT_FRAMES, DEFAULT_INKS, INKS, PAPERS, FPS_OPTIONS, MAX_FRAMES } from '../config.js';
+
+const LAYERS = 4;                         // o compositor riso mistura exatamente 4 tintas
 
 export function newProject(paper = 'natural') {
   return {
     format: 'grao-projeto',
     version: 1,
     created: new Date().toISOString(),
+    name: 'Sem título',
     paper,
     nextId: 1,
     activeLayer: 0,
@@ -51,13 +54,54 @@ export function boundsOf(strokes) {
   return b;
 }
 
-// Garante que um projeto carregado tem todos os campos (arquivos antigos ou editados à mão).
+// Garante que um projeto carregado (do navegador ou de um arquivo .grao) tem todos os campos e só valores
+// válidos. Traço estragado é descartado; o resto do projeto é aproveitado. Nunca lança erro.
 export function sanitize(p) {
   const base = newProject();
-  if (!p || p.format !== 'grao-projeto' || !Array.isArray(p.layers)) return base;
-  p.settings = { ...base.settings, ...(p.settings || {}) };
-  if (!p.paper) p.paper = 'natural';
-  if (typeof p.nextId !== 'number') p.nextId = 1;
-  if (typeof p.activeLayer !== 'number') p.activeLayer = 0;
-  return p;
+  if (!p || typeof p !== 'object' || p.format !== 'grao-projeto' || !Array.isArray(p.layers)) return base;
+  const num = (v, a, b, d) => (Number.isFinite(v) ? Math.min(b, Math.max(a, v)) : d);
+  const out = {
+    format: 'grao-projeto',
+    version: 1,
+    created: typeof p.created === 'string' ? p.created : base.created,
+    name: typeof p.name === 'string' && p.name.trim() ? p.name.trim().slice(0, 60) : base.name,
+    paper: PAPERS[p.paper] ? p.paper : 'natural',
+    nextId: 1,
+    activeLayer: 0,
+    layers: [],
+    settings: { ...base.settings },
+  };
+  let maxId = 0;
+  for (let l = 0; l < LAYERS; l++) {
+    const src = p.layers[l];
+    const def = base.layers[l];
+    if (!src || typeof src !== 'object' || !Array.isArray(src.frames) || !src.frames.length) { out.layers.push(def); continue; }
+    const frames = src.frames.slice(0, MAX_FRAMES).map((fr) => (Array.isArray(fr) ? fr : []).map(cleanStroke).filter(Boolean));
+    for (const fr of frames) for (const s of fr) maxId = Math.max(maxId, s.id);
+    out.layers.push({
+      ink: Number.isInteger(src.ink) && src.ink >= 0 && src.ink < INKS.length ? src.ink : def.ink,
+      fps: FPS_OPTIONS.includes(src.fps) ? src.fps : def.fps,
+      frames,
+    });
+  }
+  out.nextId = Math.max(Number.isInteger(p.nextId) ? p.nextId : 1, maxId + 1);
+  out.activeLayer = Number.isInteger(p.activeLayer) && p.activeLayer >= 0 && p.activeLayer < LAYERS ? p.activeLayer : 0;
+  const s = p.settings && typeof p.settings === 'object' ? p.settings : {};
+  const set = out.settings;
+  set.grain = num(s.grain, 0, 1, set.grain);
+  set.mis = num(s.mis, 0, 1, set.mis);
+  set.brush = Math.round(num(s.brush, 2, 40, set.brush));
+  for (const k of ['ferver', 'auto', 'lefty', 'pinWheel']) if (typeof s[k] === 'boolean') set[k] = s[k];
+  set.wheelCorner = ['bl', 'br', 'tl', 'tr'].includes(s.wheelCorner) ? s.wheelCorner : null;
+  return out;
+}
+
+function cleanStroke(s) {
+  if (!s || typeof s !== 'object' || !Number.isInteger(s.id) || s.id < 1) return null;
+  if (s.kind !== 'ink' && s.kind !== 'cut') return null;
+  if (!Number.isFinite(s.w) || s.w <= 0) return null;
+  const pts = s.pts;
+  if (!Array.isArray(pts) || pts.length < 3 || pts.length % 3 !== 0 || pts.length > 300000) return null;
+  for (const v of pts) if (!Number.isFinite(v)) return null;
+  return { id: s.id, kind: s.kind, w: Math.min(200, s.w), pts: pts.slice() };
 }

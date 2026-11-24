@@ -17,7 +17,8 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
-- **v0.2.0 fechada em 24/11/2026** (papel em tela cheia e roda de canto), testada pelo Raphael no tablet.
+- **v0.2.1 (24/11/2026):** Menu com arquivo `.grao`, cores à vista na pétala Tinta, setor Tempo. A v0.2.0
+  (papel em tela cheia e roda de canto) foi testada pelo Raphael no tablet; a v0.2.1 ainda não.
   Relatório: `docs/relatorio-v0.2.md`. A Fase 0 completa (`docs/08-testes-fase-0.md`) ainda decide o ADR-001.
 - Plataforma: web (PWA) no Chrome do tablet — `docs/adr/ADR-001-plataforma-v0.1.md` (status: **Proposto**).
 - Escopo do MVP: `docs/02-decisao-mvp.md`. **Não adicione recursos fora dele** sem o Raphael pedir.
@@ -56,7 +57,7 @@ src/
   main.js              cria o objeto app, liga tudo, loop requestAnimationFrame
   actions.js           ações do app (desfazer, seleção, duplicar, apagar, trocar/novo projeto); usado pelo teste
   config.js            constantes (documento 1200×800, tintas, papéis, FPS, passo da roda…)
-  doc/project.js       projeto, traços, caixas, sanitize de arquivos carregados
+  doc/project.js       projeto, traços, caixas, sanitize (confere cada campo; sempre 4 tintas)
   doc/history.js       desfazer/refazer por frame (listas "antes/depois")
   clock/clock.js       tempo virtual, velocidade, pausa, holds (molas), frame por camada, semente do ferver
   render/stroke.js     desenho do traço com pressão (igual na tela e na máscara)
@@ -64,10 +65,11 @@ src/
   render/riso/         compositor WebGL2; riso.vert/riso.frag em GLSL ES 3.00
   input/input.js       Pointer Events no canvas: desenhar, recortar, laço, mover, gestos de 2 dedos
   ui/wheel.js          roda de canto no canvas #ui: botão, centro, setores, prato, velocidade, pétalas, chips
-  ui/sheet.js          folhas HTML Mais e Camadas (só com a caneta parada)
+  ui/sheet.js          folhas HTML Menu (arquivo e ajustes) e Tempo (FPS e frames) — só com a caneta parada
   ui/dialog.js         caixa de confirmação ("Apagar e começar" / "Cancelar")
   ui/debug.js          painel "Teste da Fase 0"
   io/storage.js        IndexedDB (um projeto atual), salvamento com debounce
+  io/file.js           arquivo .grao: salvar (baixar), abrir (seletor do aparelho), conferir (sanitize)
 tests/logic_test.mjs  teste de lógica sem navegador (Node do VS Code)
 tests/smoke_test.py   teste com Chrome e GPU (Playwright)
 ```
