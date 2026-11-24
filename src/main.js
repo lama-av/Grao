@@ -1,6 +1,6 @@
 // Grão v0.1 — ponto de entrada. Liga documento, relógio, compositor riso, entrada e interface.
 
-import { VERSION, INKS, PAPERS, REPRINTS_PER_SECOND, hexToRgb } from './config.js';
+import { VERSION, BUILD, INKS, PAPERS, REPRINTS_PER_SECOND, hexToRgb } from './config.js';
 import { newProject, sanitize, cloneStroke } from './doc/project.js';
 import { History } from './doc/history.js';
 import { Clock } from './clock/clock.js';
@@ -188,6 +188,9 @@ async function start() {
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
+
+  // Fase de testes: confirma qual versão o tablet está rodando (o Chrome guarda cópias antigas).
+  app.toast(`Grão ${VERSION}-${BUILD} · baixa latência: ${app.lowLatency ? 'LIGADA' : 'desligada'}`);
 
   window.grao = app; // para inspecionar pelo console durante os testes
 }
