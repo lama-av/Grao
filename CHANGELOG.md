@@ -4,7 +4,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
-### v0.2 em construção (build b5, prévia publicada)
+### v0.2 em construção (build b6, prévia publicada)
+- b6: pétalas Tinta e Ferramenta aceitam **encostar, arrastar e soltar** sobre a pastilha (antes só toque parado); destaque na pastilha sob o dedo; o toque longo numa tinta também aceita arrastar até a cor (#008).
+- b6: `INSTRUCOES.txt` (como usar o Grão, atualizado a cada versão) e `docs/12-tintas-riso.md` (pesquisa das tintas riso: 78 cores com hex e Pantone U).
 - Papel em tela cheia; a zona do polegar saiu. Interface nova: **roda de canto** desenhada num canvas por baixo do traço (ADR-002).
 - Roda recolhida (64 px): tinta ativa, frames e parado; segurar e arrastar leva a outro canto (fica salvo).
 - Roda aberta: centro toca/pausa; setores Desfazer, Refazer, Tinta, Ferramenta, Camadas, Mais; prato do tempo; arco de velocidade. Recolhe ao desenhar, salvo com "Fixar roda".

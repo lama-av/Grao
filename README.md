@@ -13,10 +13,11 @@ Você desenha dentro de um loop que nunca para; o grão da impressão ferve no r
 | **App** | https://lama-av.github.io/Grao/ |
 | Teste da Fase 0 (caneta, palma, latência) | https://lama-av.github.io/Grao/teste-caneta.html |
 | Diagnóstico do WebGL | https://lama-av.github.io/Grao/diag.html |
+| Instruções de uso | https://github.com/lama-av/Grao/blob/main/INSTRUCOES.txt |
 | App com baixa latência ligada (fica preto no Android) | https://lama-av.github.io/Grao/?baixa=1 |
 
 Cada envio para o GitHub atualiza o site em cerca de 1 minuto. O Chrome pode mostrar a versão antiga por até
-10 minutos; o aviso ao abrir o app mostra a versão (ex.: `0.1.0-b4`).
+10 minutos; o aviso ao abrir o app mostra a versão (ex.: `0.1.0-b6`).
 
 ## Como rodar no tablet (rede local, para desenvolvimento)
 

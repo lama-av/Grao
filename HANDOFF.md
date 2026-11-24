@@ -227,6 +227,20 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
     chromium` e `CHROME=<caminho do chrome> python tests/smoke_test.py`.
   - A confirmação de Novo projeto ainda usa a caixa do navegador (botões OK/Cancelar, não "Apagar e começar").
 
+### #008 — Pétalas não respondem a "encostar e arrastar"
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.2.0
+- **Origem:** teste do Raphael no tablet (24/11): "na sessão de cores, a roda de opções, mesmo clicando e
+  arrastando, não funciona".
+- **Problema:** as pastilhas só aceitavam toque parado. Encostar em Tinta e arrastar até uma tinta, ou fazer o
+  toque longo e arrastar até a cor nova, não fazia nada ao soltar.
+- **Resposta do VS Code (24/11, build b6):**
+  - Encostar em **Tinta** ou **Ferramenta** já abre a pétala; arrastar até a pastilha e soltar escolhe. A
+    pastilha sob o dedo ganha um anel de destaque. Depois do toque longo numa tinta, arrastar até a cor e
+    soltar troca a cor. Tocar e tocar continua funcionando como antes.
+  - Arquivo: `src/ui/wheel.js`. Teste automático não rodado (mesmo motivo do #007).
+  - **Testar no tablet:** encostar em Tinta, arrastar até outra tinta e soltar; toque longo numa tinta, arrastar
+    até uma cor e soltar; tocar em Ferramenta e tocar em Borracha.
+
 ## Dúvidas do VS Code
 
 _Perguntas que travaram um pedido. O Raphael leva para o chat, e a resposta volta como edição do pedido._
@@ -249,6 +263,29 @@ _Perguntas que travaram um pedido. O Raphael leva para o chat, e a resposta volt
     definitiva e o problema some.
 - **Resolvida (23/11, Raphael):** opção **A**. A v0.2 segue sem baixa latência; no teste do tablet o modo
   baixa latência nem funcionou. O #001 foi ajustado: `#wet` transparente, sem `desynchronized`.
+
+### D2 — Pedidos do Raphael de 24/11 que estão fora da v0.2 (levar para o chat)
+O Raphael pediu, depois de usar a b5: menu de arquivo, paleta riso completa, camadas de verdade, exportar
+GIF/MP4/MOV, transformar a seleção, balde, linha, caneta Bézier, opacidade e modos de mistura. Comparação com
+`docs/02-decisao-mvp.md` e `docs/10-plano-ate-v1.md` (nada disso foi implementado; só o #008):
+
+| Pedido | No plano? | Onde | Recomendação do VS Code |
+| --- | --- | --- | --- |
+| Menu de arquivo (novo, salvar, abrir) | Sim | v0.6 T-050 galeria, T-051 arquivo `.grao` | **Antecipar o T-051** (Salvar cópia `.grao` / Abrir `.grao` na folha Mais): é pequeno e protege o desenho, que hoje só vive no navegador. "Novo projeto" já existe. Galeria fica na v0.6. |
+| Tintas riso oficiais | Em parte | MVP: 4 tintas; "paletas próprias" = Grão 2 | Valores já corretos (ver `docs/12-tintas-riso.md`; não há hex oficial da Riso). **Ampliar a troca de cor de 8 para a lista completa** numa folha com grade (só com a caneta parada). Paletas próprias continuam para depois. |
+| Camadas confusas | Sim | v0.4 T-030–T-034 | Hoje camada = tinta e a folha "Camadas" só tem tempo (FPS e frames), como a v0.2 pediu. Sugestão barata até a v0.4: **renomear o setor para "Tempo"** (decisão de texto, doc 11). |
+| Exportar GIF e MP4 | Sim | MVP essencial; v0.6 T-052 | Manter na v0.6 ou antecipar o GIF. **MOV: não recomendo** (o navegador não grava MOV; MP4 via WebCodecs e WebM funcionam no Chrome). |
+| Laço só seleciona? | Sim | MVP | Sim, Laço é só seleção. |
+| Girar e escalar a seleção | **Já existe** | decisão 10 | 2 dedos pousados sobre a seleção movem, giram e escalam. Problema real: ninguém descobre. Sugestão: dica no chip ou alças na caixa (decidir no chat). |
+| Balde | Sim | v0.3 T-022 | Seguir o plano. |
+| Linha reta | Sim | v0.3 T-023 (segurar 0,5 s endireita) | Seguir o plano. |
+| Caneta Bézier | **Não** | — | **Não recomendo no Grão**: é ferramenta de precisão vetorial, contra a ideia de caderno e de "um gesto, uma função". Se quiser, avaliar para a Prensa ou Grão 2. |
+| Opacidade | Em parte | v0.4 T-030 "retícula" 10–100 % por camada | Seguir o plano: no riso, a "opacidade" é a densidade da retícula da tinta. |
+| Modos de mistura | **Não** | decisão 5 (cada camada é uma tinta) | **Não recomendo**: riso é sempre sobreimpressão (multiplicar); outros modos quebram a cara de impressão. |
+| Cor de linha e de preenchimento separadas | **Não** | decisão 5 | Cada camada tem uma tinta só; o balde usa a tinta da camada. Duas cores = duas camadas, como na gráfica. |
+
+**O que o chat precisa decidir:** antecipar o T-051 (arquivo) e a grade de tintas para uma v0.2.1? Renomear
+"Camadas" para "Tempo" até a v0.4? Como mostrar que 2 dedos giram a seleção?
 
 ## Feitos
 

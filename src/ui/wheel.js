@@ -56,6 +56,7 @@ export function setupWheel(app, canvas) {
   let plateHeld = false;
   let sizePreview = false;
   let dragPos = null;         // botão sendo arrastado para outro canto
+  let hover = '';             // pastilha sob o dedo durante um arraste (destaque)
   let readText = '', readUntil = 0;
   let lastSpeedTap = 0;
   let lastSig = '';
@@ -258,6 +259,10 @@ export function setupWheel(app, canvas) {
       g.timer = setTimeout(() => { g.dragging = true; dragPos = p; }, DRAG_MS);
     } else if (h.kind === 'pill' && h.item.kind === 'ink') {
       g.timer = setTimeout(() => { g.long = true; petalLayer = h.item.i; petal = 'inkcolor'; }, LONG_MS);
+    } else if (h.kind === 'sector' && (h.sector.id === 'ink' || h.sector.id === 'tool') && petal !== h.sector.id) {
+      // abre a pétala já ao encostar: dá para arrastar até a pastilha e soltar em cima dela
+      petal = h.sector.id;
+      g.openedOnDown = true;
     }
     active.set(e.pointerId, g);
     return true;
@@ -284,14 +289,27 @@ export function setupWheel(app, canvas) {
     } else if (g.kind === 'pill' && g.moved > 12) {
       clearTimeout(g.timer);
     }
+    if (g.kind === 'pill' || g.kind === 'sector') {
+      const h = petal && g.moved >= TAP_MOVE ? hit(p) : null;
+      hover = h?.kind === 'pill' ? pillKey(h.item) : '';
+    }
   }
+
+  const pillKey = (it) => `${it.kind}:${it.i ?? it.j ?? it.tool}`;
 
   function up(e, cancelled) {
     const g = active.get(e.pointerId);
     if (!g) return;
     active.delete(e.pointerId);
     clearTimeout(g.timer);
+    hover = '';
     const tap = !cancelled && g.moved < TAP_MOVE;
+
+    // Arrastar e soltar sobre uma pastilha escolhe (Tinta/Ferramenta, ou a cor depois do toque longo).
+    if (!cancelled && !tap && (g.kind === 'pill' || g.kind === 'sector') && petal) {
+      const h = hit(local(e));
+      if (h?.kind === 'pill') { runPill(h.item); return; }
+    }
 
     if (g.kind === 'plate') {
       app.clock.holds.delete('wheel');
@@ -312,7 +330,7 @@ export function setupWheel(app, canvas) {
         app.clock.paused = !app.clock.paused;
         say(app.clock.paused ? 'Parado' : 'Tocando');
       } else if (g.kind === 'sector') {
-        runSector(g.sector.id, g.sheetWas);
+        if (!g.openedOnDown) runSector(g.sector.id, g.sheetWas);
       } else if (g.kind === 'pill' && !g.long) {
         runPill(g.item);
       } else if (g.kind === 'chip') {
@@ -458,6 +476,10 @@ export function setupWheel(app, canvas) {
 
   function drawPetal(c, base) {
     for (const it of petalItems()) {
+      if (hover === pillKey(it)) {          // destaque da pastilha sob o dedo
+        disc(it.x, it.y, PILL_R + 7);
+        ctx.lineWidth = 3; ctx.strokeStyle = C.text; ctx.stroke();
+      }
       disc(it.x, it.y, PILL_R);
       if (it.color) {
         ctx.fillStyle = it.color; ctx.fill();
@@ -532,7 +554,7 @@ export function setupWheel(app, canvas) {
       now < app.historyUntil, now < readUntil ? readText : '', app.tool, settings().brush, sizePreview,
       dragPos && `${dragPos.x | 0},${dragPos.y | 0}`, app.sheet?.mode, app.history.canUndo, app.history.canRedo,
       sb && `${sb.x0 | 0},${sb.y0 | 0},${sb.x1 | 0},${sb.y1 | 0}`,
-      app.project.layers.map((L) => L.ink).join(''),
+      app.project.layers.map((L) => L.ink).join(','), hover,
     ].join('|');
     if (!animating && sig === lastSig) return;
     lastSig = animating ? '' : sig;

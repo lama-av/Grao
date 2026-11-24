@@ -13,6 +13,11 @@ Leia na ordem se estiver chegando agora. Cada arquivo começa pela conclusão.
 | 07 | [Roadmap](07-roadmap.md) | Fases e portões |
 | 08 | [Testes da Fase 0](08-testes-fase-0.md) | O que medir no tablet antes de construir o resto |
 | 09 | [Crítica de design](09-critica-de-design.md) | Problemas de interação por gravidade, arco narrativo, estratégia (JTBD, métricas, suposições) |
+| 10 | [Plano até a v1.0](10-plano-ate-v1.md) | Versões, tarefas, fluxo de trabalho, pausas de auditoria, especificação da roda |
+| 11 | [Textos da interface](11-textos-da-interface.md) | Vocabulário, tom, mensagens |
+| 12 | [Tintas riso](12-tintas-riso.md) | 78 tintas com hex e Pantone U; o que é "oficial" e o que é aproximação |
+
+Como usar o app: [`INSTRUCOES.txt`](../INSTRUCOES.txt) na raiz.
 
 ## Decisões de arquitetura (ADRs)
 

@@ -1,0 +1,125 @@
+GRÃO — INSTRUÇÕES DE USO
+========================
+Versão descrita: 0.1.0-b6 (prévia da v0.2: papel em tela cheia e roda de canto)
+Atualizado em: 24/11/2026
+Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
+
+
+1. ABRIR
+--------
+- No tablet (Chrome): https://lama-av.github.io/Grao/
+- Ao abrir, aparece um aviso com a versão (ex.: "Grão 0.1.0-b6"). Se o número for
+  antigo, o Chrome está usando a cópia guardada: espere 10 minutos ou limpe os dados
+  do site (Chrome > cadeado ao lado do endereço > Configurações do site > Limpar dados).
+- Para instalar como app: menu do Chrome > "Adicionar à tela inicial".
+- No PC: servir a pasta pelo Live Server (Go Live) e abrir http://localhost:5500.
+- Se algo der errado, uma caixa vermelha aparece embaixo com o erro. Mande um print.
+
+
+2. A IDEIA EM UMA FRASE
+-----------------------
+Você desenha num papel de risografia que já está animando em loop. Cada CAMADA é
+uma TINTA riso (hoje são 4: Rosa flúor, Azul, Amarelo e Preto). As tintas se
+misturam como na impressão de verdade (multiplicando). O grão "ferve" a cada
+reimpressão.
+
+
+3. CANETA E DEDOS
+-----------------
+Caneta
+- Encostar e riscar: desenha com a ferramenta atual (pressão muda a espessura).
+- Segurar o botão lateral da caneta e riscar: apaga (Borracha), só enquanto segura.
+- Com Laço: contorne o desenho para selecionar.
+- Com uma seleção ativa: encostar dentro da caixa e arrastar move a seleção.
+
+Dedos (no papel)
+- 1 dedo NUNCA desenha (por causa da palma). Tocar o papel recolhe a roda.
+- Toque rápido com 2 dedos: Desfazer.
+- 2 dedos pousados sobre a seleção (ou até 80 px em volta): mover, girar e mudar
+  o tamanho da seleção (pinça e giro, como numa foto).
+- Não há gesto de 3 dedos nem toque duplo no papel (de propósito).
+
+
+4. A RODA DE CANTO
+------------------
+Recolhida: um botão redondo no canto inferior esquerdo (direito no modo Canhoto).
+Mostra a cor da tinta ativa, um anel de pontos com o frame atual aceso e um
+contorno fino quando o loop está parado.
+
+- Tocar no botão: abre a roda.
+- Segurar 0,4 s e arrastar: leva o botão para outro canto. Fica salvo.
+
+Roda aberta, de dentro para fora:
+- CENTRO: toca / pausa. Leituras rápidas aparecem aqui ("3/8", "1,5×", "Desfeito").
+- 6 BOTÕES: Desfazer, Refazer, Ferramenta, Mais, Camadas, Tinta.
+- PRATO DO TEMPO (anel com os pontos dos frames): encostar congela o loop; girar
+  30° anda 1 frame. Soltar volta a tocar.
+- ARCO DE VELOCIDADE (por fora): de −2× a 2×. Encaixa em 1× e em 0×.
+  Toque duplo no arco volta para 1×.
+
+Desfazer abre o MODO HISTÓRICO por 3 s: o prato fica rosa e girar o prato
+desfaz / refaz passo a passo.
+
+A roda recolhe sozinha quando você desenha ou toca o papel, a não ser que
+"Fixar roda" esteja ligado na folha Mais.
+
+PÉTALAS (aparecem em arco, fora da roda)
+- Tinta: escolhe a camada/tinta em que você desenha.
+    · Toque longo (0,5 s) numa tinta: abre as 8 cores para trocar a cor dela.
+- Ferramenta: Pincel, Borracha, Laço e o arco de Tamanho (mostra o tamanho do
+  pincel num círculo no meio do papel).
+- Dá para escolher de dois jeitos:
+    · tocar no botão (Tinta ou Ferramenta) e depois tocar na pastilha; ou
+    · encostar no botão, arrastar até a pastilha e soltar em cima dela.
+    · Depois do toque longo numa tinta, também dá para arrastar até a cor nova
+      e soltar.
+
+
+5. SELEÇÃO
+----------
+- Escolha Laço na pétala Ferramenta e contorne o desenho com a caneta.
+- Com algo selecionado, o loop fica parado e aparecem dois botões perto da caixa:
+    · "Duplicar →": copia a seleção para o próximo frame (bom para animar).
+    · "Apagar": apaga o que está selecionado.
+- Mover: caneta dentro da caixa. Girar e escalar: 2 dedos sobre a seleção.
+- Tocar fora solta a seleção.
+
+
+6. FOLHAS
+---------
+Mais (ajustes):
+- Grão, Desalinhamento (registro fora do lugar), Ferver (grão que muda a cada
+  reimpressão), Papel (Natural, Jornal, Kraft, Reciclado).
+- Auto: com o loop parado, cada traço terminado pula para o próximo frame
+  (desenho quadro a quadro).
+- Fixar roda, Canhoto, Teste da Fase 0 (painel de números).
+- Exportar PNG (o frame atual) e Novo projeto (pede confirmação).
+
+Camadas (por enquanto, só o TEMPO da camada ativa):
+- FPS (6, 8, 12 ou 24) e quantidade de frames (até 12).
+- Cada camada pode ter um loop de tamanho diferente.
+- Ainda não dá para criar, esconder ou reordenar camadas: isso está planejado
+  para a v0.4, quando "camada" e "tinta" passam a ser coisas separadas.
+
+
+7. SALVAR
+---------
+- Tudo é salvo sozinho no navegador (um projeto por vez). Recarregar não perde.
+- Limpar os dados do site APAGA o projeto. Exporte um PNG antes, se for limpar.
+- Arquivo de projeto (.grao), galeria e exportar GIF/vídeo: planejados para a v0.6.
+
+
+8. DICA RÁPIDA PARA ANIMAR UM LOOP
+----------------------------------
+1. Abra a roda e toque no centro para parar o loop.
+2. Ligue "Auto" na folha Mais.
+3. Desenhe: a cada traço o frame avança. Os frames vizinhos aparecem
+   claros (papel-cebola) enquanto está parado.
+4. Toque no centro de novo para ver o loop tocando.
+
+
+9. TESTES (FASE 0)
+------------------
+- Teste da caneta: https://lama-av.github.io/Grao/teste-caneta.html
+  No fim, toque em "Copiar resultados" e cole o texto no chat.
+- Diagnóstico de GPU: https://lama-av.github.io/Grao/diag.html

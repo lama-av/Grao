@@ -24,6 +24,9 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 - O que falta e o que mudou: `CHANGELOG.md`.
 - Plano até a v1.0, fluxo de trabalho e pausas de auditoria: `docs/10-plano-ate-v1.md`.
 - Vocabulário e textos da interface: `docs/11-textos-da-interface.md`.
+- Tintas riso (hex, Pantone, fontes): `docs/12-tintas-riso.md`.
+- **Instruções de uso para o Raphael: `INSTRUCOES.txt`** (raiz). Toda mudança visível de comportamento atualiza
+  esse arquivo (versão e data no topo), junto com o `CHANGELOG.md`.
 
 ## Pedidos de implementação → `HANDOFF.md`
 
