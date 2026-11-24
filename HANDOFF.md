@@ -439,6 +439,36 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 - **Status:** Feito · **Versão alvo:** 0.5.0
 - **Resposta do VS Code:** `VERSION` 0.5.0 (b13), `sw.js`, CHANGELOG, docx. Teste de lógica: 222 verificações.
 
+### #043 — Galeria de projetos
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.6.0 · **Origem:** T-050, queixa do Raphael (D3)
+- **Resposta do VS Code:** IndexedDB com vários projetos (`p:<uid>`; `atual` = uid aberto); migração automática do
+  formato antigo. Menu → **Projetos**: miniatura (frame 1 de todas as camadas visíveis), nome, data; Abrir (salva o
+  atual antes), Duplicar, Apagar (confirma; o aberto não pode ser apagado). **Novo projeto sem confirmação**, porque o
+  atual fica guardado (texto: "Projeto novo. O anterior está em Projetos."). Renomear = campo Nome do Menu.
+  **Testar:** criar 3 projetos, alternar entre eles, duplicar, apagar; recarregar e conferir.
+
+### #044 — Exportar GIF
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.6.0 · **Origem:** MVP (doc 02), T-052, pedido do Raphael
+- **Resposta do VS Code:** `src/io/gif.js` (GIF89a, LZW próprio testado com um decodificador padrão, paleta de até
+  256 cores **por quadro**, laço infinito). FPS = o maior FPS das camadas desenhadas; o GIF só aceita centésimos de
+  segundo, então 24 fps vira 25 fps (4/100 s). Ferver usa o tempo do quadro: o GIF sai igual a cada exportação.
+  Máximo de 288 quadros.
+  **Testar:** exportar GIF 50% e 100%, abrir na galeria e no WhatsApp; conferir cores e grão.
+
+### #045 — Sequência de PNG
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.6.0 · **Origem:** T-052
+- **Resposta do VS Code:** um PNG por quadro (`nome_0001.png`…) num `.zip` sem compressão (`src/io/zip.js`).
+  **Testar:** exportar PNGs 100%, abrir o .zip no PC.
+
+### #046 — Folha Exportar: formato, escala e voltas
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.6.0 · **Origem:** T-052
+- **Resposta do VS Code:** Menu → **Exportar…**: GIF · Vídeo · PNGs (.zip) · PNG do frame; Escala 50/100/200% (200%
+  só para PNGs; vídeo grava a tela); Voltas 1/2/3. GIF e PNGs: renderização fora da tela (framebuffer), um quadro por
+  quadro da tela, com porcentagem no botão da roda; papel e roda esperam.
+
+### #047 — Fechar a 0.6.0
+- **Status:** Feito · **Resposta do VS Code:** `VERSION` 0.6.0 (b14), CHANGELOG, docx; 236 verificações.
+
 ### Pedidos já feitos (v0.2.0 a v0.3.1)
 
 ### #001 — Papel em tela cheia e canvas de interface

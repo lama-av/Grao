@@ -13,7 +13,10 @@ import { setupSheet } from './ui/sheet.js';
 import { setupDebug } from './ui/debug.js';
 import { loadProject, saveProject, debounced } from './io/storage.js';
 import { downloadBlob, baseNameFor } from './io/file.js';
-import { videoFormat, recordSeconds, recordCanvas, fmtSeconds } from './io/video.js';
+import { videoFormat, recordSeconds, recordCanvas, fmtSeconds, planFrames } from './io/video.js';
+import { GifWriter } from './io/gif.js';
+import { makeZip } from './io/zip.js';
+import { frameAtTick } from './doc/project.js';
 import { rebuildDirty } from './schedule.js';
 import { createView, fitView } from './view.js';
 
@@ -101,11 +104,11 @@ async function start() {
   // Exportar vídeo: grava o loop tocando desde o frame 1, na velocidade 1×, por ciclos inteiros.
   app.recording = false;
   app.canRecordVideo = !!videoFormat();
-  app.exportVideo = async () => {
-    if (app.recording) return;
+  app.exportVideo = async ({ laps = 0 } = {}) => {
+    if (app.recording || app.exporting) return;
     const format = videoFormat();
     if (!format) { app.toast('Este navegador não grava vídeo. Use o Chrome atualizado.'); return; }
-    const seconds = recordSeconds(app.project);
+    const seconds = recordSeconds(app.project, laps);
     const c = app.clock;
     const saved = { paused: c.paused, speed: c.speed, view: { ...app.view } };
     fitView(app.view);                      // o vídeo mostra o papel inteiro
@@ -166,17 +169,20 @@ async function start() {
     return out;
   }
 
-  function draw(now) {
+  // Parâmetros do compositor. Sem `at`: o tempo do relógio (tela). Com `at` (segundos): exportação — frame de cada
+  // camada naquele tempo, semente do ferver pelo tempo (o GIF sai igual a cada exportação), sem papel-cebola.
+  function drawParams(now, at = null) {
     const p = app.project;
     const s = p.settings;
     const active = p.layers[p.activeLayer];
-    const fa = app.clock.frameOf(active);
+    const frameOf = (layer) => (at === null ? app.clock.frameOf(layer) : frameAtTick(layer, Math.floor(at * layer.fps + 1e-6)));
+    const fa = frameOf(active);
     const n = active.frames.length;
-    const seed = app.clock.seed(now, REPRINTS_PER_SECOND, s.ferver);
+    const seed = at === null ? app.clock.seed(now, REPRINTS_PER_SECOND, s.ferver) : (s.ferver ? Math.floor(at * REPRINTS_PER_SECOND) : 0);
     const paper = PAPERS[p.paper] || PAPERS.natural;
-    riso.draw({
+    return {
       layers: p.layers.map((layer) => ({
-        mask: app.masks.get(layer.id, app.clock.frameOf(layer)),
+        mask: app.masks.get(layer.id, frameOf(layer)),
         ink: layer.ink,
         type: layer.screen.type === 'am' ? 1 : 0,
         density: layer.screen.density,
@@ -195,10 +201,54 @@ async function start() {
       paper: { rgb: hexToRgb(paper.hex), fiber: paper.fiber, incl: paper.incl, tex: paper.tex },
       grain: s.grain,
       seed,
-      onion: app.clock.frozen && n > 1,
-      view: app.view,
-    });
+      onion: at === null && app.clock.frozen && n > 1,
+      view: at === null ? app.view : { s: 1, ox: 0, oy: 0 },
+    };
   }
+
+  function draw(now) { riso.draw(drawParams(now)); }
+
+  // Exportação quadro a quadro (#044, #045, #046): desenha cada quadro fora da tela, um por quadro da tela (o loop
+  // continua), e monta o GIF ou o .zip de PNGs. Papel e roda ficam esperando (como na gravação de vídeo).
+  const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+  app.exporting = false;
+  app.exportAnimation = async (format, { scale = 0.5, laps = 0 } = {}) => {
+    if (app.exporting || app.recording) return;
+    app.exporting = true;
+    app.selection = null; app.onSelectionChange(); app.ui?.collapse(); app.sheet?.close();
+    while (app.dirty.size) rebuildDirty(app, performance.now(), () => 0);   // todas as máscaras prontas
+    const plan = planFrames(app.project, laps);
+    const w = Math.round(DOC_W * scale), h = Math.round((DOC_W * scale * 2) / 3);
+    const target = riso.createTarget(w, h);
+    const name = baseNameFor(app.project);
+    app.toast(`Exportando ${plan.count} quadros. Espere terminar.`);
+    try {
+      const gif = format === 'gif' ? new GifWriter(w, h) : null;
+      const files = [];
+      const cv = format === 'png' ? Object.assign(document.createElement('canvas'), { width: w, height: h }) : null;
+      for (let i = 0; i < plan.count; i++) {
+        await nextFrame();
+        riso.draw(drawParams(performance.now(), plan.times[i]), target);
+        const rgba = riso.read(target);
+        if (gif) gif.addFrame(rgba, plan.delayCs);
+        else {
+          cv.getContext('2d').putImageData(new ImageData(rgba, w, h), 0, 0);
+          const blob = await new Promise((r) => cv.toBlob(r, 'image/png'));
+          files.push({ name: `${name}_${String(i + 1).padStart(4, '0')}.png`, data: new Uint8Array(await blob.arrayBuffer()) });
+        }
+        if (i % 6 === 0) app.ui?.say(`${Math.round((100 * (i + 1)) / plan.count)}%`);
+      }
+      if (gif) downloadBlob(new Blob([gif.finish()], { type: 'image/gif' }), `${name}.gif`);
+      else downloadBlob(new Blob([makeZip(files)], { type: 'application/zip' }), `${name}_png.zip`);
+      app.toast(`${gif ? 'GIF' : 'PNGs'} exportado. Procure em Downloads.`);
+    } catch (err) {
+      console.warn('Grão: exportação falhou', err);
+      app.toast('Não deu para exportar. Tente uma escala menor ou menos voltas.');
+    } finally {
+      riso.destroyTarget(target);
+      app.exporting = false;
+    }
+  };
 
   // Papel-cebola (#040): até 2 frames antes e 2 depois; o segundo com metade da intensidade.
   function onionWeights(o, n) {

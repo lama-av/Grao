@@ -45,10 +45,24 @@ export function loopSeconds(project) {
 }
 
 // Quanto gravar: ciclos inteiros até passar de MIN_SECONDS (sem passar de MAX_SECONDS).
-export function recordSeconds(project) {
+// laps (v0.6): número de voltas escolhido na folha Exportar; sem ele, o mínimo de 3 s.
+export function recordSeconds(project, laps = 0) {
   const one = loopSeconds(project);
-  const reps = Math.max(1, Math.ceil(MIN_SECONDS / one - 1e-9));
+  const reps = laps > 0 ? laps : Math.max(1, Math.ceil(MIN_SECONDS / one - 1e-9));
   return Math.min(MAX_SECONDS, one * reps);
+}
+
+// Plano de uma exportação quadro a quadro (GIF, sequência de PNG): FPS = o maior FPS das camadas desenhadas,
+// tempos de cada quadro e atraso do GIF (centésimos de segundo; o GIF só aceita centésimos inteiros).
+export const MAX_EXPORT_FRAMES = 288;
+export function planFrames(project, laps = 0) {
+  const used = project.layers.filter((L) => L.frames.some((f) => f.length));
+  const layers = used.length ? used : [project.layers[project.activeLayer]];
+  const fps = Math.max(...layers.map((L) => L.fps));
+  const seconds = recordSeconds(project, laps);
+  const count = Math.max(1, Math.min(MAX_EXPORT_FRAMES, Math.round(seconds * fps)));
+  const times = Array.from({ length: count }, (_, i) => i / fps + 1e-4);
+  return { fps, seconds, count, times, delayCs: Math.max(2, Math.round(100 / fps)) };
 }
 
 // Grava `seconds` do canvas. Devolve uma Promise com o Blob do vídeo.

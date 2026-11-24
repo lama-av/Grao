@@ -99,6 +99,15 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
 .thumb canvas { width: 72px; height: 48px; border-radius: 4px; display: block; }
 .thumb.on { border-color: var(--text); color: var(--text); }
 .lp-tag { color: var(--muted); font-size: 12px; min-width: 44px; align-self: center; }
+.gallery { display: flex; flex-direction: column; gap: 8px; color: var(--muted); }
+.gal-row { display: grid; grid-template-columns: 96px 1fr; gap: 8px; padding: 6px; border-radius: 8px; background: #26231f; }
+.gal-row.on { outline: 2px solid var(--text); }
+.gal-thumb { width: 96px; height: 64px; border-radius: 4px; display: block; }
+.gal-info { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; }
+.gal-info b { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gal-info span { font-size: 12px; }
+.gal-btns { grid-column: 1 / -1; display: flex; gap: 6px; }
+.gal-btns .btn { flex: 1; }
 .sheet { width: 300px; }
 .gestures { margin: 0; display: grid; gap: 4px 0; }
 .gestures dt { color: var(--text); font-weight: 600; margin-top: 6px; }

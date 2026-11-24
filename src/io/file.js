@@ -2,7 +2,7 @@
 // Salvar = baixar o arquivo (no tablet vai para a pasta Downloads). Abrir = escolher um arquivo no aparelho.
 // O salvamento automático no navegador (storage.js) continua por baixo, como rede de segurança.
 
-import { sanitize } from '../doc/project.js';
+import { sanitize, newUid } from '../doc/project.js';
 
 export const FILE_EXT = '.grao';
 
@@ -24,7 +24,9 @@ export function projectFromText(text) {
   let data;
   try { data = JSON.parse(text); } catch { return null; }
   if (!data || data.format !== 'grao-projeto' || !Array.isArray(data.layers)) return null;
-  return sanitize(data);
+  const p = sanitize(data);
+  p.uid = newUid();                         // arquivo aberto vira um projeto novo na galeria (não sobrescreve outro)
+  return p;
 }
 
 export function downloadProject(project) {

@@ -139,6 +139,23 @@ Rodapé: "A palma apoiada é ignorada enquanto a caneta está perto da tela."
 | Leituras | Copiado · Colado · Último frame |
 | Menu: Auto | Auto (cada traço anda um frame) · Auto volta em vez de avançar · Auto para no último frame |
 | Menu: papel-cebola | Cebola · Antes · Depois · Intensidade do papel-cebola |
+
+## Textos da v0.6 (escritos pelo VS Code, 24/11)
+
+| Onde | Texto |
+| --- | --- |
+| Menu | Projetos · Novo projeto · Exportar… |
+| Projetos: título | Projetos neste aparelho |
+| Projetos: botões | Abrir · Duplicar · Apagar |
+| Projetos: vazio | Nenhum projeto guardado ainda. |
+| Projeto aberto | Aberto agora |
+| Aviso: projeto novo | Projeto novo. O anterior está em Projetos. |
+| Confirmação: apagar projeto | Apagar "nome"? Ele some deste aparelho. Salve um arquivo antes, se quiser guardar. · Apagar projeto · Cancelar |
+| Exportar: formatos | GIF · Vídeo · PNGs (.zip) · PNG do frame |
+| Exportar: opções | Escala 50% 100% 200% · Voltas 1 2 3 |
+| Aviso: exportando | Exportando 24 quadros. Espere terminar. |
+| Sucesso | GIF exportado. Procure em Downloads. · PNGs exportado. Procure em Downloads. |
+| Erro | Não deu para exportar. Tente uma escala menor ou menos voltas. |
 | Apagar camada com desenho | Apagar a camada 3? O desenho dela some de todos os frames. · Apagar camada · Cancelar |
 | Folha da camada: rótulos | Tinta · Retícula · Estocástica · Reticulada · Densidade · Visível · Travar · Subir · Descer · Duplicar camada · Apagar camada |
 | Menu → Impressão | Lineatura · 40 · 60 · 85 |

@@ -210,7 +210,7 @@ export function setupInput(app, wetCanvas) {
   wetCanvas.addEventListener('pointerdown', (e) => {
     app.debug?.pointer(e);
     penSeen(e);
-    if (app.recording) return;                // gravando o vídeo: o papel e a roda esperam
+    if (app.recording || app.exporting) return;   // gravando/exportando: o papel e a roda esperam
     if (isPen(e)) {
       penButtons(e);
       // Botão lateral apertado com a caneta no ar: só troca de ferramenta, não toca na roda nem no papel.

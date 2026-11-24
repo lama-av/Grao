@@ -2,15 +2,14 @@
 // "Gestos" e a folha da camada (toque longo numa camada da pétala Camadas).
 // Só existem com a caneta parada: fecham quando o papel ou a roda são tocados (ver wheel.paperDown).
 
-import { INKS, PAPERS, FPS_OPTIONS } from '../config.js';
-import { layerTicks as loopTicks } from '../doc/project.js';
+import { INKS, PAPERS, FPS_OPTIONS, LPI_OPTIONS } from '../config.js';
+import { inkOf, DRUMS, expoOf, MAX_EXPO, sanitize, newUid, layerTicks as loopTicks } from '../doc/project.js';
 import { confirmDialog } from './dialog.js';
 import { downloadProject, pickProjectFile, projectFromText } from '../io/file.js';
 import { fmtSeconds } from '../io/video.js';
+import { listProjects, storeProject, deleteProject } from '../io/storage.js';
 import { fitView, isFit } from '../view.js';
-import { inkOf, DRUMS, expoOf, MAX_EXPO } from '../doc/project.js';
-import { drawThumb } from '../render/thumb.js';
-import { LPI_OPTIONS } from '../config.js';
+import { drawThumb, drawComposite } from '../render/thumb.js';
 
 export function setupSheet(app) {
   const el = document.createElement('div');
@@ -54,10 +53,10 @@ export function setupSheet(app) {
           <button class="btn small" data-act="open">Abrir arquivo</button>
         </div>
         <div class="row">
+          <button class="btn small" data-act="gallery">Projetos</button>
           <button class="btn small" data-act="new">Novo projeto</button>
-          <button class="btn small" data-act="png">Exportar PNG</button>
         </div>
-        <button class="btn small" data-act="video"${app.canRecordVideo ? '' : ' disabled'}>Exportar vídeo do loop</button>
+        <button class="btn small" data-act="export">Exportar…</button>
       </div>
       <div class="sheet-group">
         <div class="sheet-title">Impressão</div>
@@ -161,17 +160,16 @@ export function setupSheet(app) {
       });
       if (ok) { app.replaceProject(p); app.toast('Projeto aberto'); }
     };
-    act('png').onclick = () => app.exportPNG();
+    act('gallery').onclick = () => open('gallery');
+    act('export').onclick = () => open('export');
     act('gestures').onclick = () => open('gestures');
     act('fit').onclick = () => { fitView(app.view); app.input?.redrawOverlay(); close(); };
-    act('video').onclick = () => { close(); app.exportVideo(); };
+    // Desde a v0.6 o projeto atual fica guardado na galeria: projeto novo não apaga nada.
     act('new').onclick = async () => {
       close();
-      const ok = await confirmDialog({
-        text: 'Começar um projeto novo? O desenho atual será apagado deste aparelho.',
-        ok: 'Apagar e começar',
-      });
-      if (ok) app.newProject();
+      await app.saveNow();
+      app.newProject();
+      app.toast('Projeto novo. O anterior está em Projetos.');
     };
   }
 
@@ -335,12 +333,96 @@ export function setupSheet(app) {
     };
   }
 
+  // Galeria (#043): projetos guardados neste aparelho.
+  async function buildGallery() {
+    el.setAttribute('aria-label', 'Projetos');
+    el.innerHTML = `<div class="sheet-title">Projetos neste aparelho</div><div class="gallery">Carregando…</div>
+      <div class="sheet-note">Para guardar fora do tablet: Menu → Salvar arquivo.</div>`;
+    let list = [];
+    try { await app.saveNow(); list = await listProjects(); } catch { /* sem armazenamento */ }
+    if (mode !== 'gallery') return;
+    const box = el.querySelector('.gallery');
+    box.textContent = list.length ? '' : 'Nenhum projeto guardado ainda.';
+    for (const raw of list) {
+      const p = sanitize(raw);
+      const isCur = p.uid === app.project.uid;
+      const row = document.createElement('div');
+      row.className = 'gal-row' + (isCur ? ' on' : '');
+      const cv = document.createElement('canvas');
+      cv.className = 'gal-thumb';
+      drawComposite(cv, p.layers.filter((L) => L.visible).map((L) => ({ strokes: L.frames[0] || [], inkHex: inkOf(p, L).hex })),
+        (PAPERS[p.paper] || PAPERS.natural).hex);
+      const info = document.createElement('div');
+      info.className = 'gal-info';
+      const when = raw.modified ? new Date(raw.modified) : null;
+      info.innerHTML = `<b></b><span>${isCur ? 'Aberto agora' : when ? when.toLocaleDateString('pt-BR') + ' ' + when.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}</span>`;
+      info.querySelector('b').textContent = p.name;
+      const btns = document.createElement('div');
+      btns.className = 'gal-btns';
+      const mk = (label, fn, dis) => { const b = document.createElement('button'); b.className = 'btn small'; b.textContent = label; b.disabled = !!dis; b.onclick = fn; btns.appendChild(b); };
+      mk('Abrir', async () => { close(); await app.saveNow(); app.replaceProject(p); app.toast(`"${p.name}" aberto`); }, isCur);
+      mk('Duplicar', async () => {
+        const copy = { ...JSON.parse(JSON.stringify(p)), uid: newUid(), name: `${p.name} (cópia)`.slice(0, 60) };
+        await storeProject(copy);
+        buildGallery();
+      });
+      mk('Apagar', async () => {
+        close();
+        const ok = await confirmDialog({
+          text: `Apagar "${p.name}"? Ele some deste aparelho. Salve um arquivo antes, se quiser guardar.`,
+          ok: 'Apagar projeto',
+        });
+        if (ok) { await deleteProject(p.uid); app.toast('Projeto apagado'); }
+      }, isCur);
+      row.append(cv, info, btns);
+      box.appendChild(row);
+    }
+  }
+
+  // Exportar (#046): formato, escala e voltas.
+  const exportChoice = { format: 'gif', scale: 0.5, laps: 1 };
+  function buildExport() {
+    const c = exportChoice;
+    el.setAttribute('aria-label', 'Exportar');
+    const opt = (group, value, label, on, dis) =>
+      `<button class="btn small${on ? ' on' : ''}" data-${group}="${value}"${dis ? ' disabled' : ''}>${label}</button>`;
+    const anim = c.format === 'gif' || c.format === 'png';
+    el.innerHTML = `
+      <div class="sheet-title">Exportar</div>
+      <div class="sheet-group">
+        <div class="row">${opt('format', 'gif', 'GIF', c.format === 'gif')}${opt('format', 'video', 'Vídeo', c.format === 'video', !app.canRecordVideo)}</div>
+        <div class="row">${opt('format', 'png', 'PNGs (.zip)', c.format === 'png')}${opt('format', 'frame', 'PNG do frame', c.format === 'frame')}</div>
+      </div>
+      <div class="sheet-group">
+        <div class="lp-row"><span>Escala</span>${opt('scale', '0.5', '50%', c.scale === 0.5, !anim)}${opt('scale', '1', '100%', c.scale === 1, !anim)}${opt('scale', '2', '200%', c.scale === 2, c.format !== 'png')}</div>
+        <div class="lp-row"><span>Voltas</span>${opt('laps', '1', '1', c.laps === 1, c.format === 'frame')}${opt('laps', '2', '2', c.laps === 2, c.format === 'frame')}${opt('laps', '3', '3', c.laps === 3, c.format === 'frame')}</div>
+        <div class="sheet-note">${{
+          gif: 'GIF em laço, com o grão fervendo. 50% = 600 × 400.',
+          png: 'Um PNG por quadro, num arquivo .zip (para editar em outro programa). 100% = 1200 × 800.',
+          video: 'Grava o loop tocando, na resolução da tela, em MP4 (ou WebM).',
+          frame: 'Uma imagem do frame que está na tela.',
+        }[c.format]}</div>
+      </div>
+      <button class="btn" data-act="go">Exportar</button>`;
+    el.querySelectorAll('[data-format]').forEach((b) => { b.onclick = () => { c.format = b.dataset.format; if (c.format === 'gif' && c.scale === 2) c.scale = 1; buildExport(); }; });
+    el.querySelectorAll('[data-scale]').forEach((b) => { b.onclick = () => { c.scale = +b.dataset.scale; buildExport(); }; });
+    el.querySelectorAll('[data-laps]').forEach((b) => { b.onclick = () => { c.laps = +b.dataset.laps; buildExport(); }; });
+    el.querySelector('[data-act="go"]').onclick = () => {
+      close();
+      if (c.format === 'frame') app.exportPNG();
+      else if (c.format === 'video') app.exportVideo({ laps: c.laps });
+      else app.exportAnimation(c.format, { scale: c.scale, laps: c.laps });
+    };
+  }
+
   function open(m, arg) {
     mode = m;
     if (m === 'layer') sheetLayer = arg ?? app.project.activeLayer;
     if (m === 'more') buildMenu();
     else if (m === 'gestures') buildGestures();
     else if (m === 'layer') buildLayer();
+    else if (m === 'gallery') buildGallery();
+    else if (m === 'export') buildExport();
     else buildTime();
     position();
     el.hidden = false;

@@ -50,6 +50,13 @@ export function frameAtTick(layer, tick) {
   return layer.frames.length - 1;
 }
 
+// Identidade do projeto na galeria (v0.6): não muda ao renomear; arquivo aberto ganha uma nova (é uma cópia).
+export function newUid() {
+  const r = Math.random().toString(36).slice(2, 8);
+  return `${Date.now().toString(36)}-${r}`;
+}
+const validUid = (u) => typeof u === 'string' && /^[a-z0-9-]{4,40}$/.test(u);
+
 // Cor (entrada de INKS) com que a camada imprime.
 export const inkOf = (project, layer) => INKS[project.inks[layer.ink]] || INKS[0];
 
@@ -63,6 +70,7 @@ export function newProject(paper = 'natural') {
     format: 'grao-projeto',
     version: 2,
     created: new Date().toISOString(),
+    uid: newUid(),
     name: 'Sem título',
     paper,
     nextId: 1,
@@ -158,6 +166,7 @@ export function sanitize(p) {
     format: 'grao-projeto',
     version: 2,
     created: typeof p.created === 'string' ? p.created : base.created,
+    uid: validUid(p.uid) ? p.uid : base.uid,
     name: typeof p.name === 'string' && p.name.trim() ? p.name.trim().slice(0, 60) : base.name,
     paper: PAPERS[p.paper] ? p.paper : 'natural',
     nextId: 1,

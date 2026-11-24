@@ -489,7 +489,7 @@ export function setupWheel(app, canvas) {
       disc(c.x, c.y, 17);
       ctx.setLineDash([3, 3]); ctx.lineWidth = 1.5; ctx.strokeStyle = C.text; ctx.stroke(); ctx.setLineDash([]);
     }
-    if (app.recording) {              // ponto vermelho enquanto grava o vídeo
+    if (app.recording || app.exporting) {   // ponto vermelho enquanto grava ou exporta
       disc(c.x + BTN_R * 0.72, c.y - BTN_R * 0.72, 6);
       ctx.fillStyle = '#e53935'; ctx.fill();
     }
@@ -747,7 +747,7 @@ export function setupWheel(app, canvas) {
       now < app.historyUntil, now < readUntil ? readText : '', app.tool, settings().sizes[sizeTool()], sizePreview,
       dragPos && `${dragPos.x | 0},${dragPos.y | 0}`, app.sheet?.mode, app.history.canUndo, app.history.canRedo,
       sb && `${sb.x0 | 0},${sb.y0 | 0},${sb.x1 | 0},${sb.y1 | 0}`, app.project.inks.join(','), app.project.activeLayer,
-      app.project.layers.map((L) => `${L.id}.${L.ink}.${L.visible ? 1 : 0}${L.locked ? 1 : 0}`).join(','), hover, app.lassoHeld, app.project.paper, showHint, app.recording, now < rulerUntil, !!app.updateReady, !!app.clipboard?.length,
+      app.project.layers.map((L) => `${L.id}.${L.ink}.${L.visible ? 1 : 0}${L.locked ? 1 : 0}`).join(','), hover, app.lassoHeld, app.project.paper, showHint, app.recording, app.exporting, now < rulerUntil, !!app.updateReady, !!app.clipboard?.length,
       app.view && `${app.view.s.toFixed(3)},${app.view.ox.toFixed(4)},${app.view.oy.toFixed(4)}`,
     ].join('|');
     if (!animating && sig === lastSig) return;

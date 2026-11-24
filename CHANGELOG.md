@@ -4,6 +4,24 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [0.6.0] — 2026-11-24
+
+Projetos e exportação. Pedidos #043–#047 (escritos pelo VS Code a partir do roteiro).
+
+### Adicionado
+- **Galeria de projetos** (#043): Menu → **Projetos** lista os projetos guardados no aparelho, com miniatura, nome e
+  data: Abrir, Duplicar, Apagar (com confirmação). **Novo projeto** não apaga mais nada: o atual fica na galeria.
+  O projeto das versões anteriores entra na galeria sozinho na primeira abertura.
+- **Exportar GIF** (#044): codificador próprio (`src/io/gif.js`), paleta por quadro, laço infinito, grão fervendo.
+- **Sequência de PNG** (#045): um PNG por quadro num `.zip` (`src/io/zip.js`).
+- **Folha Exportar** (#046): GIF, Vídeo, PNGs (.zip) ou PNG do frame; escala 50% / 100% / 200%; 1, 2 ou 3 voltas.
+  GIF e PNGs são desenhados fora da tela, um quadro por vez: o loop continua e o papel não pisca.
+- Arquivo `.grao` aberto vira um projeto novo na galeria (não sobrescreve outro).
+
+### Mudado
+- Menu: "Projetos", "Novo projeto" e "Exportar…" no lugar de "Novo projeto", "Exportar PNG" e "Exportar vídeo".
+- Teste de lógica: 236 verificações (LZW do GIF com decodificador, CRC32 e estrutura do ZIP, plano de quadros, uid).
+
 ## [0.5.0] — 2026-11-24
 
 Tempo: editar a animação sem sair do papel. Pedidos #036–#042, escritos pelo VS Code a partir do roteiro (doc 13),

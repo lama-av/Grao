@@ -1032,5 +1032,94 @@ for (const code of [4]) {
   check('ajustes do papel-cebola e do Auto conferidos ao abrir', ok.onion.before === 2 && ok.onion.after === 0 && ok.onion.strength === 0.8 && ok.autoDir === 'forward' && ok.autoStop === true);
 }
 
+// ---------- v0.6: codificadores GIF e ZIP (#044, #045) ----------
+{
+  const { lzwEncode, quantize, GifWriter } = await import('../src/io/gif.js');
+  // decodificador LZW padrão (como o dos navegadores), só para conferir a ida e volta
+  function lzwDecode(bytes, minCode) {
+    let pos = 0, bit = 0;
+    const read = (size) => {
+      let v = 0;
+      for (let i = 0; i < size; i++) {
+        if (pos >= bytes.length) return -1;
+        v |= ((bytes[pos] >> bit) & 1) << i;
+        if (++bit === 8) { bit = 0; pos++; }
+      }
+      return v;
+    };
+    const clear = 1 << minCode, eoi = clear + 1;
+    let size = minCode + 1, next = eoi + 1, dict = [], prev = null;
+    const reset = () => { dict = []; for (let i = 0; i < clear; i++) dict[i] = [i]; size = minCode + 1; next = eoi + 1; prev = null; };
+    reset();
+    const out = [];
+    for (;;) {
+      const code = read(size);
+      if (code < 0 || code === eoi) break;
+      if (code === clear) { reset(); continue; }
+      let entry;
+      if (dict[code]) entry = dict[code];
+      else if (code === next && prev) entry = prev.concat(prev[0]);
+      else throw new Error('código inválido ' + code);
+      out.push(...entry);
+      if (prev && next < 4096) { dict[next++] = prev.concat(entry[0]); if (next === (1 << size) && size < 12) size++; }
+      prev = entry;
+    }
+    return out;
+  }
+  let ok = true, info = '';
+  for (const [n, colors, seed] of [[10, 4, 1], [1000, 4, 2], [5000, 2, 3], [60000, 256, 4], [60000, 16, 5], [200000, 3, 6]]) {
+    let x = seed * 7919;
+    const rnd = () => { x = (x * 1103515245 + 12345) & 0x7fffffff; return x; };
+    const idx = new Uint8Array(n);
+    for (let i = 0; i < n; i++) idx[i] = (i % 97 < 60 ? (i >> 4) : rnd()) % colors;   // trechos repetidos e ruído
+    let bits = 2; while ((1 << bits) < colors) bits++;
+    const back = lzwDecode(lzwEncode(idx, bits), bits);
+    if (back.length !== n || back.some((v, i) => v !== idx[i])) { ok = false; info += `${n}/${colors} `; }
+  }
+  check('GIF: LZW codifica e decodifica igual (inclusive com o dicionário recomeçando)', ok, info);
+  // paleta: imagem com 3 cores vira 3 cores exatas
+  const w = 30, h = 20, img = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) { const c = [[243, 239, 230], [255, 72, 176], [0, 120, 191]][i % 3]; img.set([...c, 255], i * 4); }
+  const qz = quantize(img);
+  check('GIF: paleta pega as cores exatas de um frame com poucas cores', qz.colors >= 3 && qz.palette[qz.indices[1] * 3 + 1] === 72);
+  const g = new GifWriter(w, h);
+  g.addFrame(img, 8); g.addFrame(img, 8);
+  const bytes = g.finish();
+  const head = String.fromCharCode(...bytes.slice(0, 6));
+  check('GIF: arquivo começa com GIF89a, tem laço infinito e termina com 0x3B', head === 'GIF89a' && String.fromCharCode(...bytes.slice(16, 27)) === 'NETSCAPE2.0' && bytes.at(-1) === 0x3b);
+}
+{
+  const { crc32, makeZip } = await import('../src/io/zip.js');
+  check('ZIP: CRC32 de "123456789" = CBF43926', crc32(new TextEncoder().encode('123456789')) === 0xcbf43926);
+  const z = makeZip([{ name: 'a.txt', data: new TextEncoder().encode('oi') }, { name: 'pasta/b.png', data: new Uint8Array([1, 2, 3]) }]);
+  const dv = new DataView(z.buffer);
+  const endAt = z.length - 22;
+  check('ZIP: começa com PK\\3\\4 e o fim aponta 2 arquivos', dv.getUint32(0, true) === 0x04034b50 && dv.getUint32(endAt, true) === 0x06054b50 && dv.getUint16(endAt + 10, true) === 2);
+  const cdOff = dv.getUint32(endAt + 16, true);
+  check('ZIP: diretório central no lugar certo', dv.getUint32(cdOff, true) === 0x02014b50);
+}
+
+// ---------- v0.6: projetos e exportação (#043–#046) ----------
+{
+  const { planFrames, recordSeconds } = await import('../src/io/video.js');
+  const { newProject: np, sanitize: san } = await import('../src/doc/project.js');
+  const p = np();
+  p.layers[0].frames[0].push({ id: 1, kind: 'ink', w: 5, pts: [1, 1, 1] });
+  const plan = planFrames(p, 1);
+  check('GIF: 1 volta de 8 frames a 8 fps = 8 quadros, atraso de 13 centésimos', plan.count === 8 && plan.delayCs === 13 && plan.seconds === 1, JSON.stringify({ c: plan.count, d: plan.delayCs }));
+  check('GIF: 3 voltas = 24 quadros', planFrames(p, 3).count === 24);
+  p.layers[1].fps = 24; p.layers[1].frames[0].push({ id: 2, kind: 'ink', w: 5, pts: [1, 1, 1] });
+  check('GIF: usa o maior FPS das camadas desenhadas', planFrames(p, 1).fps === 24 && planFrames(p, 1).delayCs === 4);
+  check('vídeo: voltas escolhidas valem', recordSeconds(p, 2) === 2 && recordSeconds(p) === 3);
+  // uid: identidade do projeto na galeria
+  const a = np(), b = np();
+  check('projeto novo ganha uid próprio', typeof a.uid === 'string' && a.uid !== b.uid);
+  check('abrir do navegador mantém o uid', san(JSON.parse(JSON.stringify(a))).uid === a.uid);
+  const { projectFromText, projectToText } = await import('../src/io/file.js');
+  check('abrir arquivo .grao cria uid novo (vira uma cópia na galeria)', projectFromText(projectToText(a)).uid !== a.uid);
+  const bad = JSON.parse(JSON.stringify(a)); bad.uid = '<script>';
+  check('uid inválido é trocado', san(bad).uid !== '<script>' && /^[a-z0-9-]+$/.test(san(bad).uid));
+}
+
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);
 process.exit(fails ? 1 : 0);

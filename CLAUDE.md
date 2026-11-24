@@ -17,6 +17,7 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
+- **v0.6.0 (24/11/2026):** galeria de projetos, exportar GIF e sequência de PNG, folha Exportar.
 - **v0.5.0 (24/11/2026):** tira de frames, operações de frame, exposição, copiar/colar, papel-cebola configurável.
 - **v0.4.0 (24/11/2026):** camadas separadas das tintas (ADR-004), retícula, trapping, abrir sem internet (`sw.js`).
   **v0.3.x:** gestos de 2 dedos, Vermelho vivo, zoom, pincéis, balde, linha reta, vídeo. **v0.2.1:** Menu com arquivo `.grao`, cores à
@@ -78,9 +79,11 @@ sw.js                  service worker: guarda o app para abrir sem internet; avi
   ui/sheet.js          folhas HTML Menu (arquivo e ajustes) e Tempo (FPS e frames) — só com a caneta parada
   ui/dialog.js         caixa de confirmação ("Apagar e começar" / "Cancelar")
   ui/debug.js          painel "Teste da Fase 0"
-  io/storage.js        IndexedDB (um projeto atual), salvamento com debounce
+  io/storage.js        IndexedDB: galeria de projetos (p:<uid>), projeto aberto, salvamento com debounce
   io/file.js           arquivo .grao: salvar (baixar), abrir (seletor do aparelho), conferir (sanitize)
-  io/video.js          exportar vídeo do loop (MediaRecorder: MP4 ou WebM), duração por ciclos inteiros
+  io/video.js          exportar vídeo do loop (MediaRecorder: MP4 ou WebM), duração e plano de quadros
+  io/gif.js            codificador de GIF animado (LZW próprio, paleta por quadro)
+  io/zip.js            .zip sem compressão (sequência de PNG)
 tests/logic_test.mjs  teste de lógica sem navegador (Node do VS Code)
 tests/smoke_test.py   teste com Chrome e GPU (Playwright)
 ```
