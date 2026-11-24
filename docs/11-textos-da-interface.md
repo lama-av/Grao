@@ -74,6 +74,8 @@ apaga a tinta e mostra o papel).
 | Dica de 2 dedos | 2 dedos sobre a seleção: girar e escalar |
 | Leitura: botão da caneta | Borracha · Pincel · Laço |
 | Leitura: linha reta | Linha |
+| Leitura: balde em cima da linha | Nada para pintar |
+| Erro: PNG | Não deu para exportar o PNG. Tente de novo. |
 | Pétala Ferramenta | Pincel · Borracha · Balde · Laço · Tamanho |
 | Menu: vídeo | Exportar vídeo do loop |
 | Aviso: gravando | Gravando o loop: 3 s. Espere terminar. |

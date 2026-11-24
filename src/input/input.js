@@ -4,7 +4,7 @@
 // o resto vai para o papel. O #wet guarda só o traço molhado e o laço; a caixa da seleção vai para o #ui.
 
 import { DOC_W, DOC_H, INKS, PAPERS } from '../config.js';
-import { newStroke, cloneStroke, boundsOf } from '../doc/project.js';
+import { newStroke, cloneStroke, boundsOf, fillDependents } from '../doc/project.js';
 import { drawLastSegment, drawStroke } from '../render/stroke.js';
 
 // Captura o ponteiro; ignora a falha quando o ponteiro já sumiu (eventos sintéticos, cancelamentos).
@@ -25,6 +25,8 @@ const LINE_MIN = 20;        // traço precisa ter pelo menos isso para virar lin
 const TIP = 1;
 const BTN_TOGGLE = 2;
 const BTN_LASSO = 4 | 32;
+// Quando o botão 2 vira "borracha" (32), o Chrome manda o contato como 32, sem o bit da ponta.
+const CONTACT = TIP | 32;
 
 export function setupInput(app, wetCanvas) {
   // No Chrome do Android, o canvas "desynchronized" vai direto para a tela sem misturar transparência:
@@ -100,49 +102,49 @@ export function setupInput(app, wetCanvas) {
     return b && p.x >= b.x0 - marginDoc && p.x <= b.x1 + marginDoc && p.y >= b.y0 - marginDoc && p.y <= b.y1 + marginDoc;
   }
 
-  // Troca os traços selecionados por clones (o "antes" do desfazer fica intacto).
+  // Transformação da seleção (mover com a caneta; mover, girar e escalar com 2 dedos).
+  // Troca os traços selecionados por clones e só mexe nos clones: o "antes" do desfazer fica intacto.
+  // Se o frame for trocado no meio (desfazer, abrir arquivo, projeto novo), a transformação morre sem tocar em nada.
   function beginTransform() {
     const sel = app.selection;
     const fr = app.project.layers[sel.l].frames[sel.f];
-    const before = fr.slice();
-    const snap = new Map();
+    const xf = { l: sel.l, f: sel.f, frame: fr, before: fr.slice(), items: [] };
     for (let i = 0; i < fr.length; i++) {
       if (sel.ids.has(fr[i].id)) {
         fr[i] = cloneStroke(fr[i]);
-        snap.set(fr[i].id, { pts: fr[i].pts.slice(), w: fr[i].w });
+        xf.items.push({ s: fr[i], pts: fr[i].pts.slice(), w: fr[i].w });
       }
     }
-    return { before, snap };
+    return xf;
   }
 
-  function applyMatrix(snap, m) {
-    const sel = app.selection;
-    const fr = app.project.layers[sel.l].frames[sel.f];
-    for (const s of fr) {
-      const o = snap.get(s.id);
-      if (!o) continue;
-      for (let i = 0; i < o.pts.length; i += 3) {
-        const x = o.pts[i], y = o.pts[i + 1];
+  const alive = (xf) => app.project.layers[xf.l]?.frames[xf.f] === xf.frame;
+
+  // Devolve false se a transformação morreu (o frame foi trocado por outro caminho).
+  function applyMatrix(xf, m) {
+    if (!alive(xf)) return false;
+    for (const { s, pts, w } of xf.items) {
+      for (let i = 0; i < pts.length; i += 3) {
+        const x = pts[i], y = pts[i + 1];
         s.pts[i] = m.a * x + m.c * y + m.e;
         s.pts[i + 1] = m.b * x + m.d * y + m.f;
       }
-      s.w = o.w * m.scale;
+      s.w = w * m.scale;
     }
-    app.markDirty(sel.l, sel.f);
+    app.markDirty(xf.l, xf.f);
+    return true;
   }
 
-  // Desiste de uma transformação: o frame volta à lista de antes (os traços originais, intactos).
-  function restoreFrame(before) {
-    const sel = app.selection;
-    if (!sel) return;
-    app.project.layers[sel.l].frames[sel.f] = before.slice();
-    app.markDirty(sel.l, sel.f);
+  // Desiste: o frame volta à lista de antes (os traços originais).
+  function restoreFrame(xf) {
+    if (!alive(xf)) return;
+    app.project.layers[xf.l].frames[xf.f] = xf.before.slice();
+    app.markDirty(xf.l, xf.f);
   }
 
-  function endTransform(before) {
-    const sel = app.selection;
-    const fr = app.project.layers[sel.l].frames[sel.f];
-    app.history.push({ l: sel.l, f: sel.f, before, after: fr.slice() });
+  function endTransform(xf) {
+    if (!alive(xf)) return;
+    app.history.push({ l: xf.l, f: xf.f, before: xf.before, after: xf.frame.slice() });
     app.requestSave();
   }
 
@@ -176,11 +178,12 @@ export function setupInput(app, wetCanvas) {
     setLassoHeld(false);
   }
 
-  const tipOf = (e) => (e.buttons & TIP) !== 0 || (e.type === 'pointerdown' && e.button === 0 && e.buttons === 0);
+  const tipOf = (e) => (e.buttons & CONTACT) !== 0 || (e.type === 'pointerdown' && e.button === 0 && e.buttons === 0);
 
   // ---------- caneta ----------
   wetCanvas.addEventListener('pointerdown', (e) => {
     app.debug?.pointer(e);
+    if (app.recording) return;                // gravando o vídeo: o papel e a roda esperam
     if (isPen(e)) {
       penButtons(e);
       // Botão lateral apertado com a caneta no ar: só troca de ferramenta, não toca na roda nem no papel.
@@ -201,7 +204,7 @@ export function setupInput(app, wetCanvas) {
     // Com o botão do laço segurado, a caneta sempre faz laço. Com o Laço fixo (roda), dentro da seleção ela move.
     if (!app.lassoHeld && app.selection && insideBounds(p, selectionBounds())) {
       mode = 'move';
-      moveStart = { x: p.x, y: p.y, ...beginTransform() };
+      moveStart = { x: p.x, y: p.y, moved: false, xf: beginTransform() };
       return;
     }
     if (app.lassoHeld || app.tool === 'lasso') {
@@ -221,7 +224,11 @@ export function setupInput(app, wetCanvas) {
       mode = 'fill';
       const fill = newStroke(app.project, 'fill', 1);
       fill.pts.push(p.x, p.y, 1);
-      commitStroke(fill);
+      const fr = app.project.layers[target.l].frames[target.f];
+      // Testa antes de gravar: tocar em cima de uma linha não pinta nada e não vira passo de desfazer.
+      const painted = app.masks?.tryFill ? app.masks.tryFill(target.l, target.f, fr, fill, app.project) : -1;
+      if (painted === 0) { app.ui?.say('Nada para pintar'); return; }
+      commitStroke(fill, painted < 0);      // se o teste já pintou, a máscara está pronta
       return;
     }
     const cut = app.tool === 'eraser';
@@ -233,14 +240,16 @@ export function setupInput(app, wetCanvas) {
     armLine();
   }
 
-  function commitStroke(s) {
+  function commitStroke(s, dirty = true) {
     const fr = app.project.layers[target.l].frames[target.f];
     const before = fr.slice();
     fr.push(s);
     app.history.push({ l: target.l, f: target.f, before, after: fr.slice() });
-    app.markDirty(target.l, target.f);
+    if (dirty) app.markDirty(target.l, target.f);
+    else for (const d of fillDependentsOf(target.l, target.f)) app.markDirty(d.l, d.f);
     app.requestSave();
   }
+  const fillDependentsOf = (l, f) => fillDependents(app.project, l, f);
 
   // ---------- linha reta ----------
   function armLine() {
@@ -277,10 +286,10 @@ export function setupInput(app, wetCanvas) {
     if (uiPointers.has(e.pointerId)) { app.ui.move(e); return; }
     if (!isPen(e)) { touchMove(e); return; }
     if (e.pointerType === 'pen') app.debug?.pointer(e);
-    const tip = (e.buttons & TIP) !== 0;
+    const tip = (e.buttons & CONTACT) !== 0;
     if (!mode) {
       // Com um botão lateral apertado, o Chrome avisa a ponta encostando por pointermove, não por pointerdown.
-      if (tip && e.buttons !== TIP) beginContact(e);
+      if (tip && e.buttons !== TIP && !app.recording) beginContact(e);
       return;
     }
     // Ponta levantou com um botão lateral ainda apertado: também chega como pointermove.
@@ -303,7 +312,7 @@ export function setupInput(app, wetCanvas) {
       const p = toDoc(e);
       const dx = p.x - moveStart.x, dy = p.y - moveStart.y;
       if (Math.hypot(dx, dy) > 1) moveStart.moved = true;
-      applyMatrix(moveStart.snap, { a: 1, b: 0, c: 0, d: 1, e: dx, f: dy, scale: 1 });
+      if (!applyMatrix(moveStart.xf, { a: 1, b: 0, c: 0, d: 1, e: dx, f: dy, scale: 1 })) { mode = null; moveStart = null; }
       redrawOverlay();
     }
   });
@@ -324,8 +333,8 @@ export function setupInput(app, wetCanvas) {
       if (cancelled) lasso = []; else selectWithLasso();
     } else if (mode === 'move') {
       // toque sem mover não vira passo de desfazer; cancelado (palma, sistema) volta ao lugar
-      if (!cancelled && moveStart.moved) endTransform(moveStart.before);
-      else restoreFrame(moveStart.before);
+      if (!cancelled && moveStart.moved) endTransform(moveStart.xf);
+      else restoreFrame(moveStart.xf);
       moveStart = null;
     }
     mode = null;
@@ -382,7 +391,7 @@ export function setupInput(app, wetCanvas) {
         const pa = toDoc({ clientX: a.x, clientY: a.y });
         const pb = toDoc({ clientX: b.x, clientY: b.y });
         if (insideBounds(pa, sb, marginDoc) && insideBounds(pb, sb, marginDoc)) {
-          gesture.xf = { start: twoFinger(pa, pb), ...beginTransform() };
+          gesture.xf = { start: twoFinger(pa, pb), t: beginTransform() };
         }
       }
     }
@@ -408,7 +417,7 @@ export function setupInput(app, wetCanvas) {
         f: now.cy - (sin * s0.cx + cos * s0.cy),
         scale,
       };
-      applyMatrix(gesture.xf.snap, m);
+      if (!applyMatrix(gesture.xf.t, m)) gesture.xf = null;   // a seleção foi trocada no meio: para de girar
       redrawOverlay();
     }
   }
@@ -417,17 +426,18 @@ export function setupInput(app, wetCanvas) {
     touches.delete(e.pointerId);
     if (!gesture) return;
     if (touches.size === 0) {
-      const quick = performance.now() - gesture.t0 < TAP_MS && gesture.moved < TAP_MOVE_PX;
-      if (gesture.xf) {
-        if (!cancelled && gesture.moved >= TAP_MOVE_PX) endTransform(gesture.xf.before);
+      const g = gesture;
+      gesture = null;                       // antes de tudo: um erro abaixo não pode travar os próximos gestos
+      const quick = performance.now() - g.t0 < TAP_MS && g.moved < TAP_MOVE_PX;
+      if (g.xf) {
+        if (!cancelled && g.moved >= TAP_MOVE_PX) endTransform(g.xf.t);
         else {
-          restoreFrame(gesture.xf.before);
+          restoreFrame(g.xf.t);
           if (quick && !cancelled) app.undo();
         }
       } else if (quick && !cancelled) {
         app.undo();
       }
-      gesture = null;
       redrawOverlay();
     }
   }
@@ -439,7 +449,7 @@ export function setupInput(app, wetCanvas) {
   new ResizeObserver(resize).observe(wetCanvas);
   resize();
 
-  return { redrawOverlay, clearWet, selectionBounds };
+  return { redrawOverlay, clearWet, selectionBounds, get transforming() { return !!(moveStart || gesture?.xf); } };
 }
 
 function pointInPolygon(x, y, poly) {

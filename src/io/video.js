@@ -22,6 +22,11 @@ export function videoFormat() {
 
 const gcd = (a, b) => (b ? gcd(b, a % b) : a);
 
+// "1,5 s" (vírgula decimal, doc 11).
+export function fmtSeconds(s) {
+  return `${(Math.round(s * 100) / 100).toString().replace('.', ',')} s`;
+}
+
 // Duração de um ciclo completo: quando todas as tintas desenhadas voltam juntas ao frame 1.
 // Cada FPS possível (6, 8, 12, 24) divide 24, então medimos em 1/24 s.
 export function loopSeconds(project) {
@@ -59,6 +64,6 @@ export function recordCanvas(canvas, seconds, format, fps = 30) {
       resolve(new Blob(chunks, { type: format.type.split(';')[0] }));
     };
     rec.start(250);
-    setTimeout(() => { if (rec.state !== 'inactive') rec.stop(); }, seconds * 1000 + 120);
+    setTimeout(() => { if (rec.state !== 'inactive') rec.stop(); }, seconds * 1000);
   });
 }

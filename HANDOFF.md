@@ -322,6 +322,9 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   - Ferramenta **Balde** na pétala Ferramenta (Pincel, Borracha, Balde, Laço). Um toque preenche a área fechada com
     a tinta da camada. Linhas com falhas de até ~4 px não vazam. Tocar em cima de uma linha não faz nada; tocar no
     papel vazio pinta o frame inteiro (desfazer volta).
+  - **Linhas de outras tintas seguram o balde** (linha numa tinta, preenchimento em outra, como na gráfica). As
+    paredes vêm do frame de cada outra tinta que aparece no meio do tempo desse frame (primeira volta do loop); se
+    essas linhas mudam, ou o FPS/frames mudam, o balde é refeito. Tocar em cima de uma linha: "Nada para pintar".
   - Guardado como `{ kind: 'fill', pts: [x, y, 1] }` (decisão 4: só traços). A área é calculada na máscara
     (`src/render/fill.js`, na ordem dos traços). Mover/duplicar as linhas leva o preenchimento junto; o laço pega
     o balde pelo ponto tocado.
@@ -357,6 +360,28 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 - **Origem:** revisão do código pelo VS Code.
 - **Resposta do VS Code:** se o sistema cancelava o gesto no meio de um mover (caneta ou 2 dedos), a seleção ficava
   no lugar novo sem passo de desfazer; agora volta ao lugar. Tocar na seleção sem mover não cria mais um passo vazio.
+
+### #018 — Revisão de código da rodada 0.2.0 → 0.3.0
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.3.0
+- **Origem:** pedido do Raphael ("depois de fazer, faça uma revisão"). Revisão automática (nível alto) do intervalo
+  `a91303d..7b9b1b5`, 10 achados.
+- **Corrigidos (9):**
+  1. Desfazer/abrir arquivo no meio de um giro de 2 dedos → erro e gestos de 2 dedos travados. Agora a transformação
+     guarda o frame dela e morre sozinha se o frame for trocado; o gesto sempre é zerado.
+  2. Balde ignorava linhas de outras tintas → enchia o frame inteiro. Agora elas são parede.
+  3. Balde em cima da linha gravava um passo invisível → agora testa antes (`masks.tryFill`).
+  4. Botão 2 como "borracha" (buttons = 32 no contato) não começava o laço → 32 conta como contato.
+  5. Vídeo podia sair congelado (hold esquecido, dedo na roda) e com traços desenhados durante a gravação → holds
+     zerados, papel e roda bloqueados enquanto grava, sem os 120 ms extras no fim.
+  6. Baldes refeitos a cada quadro ao mover a seleção, e abrir arquivo refazia tudo de uma vez → `src/schedule.js`
+     (limite de ~8 ms por quadro, balde no máximo a cada 120 ms durante o giro).
+  8. "Salvo às…" com mudança pendente (salvamento antigo terminando depois) → contador de mudanças.
+  9. Palma no fundo da caixa de confirmação cancelava (e perdia o arquivo escolhido) → só os botões respondem.
+  10. PNG com caminho de download próprio e formatação de segundos duplicada → unificados.
+- **Não mudado (1):** 7. `willReadFrequently` deixa o canvas das máscaras na CPU para todo traço. Mantido de
+  propósito: o balde precisa ler pixels, e o envio CPU → GPU evita a leitura da GPU que a v0.1 acusava ("GPU stall
+  due to ReadPixels"). **Medir no tablet** (painel Teste da Fase 0: tempo do quadro ao confirmar traços).
+- Teste de lógica: 98 verificações, com uma verificação de mutação para o item 1.
 
 ## Dúvidas do VS Code
 

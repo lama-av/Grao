@@ -13,7 +13,8 @@ import { setupSheet } from './ui/sheet.js';
 import { setupDebug } from './ui/debug.js';
 import { loadProject, saveProject, debounced } from './io/storage.js';
 import { downloadBlob, baseNameFor } from './io/file.js';
-import { videoFormat, recordSeconds, recordCanvas } from './io/video.js';
+import { videoFormat, recordSeconds, recordCanvas, fmtSeconds } from './io/video.js';
+import { rebuildDirty } from './schedule.js';
 
 const MAX_MIS_UV = 0.004; // desalinhamento máximo (fração da largura) com o controle no máximo
 
@@ -50,18 +51,22 @@ async function start() {
   app.savedAt = 0;
   app.unsaved = false;
   app.saveError = false;
-  app.saveNow = () => saveProject(app.project).then(() => {
-    app.savedAt = Date.now();
-    app.unsaved = false;
-    app.saveError = false;
-    app.sheet?.refreshStatus();
-  }).catch(() => {
+  let saveGen = 0;                          // mudanças pedidas; um salvamento antigo não apaga o "Salvando…" novo
+  app.saveNow = () => {
+    const gen = saveGen;
+    return saveProject(app.project).then(() => {
+      app.savedAt = Date.now();
+      if (gen === saveGen) app.unsaved = false;
+      app.saveError = false;
+      app.sheet?.refreshStatus();
+    }).catch(() => {
     app.saveError = true;
     app.sheet?.refreshStatus();
-    app.toast('Não deu para salvar. O navegador recusou o espaço. Salve um arquivo para garantir.');
-  });
+      app.toast('Não deu para salvar. O navegador recusou o espaço. Salve um arquivo para garantir.');
+    });
+  };
   const saveLater = debounced(app.saveNow, 600);
-  app.requestSave = () => { app.unsaved = true; saveLater(); };
+  app.requestSave = () => { saveGen++; app.unsaved = true; saveLater(); };
   document.addEventListener('visibilitychange', () => { if (document.hidden) app.saveNow(); });
 
   app.toast = (msg) => {
@@ -75,13 +80,12 @@ async function start() {
   installActions(app);
 
   app.exportPNG = () => {
-    draw(performance.now());               // desenha e lê no mesmo instante (o buffer ainda existe)
-    const url = glCanvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${baseNameFor(app.project)}.png`;
-    a.click();
-    app.toast('PNG exportado');
+    draw(performance.now());               // desenha e copia no mesmo instante (o buffer ainda existe)
+    glCanvas.toBlob((blob) => {
+      if (!blob) { app.toast('Não deu para exportar o PNG. Tente de novo.'); return; }
+      downloadBlob(blob, `${baseNameFor(app.project)}.png`);
+      app.toast('PNG exportado');
+    }, 'image/png');
   };
 
   // Exportar vídeo: grava o loop tocando desde o frame 1, na velocidade 1×, por ciclos inteiros.
@@ -96,9 +100,12 @@ async function start() {
     const saved = { paused: c.paused, speed: c.speed };
     app.selection = null;
     app.onSelectionChange();
+    app.ui?.collapse();
+    app.sheet?.close();
+    c.holds.clear();                        // nada segura o loop durante a gravação (papel e roda ficam bloqueados)
     c.paused = false; c.speed = 1; c.t = 1e-4;
     app.recording = true;
-    app.toast(`Gravando o loop: ${String(Math.round(seconds * 10) / 10).replace('.', ',')} s. Espere terminar.`);
+    app.toast(`Gravando o loop: ${fmtSeconds(seconds)}. Espere terminar.`);
     try {
       const blob = await recordCanvas(glCanvas, seconds, format);
       downloadBlob(blob, `${baseNameFor(app.project)}.${format.ext}`);
@@ -173,12 +180,7 @@ async function start() {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     app.clock.tick(dt);
-    for (const k of app.dirty) {
-      const [l, f] = k.split(':').map(Number);
-      const layer = app.project.layers[l];
-      if (layer && f < layer.frames.length) app.masks.rebuild(l, f, layer.frames[f]);
-    }
-    app.dirty.clear();
+    rebuildDirty(app, now);
     draw(now);
     app.ui.update();
     app.debug.frame();

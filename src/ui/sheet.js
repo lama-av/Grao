@@ -4,6 +4,7 @@
 import { INKS, PAPERS, FPS_OPTIONS, MAX_FRAMES } from '../config.js';
 import { confirmDialog } from './dialog.js';
 import { downloadProject, pickProjectFile, projectFromText } from '../io/file.js';
+import { fmtSeconds } from '../io/video.js';
 
 export function setupSheet(app) {
   const el = document.createElement('div');
@@ -171,6 +172,3 @@ export function setupSheet(app) {
   return { open, close, refreshStatus, get mode() { return mode; } };
 }
 
-function fmtSeconds(s) {
-  return `${(Math.round(s * 100) / 100).toString().replace('.', ',')} s`;
-}

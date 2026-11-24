@@ -11,7 +11,8 @@ o papel (T-020), pincéis Lápis/Marcador/Giz (T-021) e suavização (T-025).
 
 ### Adicionado
 - **Balde** (pétala Ferramenta): um toque preenche a área fechada com a tinta da camada. Buracos pequenos na linha
-  (até ~4 px) não deixam vazar. O balde guarda só o ponto tocado e a área é refeita com a máscara: mover, girar ou
+  (até ~4 px) não deixam vazar. **Linhas de outras tintas também seguram o balde** (linha preta, preenchimento rosa),
+  usando o frame de cada tinta que aparece junto naquele tempo do loop. O balde guarda só o ponto tocado e a área é refeita com a máscara: mover, girar ou
   duplicar as linhas leva o preenchimento junto. Entra no laço e no desfazer (T-022, #014).
 - **Linha reta:** no fim de um traço, segurar a caneta parada 0,5 s endireita a linha (leitura "Linha"); depois, a
   ponta da linha segue a caneta até soltar. Vale para Pincel e Borracha (T-023, #015).
@@ -24,11 +25,22 @@ o papel (T-020), pincéis Lápis/Marcador/Giz (T-021) e suavização (T-025).
 - Mover a seleção (caneta ou 2 dedos) cancelado pelo sistema deixava a seleção fora do lugar, sem passo de desfazer.
   Agora volta ao lugar (#017).
 - Tocar dentro da seleção sem mover criava um passo vazio no desfazer (#017).
+- Revisão de código (#018): desfazer (ou abrir arquivo) no meio de um giro com 2 dedos podia quebrar e travar os
+  gestos de 2 dedos até recarregar; agora o giro para sem tocar em nada. Botão 2 da caneta que o Android trata como
+  "borracha" (contato chega como 32) agora faz laço. Vídeo: nada segura o loop durante a gravação e o papel e a roda
+  ficam bloqueados (antes podia sair congelado com papel-cebola). "Salvo às…" não aparece mais com mudança pendente.
+  Tocar no fundo escuro da caixa de confirmação não cancela mais (palma).
+- Balde tocado em cima de uma linha não grava nada (antes virava um passo invisível no desfazer); leitura
+  "Nada para pintar".
 
 ### Mudado
 - Máscaras: quando o mesmo frame recebe só traços novos no fim, desenha só os novos (sem refazer os baldes).
   Mover/girar e desfazer continuam refazendo tudo.
-- Teste de lógica: 87 verificações (balde, linha reta, vídeo, máscaras, mover cancelado).
+- Máscaras são refeitas com limite de ~8 ms por quadro (`src/schedule.js`); frame com balde sendo movido é refeito
+  no máximo a cada 120 ms; abrir um arquivo refaz as máscaras aos poucos, sem travar o loop.
+- PNG exportado por `toBlob` (mesmo caminho de download do arquivo e do vídeo).
+- Teste de lógica: 98 verificações (balde, paredes entre tintas, linha reta, vídeo, agenda de máscaras, giro
+  interrompido, botão 32, mover cancelado).
 
 ## [0.2.1] — 2026-11-24
 

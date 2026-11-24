@@ -31,11 +31,12 @@ function dilate(src, w, h, r) {
 // Preenche a partir de (sx, sy), em pixels da máscara.
 // gap: buracos de até ~2*gap px na linha são fechados (a tinta "não vaza" por falhas pequenas do traço).
 // Devolve quantos pixels foram pintados (0 = tocou em cima de uma linha ou fora da máscara).
-export function floodFill(rgba, w, h, sx, sy, gap = 2) {
+// extraWall (opcional): Uint8Array w*h com 1 onde há linha de outra tinta (também segura o preenchimento).
+export function floodFill(rgba, w, h, sx, sy, gap = 2, extraWall = null) {
   sx = Math.floor(sx); sy = Math.floor(sy);
   if (sx < 0 || sy < 0 || sx >= w || sy >= h) return 0;
   const ink = new Uint8Array(w * h);
-  for (let i = 0, j = 0; i < ink.length; i++, j += 4) ink[i] = rgba[j] >= INK ? 1 : 0;
+  for (let i = 0, j = 0; i < ink.length; i++, j += 4) ink[i] = rgba[j] >= INK || (extraWall && extraWall[i]) ? 1 : 0;
   const wall = dilate(ink, w, h, gap);
   if (wall[sy * w + sx]) return 0;
 

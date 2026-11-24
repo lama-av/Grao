@@ -37,8 +37,10 @@ Caneta
 - LINHA RETA: no fim do traço, segure a caneta parada meio segundo. A linha
   endireita (aparece "Linha") e a ponta passa a seguir a caneta até você soltar.
 - BALDE: um toque dentro de uma forma fechada pinta o miolo com a tinta.
-  Falhas pequenas na linha não deixam vazar. Tocar no papel vazio pinta tudo
-  (desfazer volta).
+  Falhas pequenas na linha não deixam vazar. As linhas das OUTRAS tintas
+  também seguram o balde: dá para fazer a linha em Preto e pintar em Rosa.
+  Tocar em cima de uma linha não faz nada ("Nada para pintar"). Tocar no
+  papel vazio pinta tudo (desfazer volta).
 - Com uma seleção ativa: encostar dentro da caixa e arrastar move a seleção.
 
 Dedos (no papel)
@@ -119,8 +121,8 @@ Menu (botão "Menu" da roda):
     · Exportar PNG: imagem do frame atual.
     · Exportar vídeo do loop: grava o loop tocando desde o frame 1 (de 3 a
       12 segundos, ciclos inteiros) em MP4 (ou WebM, se o Chrome não fizer
-      MP4). Vai para Downloads. Durante a gravação não desenhe: o vídeo grava
-      o que está na tela.
+      MP4). Vai para Downloads. Durante a gravação o papel e a roda ficam
+      parados (ponto vermelho no botão); espere o aviso "Vídeo exportado".
 - Impressão: Papel (Natural, Jornal, Kraft, Reciclado), Grão, Desalinhamento
   (registro fora do lugar), Ferver (grão que muda a cada reimpressão).
 - Desenho e roda: Auto (com o loop parado, cada traço pula para o próximo

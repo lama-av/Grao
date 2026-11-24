@@ -1,5 +1,6 @@
 // Caixa de confirmação do Grão (substitui o confirm() do navegador, que só mostra OK/Cancelar).
 // Só aparece com a caneta parada, como as folhas; o fundo escuro bloqueia o papel enquanto ela está aberta.
+// Tocar no fundo não cancela (a palma encosta sem querer): só os dois botões respondem.
 // Uso: if (await confirmDialog({ text, ok: 'Apagar e começar' })) { ... }
 
 let current = null;
@@ -27,7 +28,6 @@ export function confirmDialog({ text, ok, cancel = 'Cancelar', danger = true }) 
       resolve(v);
     };
     current = done;
-    back.addEventListener('pointerdown', (e) => { if (e.target === back) done(false); });
     back.querySelector('[data-act="cancel"]').onclick = () => done(false);
     back.querySelector('[data-act="ok"]').onclick = () => done(true);
     document.body.appendChild(back);

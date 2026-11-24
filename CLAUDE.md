@@ -57,6 +57,7 @@ index.html, styles.css, manifest.webmanifest, assets/icon.svg
 src/
   main.js              cria o objeto app, liga tudo, loop requestAnimationFrame
   actions.js           ações do app (desfazer, seleção, duplicar, apagar, trocar/novo projeto); usado pelo teste
+  schedule.js          quando refazer máscaras: ~8 ms por quadro, dependências do balde entre tintas
   config.js            constantes (documento 1200×800, tintas, papéis, FPS, passo da roda…)
   doc/project.js       projeto, traços, caixas, sanitize (confere cada campo; sempre 4 tintas)
   doc/history.js       desfazer/refazer por frame (listas "antes/depois")
@@ -92,6 +93,8 @@ Entrada: o `#wet` recebe tudo; `app.ui.down(e)` diz se o toque é da roda; senã
 
 Regras de fluxo:
 - Mudou traços de um frame → `history.push({l, f, before, after})`, `markDirty`, `requestSave`.
+- Transformação (mover/girar) só mexe nos clones que ela criou e morre se o frame for trocado (`alive(xf)`).
+- Máscaras são refeitas por `schedule.js`, nunca direto no laço: respeite o limite por quadro (decisão 7).
 - **Nunca altere um traço no lugar** depois que ele entrou no histórico: troque por `cloneStroke` (ver `beginTransform`).
 - Mudou a seleção → chame `app.onSelectionChange()` (ela segura/solta o loop e redesenha o overlay).
 - Desfazer pela interface → use `app.undo()/redo()`, não `history` direto.

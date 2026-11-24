@@ -33,6 +33,33 @@ export function cloneStroke(s, newId) {
   return { id: newId ?? s.id, kind: s.kind, w: s.w, pts: s.pts.slice() };
 }
 
+// Balde: as paredes do preenchimento são as linhas da própria tinta e as das outras tintas que aparecem junto
+// com esse frame (no meio do tempo dele, primeira volta do loop). Assim dá para fazer a linha numa tinta e o
+// preenchimento em outra, como na gráfica. Devolve [{ l, f }] das outras tintas.
+export function wallsFor(project, l, f) {
+  const L = project.layers[l];
+  const t = (f + 0.5) / L.fps;
+  const out = [];
+  project.layers.forEach((M, m) => {
+    if (m === l) return;
+    const n = M.frames.length;
+    out.push({ l: m, f: ((Math.floor(t * M.fps + 1e-6) % n) + n) % n });
+  });
+  return out;
+}
+
+// Frames (de outras tintas) que têm balde e usam (l, f) como parede: precisam ser refeitos quando (l, f) muda.
+export function fillDependents(project, l, f) {
+  const out = [];
+  project.layers.forEach((M, m) => {
+    if (m === l) return;
+    M.frames.forEach((fr, g) => {
+      if (fr.some((s) => s.kind === 'fill') && wallsFor(project, m, g).some((w) => w.l === l && w.f === f)) out.push({ l: m, f: g });
+    });
+  });
+  return out;
+}
+
 // Caixa do traço em unidades do documento.
 export function strokeBounds(s) {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;

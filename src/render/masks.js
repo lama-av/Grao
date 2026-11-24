@@ -1,10 +1,15 @@
 // Máscaras: uma textura de 1 canal (R8) por frame de cada tinta.
-// Branco = tinta, preto = sem tinta. Recorte desenha preto por cima.
+// Branco = tinta, preto = sem tinta. Borracha desenha preto por cima. Balde preenche (render/fill.js).
 // Um único canvas de rascunho é reaproveitado para rasterizar (não guardamos canvas por frame).
+//
+// O rascunho é um canvas "de CPU" (willReadFrequently): o balde precisa ler os pixels, e o envio para a GPU
+// (texSubImage2D) sai direto da memória, sem a leitura da GPU que a v0.1 acusava ("GPU stall due to ReadPixels").
+// Medir no Mali (painel Teste da Fase 0) antes de mudar.
 
 import { DOC_W, DOC_H, MASK_SCALE } from '../config.js';
 import { drawStroke } from './stroke.js';
 import { floodFill } from './fill.js';
+import { wallsFor } from '../doc/project.js';
 
 export class Masks {
   constructor(gl) {
@@ -15,27 +20,69 @@ export class Masks {
     this.scratch = document.createElement('canvas');
     this.scratch.width = this.w;
     this.scratch.height = this.h;
-    this.ctx = this.scratch.getContext('2d', { willReadFrequently: true });   // o balde lê os pixels
+    this.ctx = this.scratch.getContext('2d', { willReadFrequently: true });
+    // Canvas das paredes do balde: linhas das outras tintas que aparecem junto com o frame.
+    this.wallCanvas = document.createElement('canvas');
+    this.wallCanvas.width = this.w;
+    this.wallCanvas.height = this.h;
+    this.wallCtx = this.wallCanvas.getContext('2d', { willReadFrequently: true });
     this.empty = this.#createTexture();
     // O rascunho guarda o último frame desenhado. Se o mesmo frame volta só com traços novos no fim (o caso
     // comum: acabou de desenhar), desenhamos só os novos, sem refazer os baldes de antes.
     this.lastKey = -1;
     this.lastStrokes = [];
+    this.walls = undefined;     // paredes do frame sendo desenhado (calculadas uma vez, no 1º balde)
   }
 
   key(l, f) { return l * 100 + f; }
 
   get(l, f) { return this.textures.get(this.key(l, f)) || this.empty; }
 
-  rebuild(l, f, strokes) {
-    const gl = this.gl;
+  // project é opcional: sem ele, o balde só respeita as linhas da própria tinta.
+  rebuild(l, f, strokes, project) {
     const k = this.key(l, f);
     if (!strokes || strokes.length === 0) {
       const t = this.textures.get(k);
-      if (t) { gl.deleteTexture(t); this.textures.delete(k); }
+      if (t) { this.gl.deleteTexture(t); this.textures.delete(k); }
       if (k === this.lastKey) this.lastKey = -1;
       return;
     }
+    this.#draw(l, f, strokes, project);
+    this.#upload(k);
+  }
+
+  // Balde novo: tenta preencher em cima do frame atual. Devolve quantos pixels pintou.
+  // Se pintou, a textura já fica pronta (quem chamou não precisa marcar o frame para refazer).
+  tryFill(l, f, strokes, fill, project) {
+    const k = this.key(l, f);
+    const last = this.lastStrokes;
+    const current = k === this.lastKey && strokes.length === last.length && last.every((s, i) => s === strokes[i]);
+    if (!current) this.#draw(l, f, strokes, project);
+    else this.walls = undefined;
+    const n = this.#fill(fill, l, f, project);
+    if (n) {
+      this.lastStrokes = strokes.concat([fill]);
+      this.#upload(k);
+    }
+    return n;
+  }
+
+  rebuildAll(project) {
+    this.clear();
+    project.layers.forEach((layer, l) => layer.frames.forEach((fr, f) => this.rebuild(l, f, fr, project)));
+  }
+
+  drop(l, f) { this.rebuild(l, f, null); }
+
+  clear() {
+    this.lastKey = -1;
+    for (const t of this.textures.values()) this.gl.deleteTexture(t);
+    this.textures.clear();
+  }
+
+  // Deixa o rascunho com o desenho de `strokes` (todos, ou só os novos no fim).
+  #draw(l, f, strokes, project) {
+    const k = this.key(l, f);
     const ctx = this.ctx;
     ctx.globalCompositeOperation = 'source-over';
     // Traços confirmados são imutáveis (CLAUDE.md): mesmo objeto = mesmo desenho. Só vale quando há traço novo
@@ -50,12 +97,16 @@ export class Masks {
     }
     this.lastKey = k;
     this.lastStrokes = strokes.slice();
+    this.walls = undefined;
     for (let i = from; i < strokes.length; i++) {
       const s = strokes[i];
-      if (s.kind === 'fill') this.#fill(s);
+      if (s.kind === 'fill') this.#fill(s, l, f, project);
       else drawStroke(ctx, s, MASK_SCALE, s.kind === 'cut' ? '#000' : '#fff');
     }
+  }
 
+  #upload(k) {
+    const gl = this.gl;
     let t = this.textures.get(k);
     if (!t) { t = this.#createTexture(); this.textures.set(k, t); }
     gl.bindTexture(gl.TEXTURE_2D, t);
@@ -64,25 +115,38 @@ export class Masks {
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RED, gl.UNSIGNED_BYTE, this.scratch);
   }
 
-  rebuildAll(project) {
-    this.clear();
-    project.layers.forEach((layer, l) => layer.frames.forEach((fr, f) => this.rebuild(l, f, fr)));
-  }
-
-  drop(l, f) { this.rebuild(l, f, null); }
-
-  clear() {
-    this.lastKey = -1;
-    for (const t of this.textures.values()) this.gl.deleteTexture(t);
-    this.textures.clear();
+  // Linhas das outras tintas que aparecem junto com (l, f): 1 = parede. null se não há nenhuma.
+  #wallsOf(l, f, project) {
+    if (this.walls !== undefined) return this.walls;
+    this.walls = null;
+    if (!project) return null;
+    const ctx = this.wallCtx;
+    let any = false;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, this.w, this.h);
+    for (const w of wallsFor(project, l, f)) {
+      for (const s of project.layers[w.l].frames[w.f] || []) {
+        if (s.kind === 'fill') continue;          // só linhas seguram o balde
+        drawStroke(ctx, s, MASK_SCALE, s.kind === 'cut' ? '#000' : '#fff');
+        any = any || s.kind === 'ink';
+      }
+    }
+    if (!any) return null;
+    const d = ctx.getImageData(0, 0, this.w, this.h).data;
+    const out = new Uint8Array(this.w * this.h);
+    for (let i = 0, j = 0; i < out.length; i++, j += 4) out[i] = d[j] >= 128 ? 1 : 0;
+    this.walls = out;
+    return out;
   }
 
   // Balde: preenche a área em volta do ponto com o que já foi desenhado até aqui (ordem dos traços).
-  #fill(s) {
+  #fill(s, l, f, project) {
+    const walls = this.#wallsOf(l, f, project);
     const img = this.ctx.getImageData(0, 0, this.w, this.h);
-    if (floodFill(img.data, this.w, this.h, s.pts[0] * MASK_SCALE, s.pts[1] * MASK_SCALE)) {
-      this.ctx.putImageData(img, 0, 0);
-    }
+    const n = floodFill(img.data, this.w, this.h, s.pts[0] * MASK_SCALE, s.pts[1] * MASK_SCALE, 2, walls);
+    if (n) this.ctx.putImageData(img, 0, 0);
+    return n;
   }
 
   #createTexture() {

@@ -5,6 +5,7 @@
 
 import { newProject, cloneStroke } from './doc/project.js';
 import { History } from './doc/history.js';
+import { markAll } from './schedule.js';
 
 export function installActions(app) {
   app.undo = () => {
@@ -69,7 +70,8 @@ export function installActions(app) {
   app.replaceProject = (project) => {
     app.project = project;
     app.masks.clear();
-    app.masks.rebuildAll(project);
+    app.dirty.clear();
+    markAll(app);                           // as máscaras voltam aos poucos, sem travar o loop (schedule.js)
     app.history = new History(app);
     app.selection = null;
     app.clock.t = 0;

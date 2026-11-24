@@ -142,7 +142,8 @@ function tap(wet, x, y, type = 'touch') { const p = pointer(wet, type); p.down(x
 }
 
 // ---------- botão lateral 2: segura o Laço ----------
-for (const code of [4, 32]) {
+// (4 = botão do meio: aparece também com a caneta no ar. O caso 32, "borracha", está mais abaixo.)
+for (const code of [4]) {
   const { app, wet } = makeApp();
   app.clock.paused = false;
   stroke(wet, 300, 300);                        // algo para laçar (de 300,300 a 400,350)
@@ -452,6 +453,97 @@ for (const code of [4, 32]) {
   fa.down(300, 320); fb.down(400, 330); fb.move(380, 420); fb.move(360, 450);
   fa.cancel(300, 320); fb.cancel(360, 450);
   check('giro com 2 dedos cancelado volta ao lugar', all(app)[0].pts[0] === x0 && app.history.depth === d2);
+}
+
+// ---------- correções da revisão (24/11) ----------
+{
+  // seleção some no meio de um giro com 2 dedos: não pode quebrar nem travar os gestos
+  const { app, wet } = makeApp();
+  stroke(wet, 300, 300);
+  app.tool = 'lasso';
+  const l = pointer(wet);
+  l.down(250, 250);
+  for (const [x, y] of [[450, 250], [450, 400], [250, 400], [250, 260]]) l.move(x, y, 1);
+  l.up(250, 260);
+  app.tool = 'brush';
+  const original = app.history.undoStack.at(-1)?.after[0];
+  const fa = pointer(wet, 'touch'), fb = pointer(wet, 'touch');
+  fa.down(300, 320); fb.down(400, 330); fb.move(380, 380);
+  let threw = false;
+  try {
+    app.undo();                                   // desfazer pela roda no meio do giro: o frame é trocado
+    fb.move(360, 450); fa.up(300, 320); fb.up(360, 450);
+  } catch (err) { threw = String(err); }
+  check('desfazer no meio do giro não quebra', threw === false, threw);
+  check('desfazer no meio do giro: o giro morre sem gravar passo falso', app.history.canRedo && all(app).length === 0);
+  check('desfazer no meio do giro não mexe nos traços do histórico', !original || Math.abs(original.pts[0] - (300 / W) * 1200) < 1e-6);
+  stroke(wet, 600, 200);
+  const n = all(app).length;
+  const ta = pointer(wet, 'touch'), tb = pointer(wet, 'touch');
+  ta.down(500, 400); tb.down(800, 400); ta.up(500, 400); tb.up(800, 400);
+  check('depois disso, o toque de 2 dedos ainda desfaz', all(app).length === n - 1);
+}
+{
+  // botão 2 que o Android trata como "borracha": o contato chega como buttons = 32, sem o bit da ponta
+  const { app, wet } = makeApp();
+  stroke(wet, 300, 300);
+  const pen = pointer(wet);
+  pen.down(250, 250, 32, 5);
+  for (const [x, y] of [[450, 250], [450, 400], [250, 400], [250, 260]]) pen.move(x, y, 32, 0.5);
+  pen.up(250, 260, 0, 5);
+  check('botão 2 como borracha (32) faz laço', app.selection?.ids.size === 1 && all(app).length === 1);
+  check('soltar o botão 2 (32) solta o Laço', !app.lassoHeld);
+}
+{
+  // gravando vídeo: papel e roda não recebem nada
+  const { app, wet } = makeApp();
+  app.recording = true;
+  stroke(wet, 300, 300);
+  tap(wet, ...BTN);
+  check('gravando: caneta não desenha e a roda não abre', all(app).length === 0 && !app.ui.isOpen);
+}
+{
+  // paredes do balde em outra tinta
+  const { wallsFor, fillDependents } = await import('../src/doc/project.js');
+  const p = newProject();
+  check('paredes: mesma duração = mesmo frame nas outras tintas', JSON.stringify(wallsFor(p, 1, 3)) === JSON.stringify([{ l: 0, f: 3 }, { l: 2, f: 3 }, { l: 3, f: 3 }]));
+  p.layers[0].fps = 12; p.layers[0].frames = Array.from({ length: 12 }, () => []);
+  check('paredes: tinta a 12 fps acompanha o tempo do frame', wallsFor(p, 1, 2).find((w) => w.l === 0).f === 3);
+  p.layers[1].frames[2].push({ id: 1, kind: 'fill', w: 1, pts: [5, 5, 1] });
+  check('balde na tinta 2 depende da linha da tinta 1 no mesmo tempo', JSON.stringify(fillDependents(p, 0, 3)) === JSON.stringify([{ l: 1, f: 2 }]));
+  check('frame sem relação não tem dependentes', fillDependents(p, 0, 7).length === 0);
+}
+{
+  // agenda de máscaras: limite de tempo, dependentes, giro com balde, mudança de FPS
+  const { rebuildDirty } = await import('../src/schedule.js');
+  const built = [];
+  const app = { project: newProject(), dirty: new Set(), masks: { rebuild: (l, f) => built.push(`${l}:${f}`) }, input: { transforming: false } };
+  const P = app.project;
+  P.layers[0].frames[0].push({ id: 1, kind: 'ink', w: 5, pts: [1, 1, 1] });
+  P.layers[1].frames[0].push({ id: 2, kind: 'fill', w: 1, pts: [5, 5, 1] });
+  rebuildDirty(app, 0);
+  app.dirty.add('0:0');
+  rebuildDirty(app, 1000);
+  check('linha mudou: o balde da outra tinta é refeito junto', built.includes('0:0') && built.includes('1:0'), built.join(' '));
+  built.length = 0;
+  let fake = 0;
+  for (let f = 0; f < 8; f++) { P.layers[2].frames[f].push({ id: 10 + f, kind: 'ink', w: 5, pts: [1, 1, 1] }); app.dirty.add(`2:${f}`); }
+  rebuildDirty(app, 2000, () => (fake += 5));      // cada máscara "custa" 5 ms
+  check('limite por quadro: não refaz tudo de uma vez', built.length > 0 && built.length < 8 && app.dirty.size > 0, built.length);
+  while (app.dirty.size) rebuildDirty(app, 2000, () => (fake += 5));
+  check('o resto é refeito nos quadros seguintes', [0, 1, 2, 3, 4, 5, 6, 7].every((f) => built.includes(`2:${f}`)) && !app.dirty.size);
+  built.length = 0;
+  app.input.transforming = true;
+  app.dirty.add('1:0'); rebuildDirty(app, 3000);
+  app.dirty.add('1:0'); rebuildDirty(app, 3050);
+  check('girando um frame com balde: no máximo a cada 120 ms', built.length === 1 && app.dirty.has('1:0'));
+  app.input.transforming = false;
+  rebuildDirty(app, 3060);
+  check('soltou: o frame com balde é refeito', built.length === 2 && !app.dirty.size);
+  built.length = 0;
+  P.layers[0].fps = 12;
+  rebuildDirty(app, 4000);
+  check('mudou o FPS: frames com balde são refeitos', built.includes('1:0'), built.join(' '));
 }
 
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);
