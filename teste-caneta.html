@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Grão — teste da caneta (Fase 0)</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 12px; background: #1b1a18; color: #eee; font: 14px/1.4 system-ui, sans-serif; }
+    h1 { font-size: 17px; margin: 0 0 4px; }
+    h2 { font-size: 15px; margin: 18px 0 6px; }
+    p { margin: 0 0 8px; color: #bbb; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .col { flex: 1 1 420px; min-width: 0; }
+    .pad { position: relative; width: 100%; aspect-ratio: 3 / 2; background: #f3efe6; border-radius: 6px; touch-action: none; }
+    .pad canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 6px; touch-action: none; }
+    pre { margin: 0; padding: 8px; background: #2a2825; border-radius: 6px; font: 13px/1.45 monospace; white-space: pre-wrap; }
+    table { border-collapse: collapse; width: 100%; font: 13px/1.4 monospace; }
+    td, th { border-bottom: 1px solid #3a3733; padding: 4px 6px; text-align: left; }
+    button { font: inherit; padding: 8px 12px; border-radius: 6px; border: 0; background: #3a3733; color: #eee; }
+    .big { font-size: 22px; font-weight: 700; color: #ffe800; }
+  </style>
+</head>
+<body>
+  <h1>Grão · Teste da Fase 0 (caneta, palma, latência)</h1>
+  <p>Esta página só mede. Nada fica salvo. No fim, tire um print das tabelas e mande.</p>
+
+  <h2>1. Botões da caneta</h2>
+  <p>Encoste a caneta no papel abaixo e, <b>com ela encostada</b>, aperte e segure o botão lateral de baixo. Solte. Repita
+    com o botão de cima. Depois faça o mesmo com a caneta <b>pairando</b> (perto da tela, sem encostar).</p>
+  <div class="row">
+    <div class="col">
+      <div class="pad"><canvas id="pad1"></canvas></div>
+    </div>
+    <div class="col">
+      <pre id="live">aproxime a caneta…</pre>
+      <p style="margin-top:8px">Valor de "botões" agora: <span class="big" id="btnNow">—</span></p>
+    </div>
+  </div>
+  <h2>Valores de "botões" que já apareceram</h2>
+  <table id="seen"><tr><th>botões</th><th>button</th><th>tipo</th><th>encostada?</th><th>vezes</th></tr></table>
+  <h2>Outras coisas que o sistema disparou</h2>
+  <p>Se um botão da caneta virar "menu de contexto", tecla ou "voltar", aparece aqui.</p>
+  <pre id="other">nada ainda</pre>
+
+  <h2>2. Palma</h2>
+  <p>Desenhe 2 minutos no papel acima com a mão apoiada, do jeito natural. Os contadores mostram o que a palma gerou.</p>
+  <pre id="palm"></pre>
+
+  <h2>3. Latência (filmar em câmera lenta)</h2>
+  <p>Os dois papéis desenham igual. O da direita usa o modo baixa latência (<code>desynchronized</code>). Filme cada um em câmera
+    lenta riscando linhas rápidas e conte os quadros entre a ponta da caneta e o fim da linha.</p>
+  <div class="row">
+    <div class="col"><p>Normal</p><div class="pad"><canvas id="padN"></canvas></div></div>
+    <div class="col"><p>Baixa latência: <span id="desyncOn">?</span></p><div class="pad"><canvas id="padD"></canvas></div></div>
+  </div>
+  <p style="margin-top:8px"><button id="clear">Limpar os papéis</button></p>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const seen = new Map();
+const other = [];
+const palm = { touchDown: 0, penDown: 0, cancel: 0, cancelDuringPen: 0 };
+let penActive = false;
+
+function setupPad(canvas, desync, opaque) {
+  const ctx = canvas.getContext('2d', { desynchronized: desync, alpha: !opaque });
+  function resize() {
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.round(r.width * devicePixelRatio);
+    canvas.height = Math.round(r.height * devicePixelRatio);
+    clear();
+  }
+  function clear() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (opaque) { ctx.fillStyle = '#f3efe6'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  new ResizeObserver(resize).observe(canvas);
+  let last = null;
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
+    try { canvas.setPointerCapture(e.pointerId); } catch {}
+    last = pos(e);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!last || e.buttons === 0) return;
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    ctx.strokeStyle = (e.buttons & 2) ? '#FF48B0' : (e.buttons & 32) ? '#0078BF' : '#111';
+    ctx.lineCap = 'round';
+    for (const ev of evs) {
+      const p = pos(ev);
+      ctx.lineWidth = (2 + 10 * (ev.pressure || 0.5)) * devicePixelRatio;
+      ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+      last = p;
+    }
+  });
+  const end = () => { last = null; };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+  function pos(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * devicePixelRatio, y: (e.clientY - r.top) * devicePixelRatio };
+  }
+  return { ctx, clear };
+}
+
+const p1 = setupPad($('pad1'), false, false);
+const pN = setupPad($('padN'), false, true);
+const pD = setupPad($('padD'), true, true);   // opaco de propósito: no Android o modo baixa latência não tem transparência
+$('desyncOn').textContent = pD.ctx.getContextAttributes?.().desynchronized ? 'LIGADA' : 'não disponível';
+$('clear').onclick = () => { p1.clear(); pN.clear(); pD.clear(); };
+
+function record(e) {
+  if (e.pointerType === 'touch') return;
+  const touching = e.pressure > 0 && e.buttons !== 0 && (e.buttons & 1) === 1;
+  const key = `${e.buttons}|${e.button}|${e.pointerType}|${touching}`;
+  const row = seen.get(key) || { buttons: e.buttons, button: e.button, type: e.pointerType, touching, n: 0 };
+  row.n++;
+  seen.set(key, row);
+  $('btnNow').textContent = e.buttons;
+  $('live').textContent = [
+    `evento: ${e.type}`,
+    `tipo: ${e.pointerType}`,
+    `botões (buttons): ${e.buttons}   [${bits(e.buttons)}]`,
+    `button: ${e.button}`,
+    `pressão: ${e.pressure.toFixed(3)}`,
+    `inclinação: x ${e.tiltX}  y ${e.tiltY}`,
+    `encostada: ${touching ? 'sim' : 'não (hover)'}`,
+  ].join('\n');
+}
+function bits(b) {
+  const names = [];
+  if (b & 1) names.push('1 = ponta/primário');
+  if (b & 2) names.push('2 = botão lateral (direito)');
+  if (b & 4) names.push('4 = meio');
+  if (b & 32) names.push('32 = borracha');
+  if (b & 8) names.push('8'); if (b & 16) names.push('16');
+  return names.join(', ') || 'nenhum';
+}
+function renderSeen() {
+  const rows = [...seen.values()].sort((a, b) => a.buttons - b.buttons);
+  $('seen').innerHTML = '<tr><th>botões</th><th>button</th><th>tipo</th><th>encostada?</th><th>vezes</th></tr>' +
+    rows.map((r) => `<tr><td>${r.buttons}</td><td>${r.button}</td><td>${r.type}</td><td>${r.touching ? 'sim' : 'não'}</td><td>${r.n}</td></tr>`).join('');
+  $('palm').textContent = [
+    `toques de dedo/palma (touch) que encostaram: ${palm.touchDown}`,
+    `traços de caneta: ${palm.penDown}`,
+    `pointercancel (sistema cancelou um toque): ${palm.cancel}`,
+    `  …desses, durante um traço de caneta: ${palm.cancelDuringPen}`,
+  ].join('\n');
+  requestAnimationFrame(renderSeen);
+}
+requestAnimationFrame(renderSeen);
+
+for (const t of ['pointerdown', 'pointermove', 'pointerup', 'pointerrawupdate']) {
+  window.addEventListener(t, record, { capture: true, passive: true });
+}
+window.addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'touch') palm.touchDown++;
+  if (e.pointerType === 'pen') { palm.penDown++; penActive = true; }
+}, true);
+window.addEventListener('pointerup', (e) => { if (e.pointerType === 'pen') penActive = false; }, true);
+window.addEventListener('pointercancel', (e) => {
+  palm.cancel++;
+  if (penActive || e.pointerType === 'pen') palm.cancelDuringPen++;
+  note(`pointercancel (${e.pointerType})`);
+}, true);
+
+function note(msg) {
+  other.unshift(`${new Date().toLocaleTimeString()}  ${msg}`);
+  other.length = Math.min(other.length, 15);
+  $('other').textContent = other.join('\n');
+}
+window.addEventListener('contextmenu', (e) => { e.preventDefault(); note(`menu de contexto (button ${e.button}, tipo ${e.pointerType ?? '?'})`); }, true);
+window.addEventListener('auxclick', (e) => note(`auxclick (button ${e.button})`), true);
+window.addEventListener('keydown', (e) => { note(`tecla: key="${e.key}" code="${e.code}"`); }, true);
+window.addEventListener('popstate', () => note('voltar (popstate)'));
+history.pushState(null, '', location.href); // para perceber se um botão vira "voltar"
+</script>
+</body>
+</html>

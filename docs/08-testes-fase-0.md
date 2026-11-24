@@ -2,6 +2,23 @@
 
 **Antes de construir o compositor riso, três coisas são medidas no tablet: o que chega da caneta, a palma e a latência do traço. O resultado decide o [ADR-001](adr/ADR-001-plataforma-v0.1.md).**
 
+## Como testar (páginas publicadas)
+
+- **https://lama-av.github.io/Grao/teste-caneta.html**: mostra e anota sozinha cada valor de `buttons`, eventos
+  do sistema (menu de contexto, teclas, "voltar"), contadores da palma e dois papéis lado a lado (normal e
+  baixa latência) para filmar a latência.
+- **https://lama-av.github.io/Grao/diag.html**: confere o WebGL2 e o compositor riso no tablet.
+
+## Resultados
+
+| Data | Item | Resultado |
+| --- | --- | --- |
+| 23/11/2026 | WebGL2 e compositor riso no Mali-G57 | Funcionam (testes 1–5 e 7 do `diag.html`) |
+| 23/11/2026 | Canvas 2D `desynchronized` com transparência | **Falha**: o vazio fica preto. A v0.1 roda sem esse modo |
+| | Botões da caneta (`buttons`) | _a medir com `teste-caneta.html`_ |
+| | Palma | _a medir_ |
+| | Latência (normal × baixa latência) | _a medir_ |
+
 ## 1. O que chega da caneta
 
 Página de teste mostra, para cada evento de ponteiro: `pointerType`, `pressure`, `tiltX`, `tiltY`, `buttons`, e se há hover (eventos sem contato).

@@ -7,6 +7,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ### Adicionado
 - Caixa vermelha de erros na tela do app (fase de testes no tablet, onde não há console).
 - Aviso ao abrir com a versão e o estado da baixa latência (para saber se o tablet pegou a versão nova).
+- `teste-caneta.html`: teste da Fase 0 no tablet (valores de `buttons` da caneta, eventos do sistema, palma, latência normal × baixa latência).
 - `diag.html`: página de diagnóstico do WebGL do tablet, com testes por partes do compositor.
 
 ### Corrigido
