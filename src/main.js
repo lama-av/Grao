@@ -260,14 +260,14 @@ async function start() {
     if (app.exporting || app.recording) return;
     app.exporting = true;
     app.ui?.collapse(); app.sheet?.close();
+    let target = null;
     try {
-      while (app.dirty.size) rebuildDirty(app, performance.now(), () => 0);
-      await nextFrame();
+      const at = app.clock.t;
+      await flushMasks();
       const w = 2400, h = 1600;
-      const target = riso.createTarget(w, h);
-      riso.draw(drawParams(performance.now(), app.clock.t), target);
+      target = riso.createTarget(w, h);
+      riso.draw(drawParams(performance.now(), at), target);
       const rgba = riso.read(target);
-      riso.destroyTarget(target);
       const cv = Object.assign(document.createElement('canvas'), { width: w, height: h });
       cv.getContext('2d').putImageData(new ImageData(rgba, w, h), 0, 0);
       const blob = await new Promise((r) => cv.toBlob(r, 'image/png'));
@@ -276,9 +276,16 @@ async function start() {
       console.warn('Grão: prova falhou', err);
       app.toast('Não deu para fazer a prova. Tente de novo.');
     } finally {
+      if (target) riso.destroyTarget(target);
       app.exporting = false;
     }
   };
+
+  // Deixa todas as máscaras prontas antes de exportar, respeitando o limite por quadro (o loop não para).
+  async function flushMasks() {
+    let guard = 600;
+    while (app.dirty.size && guard-- > 0) { rebuildDirty(app, performance.now()); await nextFrame(); }
+  }
   function showProof(blob) {
     const url = URL.createObjectURL(blob);
     const p = app.project;
@@ -308,6 +315,9 @@ async function start() {
     app.ui?.collapse(); app.sheet?.close();
     const p = app.project, name = baseNameFor(p);
     const scale = 3508 / DOC_W;
+    // Frame de cada camada fixado agora: o loop continua tocando durante a separação, e todas as tintas precisam
+    // sair do mesmo instante (senão as chapas não registram).
+    const frameAt = p.layers.map((L) => app.clock.frameOf(L));
     try {
       const files = [];
       const drums = [...new Set(p.layers.filter((L) => L.visible).map((L) => L.ink))].sort();
@@ -318,7 +328,7 @@ async function start() {
           const L = p.layers[l];
           if (!L.visible || L.ink !== d) continue;
           await nextFrame();
-          const r = rasterFrame(p, l, app.clock.frameOf(L), scale);
+          const r = rasterFrame(p, l, frameAt[l], scale);
           w = r.w; h = r.h;
           acc = acc || new Uint8ClampedArray(w * h);
           const dens = L.screen.density;
@@ -354,14 +364,15 @@ async function start() {
   app.exportAnimation = async (format, { scale = 0.5, laps = 0 } = {}) => {
     if (app.exporting || app.recording) return;
     app.exporting = true;
-    app.selection = null; app.onSelectionChange(); app.ui?.collapse(); app.sheet?.close();
-    while (app.dirty.size) rebuildDirty(app, performance.now(), () => 0);   // todas as máscaras prontas
-    const plan = planFrames(app.project, laps);
-    const w = Math.round(DOC_W * scale), h = Math.round((DOC_W * scale * 2) / 3);
-    const target = riso.createTarget(w, h);
-    const name = baseNameFor(app.project);
-    app.toast(`Exportando ${plan.count} quadros. Espere terminar.`);
+    let target = null;
     try {
+      app.selection = null; app.onSelectionChange(); app.ui?.collapse(); app.sheet?.close();
+      await flushMasks();                     // todas as máscaras prontas, sem travar o loop
+      const plan = planFrames(app.project, laps);
+      const w = Math.round(DOC_W * scale), h = Math.round((DOC_W * scale * 2) / 3);
+      target = riso.createTarget(w, h);
+      const name = baseNameFor(app.project);
+      app.toast(`Exportando ${plan.count} quadros. Espere terminar.`);
       const gif = format === 'gif' ? new GifWriter(w, h) : null;
       const files = [];
       const cv = format === 'png' ? Object.assign(document.createElement('canvas'), { width: w, height: h }) : null;
@@ -384,7 +395,7 @@ async function start() {
       console.warn('Grão: exportação falhou', err);
       app.toast('Não deu para exportar. Tente uma escala menor ou menos voltas.');
     } finally {
-      riso.destroyTarget(target);
+      if (target) riso.destroyTarget(target);
       app.exporting = false;
     }
   };
@@ -401,7 +412,8 @@ async function start() {
     const dtMs = now - last;
     const dt = Math.min(0.1, dtMs / 1000);
     last = now;
-    if (app.quality.sample(dtMs, app.project.settings.autoQuality !== false)) resizeGl();
+    // durante gravação/exportação a qualidade não muda (o vídeo mudaria de tamanho no meio)
+    if (!app.recording && !app.exporting && app.quality.sample(dtMs, app.project.settings.autoQuality !== false)) resizeGl();
     app.clock.tick(dt);
     rebuildDirty(app, now);
     draw(now);

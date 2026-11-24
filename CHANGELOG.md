@@ -4,6 +4,30 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [0.9.0] — 2026-11-24
+
+Beta: estabilidade. Pedidos #060–#063 (escritos pelo VS Code a partir do roteiro). Recursos congelados.
+
+### Adicionado
+- **Qualidade automática** (#060): se o tablet passar de ~21 ms por quadro (menos de ~48 quadros/s) por 1,5 s, o
+  compositor riso desenha em resolução menor (1,5× → 1× → 0,75× → 0,5× da densidade da tela); volta a subir depois de
+  ~10 s rodando a 60 Hz. Traço molhado e roda continuam nítidos. Menu → Qualidade automática; painel mostra o nível.
+- **Não perder desenho** (#061): salva também ao sair da página (`pagehide`) e pede ao navegador armazenamento
+  persistente (não apagar os projetos quando faltar espaço).
+
+### Corrigido (revisão de código da 0.3.1 à 0.9, #062)
+- Separações: todas as tintas saem do mesmo instante (antes cada tinta podia sair de um frame, com o loop tocando).
+- Exportar com voltas não corta mais o loop no meio (voltas inteiras que cabem em 12 s).
+- GIF/PNGs com camadas de FPS diferentes saem a 24 quadros/s (antes, frames de duração desigual).
+- Caneta cancelada pelo sistema não deixa mais os gestos de 2 dedos presos como "palma".
+- A qualidade automática não muda durante gravação/exportação (o vídeo mudaria de tamanho) e volta a subir a 60 Hz.
+- Erro no começo de uma exportação não trava mais o papel e a roda; a prova libera a memória da GPU sempre.
+- Trocar de projeto esquece as tintas de antes do Falso CMYK e as dicas da primeira vez.
+- Antes de exportar, as máscaras são preparadas respeitando o limite por quadro (antes, tudo de uma vez).
+
+### Mudado
+- Teste de lógica: 265 verificações.
+
 ## [0.8.0] — 2026-11-24
 
 Primeira vez, textos e acessibilidade. Pedidos #055–#059 (escritos pelo VS Code a partir do roteiro).

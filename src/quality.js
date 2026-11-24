@@ -6,8 +6,8 @@
 
 export const LEVELS = [1.5, 1.0, 0.75, 0.5];
 const WINDOW = 90;            // quadros por medição (~1,5 s a 60 fps)
-const SLOW_MS = 19;           // média acima disso (< ~52 quadros/s): desce um nível
-const FAST_MS = 15;           // média abaixo disso por 10 s seguidos: sobe um nível
+const SLOW_MS = 21;           // média acima disso (< ~48 quadros/s): desce um nível
+const FAST_MS = 17.5;         // média abaixo disso por ~10 s seguidos: sobe (60 Hz = 16,7 ms; precisa caber)
 const FAST_WINDOWS = 6;
 
 export function createQuality(start = 0) {

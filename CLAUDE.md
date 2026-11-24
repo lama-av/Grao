@@ -17,6 +17,7 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
+- **v0.9.0 (24/11/2026):** qualidade automática, salvar ao sair, correções de uma revisão de código.
 - **v0.8.0 (24/11/2026):** projeto de boas-vindas com dicas, roda com alvos de 48 px, leitor de tela, textos.
 - **v0.7.0 (24/11/2026):** sobreimpressão por passada, pontos linha/elipse, Prova de impressão, separações 300 dpi,
   imperfeições opcionais.
@@ -68,6 +69,7 @@ src/
 sw.js                  service worker: guarda o app para abrir sem internet; aviso de versão nova
   actions.js           ações do app (desfazer, seleção, duplicar, apagar, trocar/novo projeto); usado pelo teste
   schedule.js          quando refazer máscaras: ~8 ms por quadro, dependências do balde entre tintas
+  quality.js           qualidade automática: resolução do compositor pelo intervalo entre quadros
   config.js            constantes (documento 1200×800, tintas, papéis, FPS, passo da roda…)
   doc/project.js       projeto, traços, caixas, sanitize (confere cada campo; sempre 4 tintas)
   doc/history.js       desfazer/refazer: frame, camadas e lista de frames (retratos "antes/depois")

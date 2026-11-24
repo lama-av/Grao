@@ -1184,15 +1184,42 @@ for (const code of [4]) {
   let changed = false;
   for (let i = 0; i < 90; i++) changed = q.sample(30) || changed;
   check('qualidade: quadros lentos (30 ms) descem um nível', changed && q.scale === LEVELS[1]);
-  for (let i = 0; i < 90 * 5; i++) q.sample(12);
-  check('qualidade: rápido por menos de 10 s ainda não sobe', q.scale === LEVELS[1]);
-  for (let i = 0; i < 90; i++) q.sample(12);
-  check('qualidade: rápido por ~10 s sobe de volta', q.scale === LEVELS[0]);
+  for (let i = 0; i < 90 * 5; i++) q.sample(16.7);   // 60 Hz
+  check('qualidade: 60 Hz por menos de 10 s ainda não sobe', q.scale === LEVELS[1]);
+  for (let i = 0; i < 90; i++) q.sample(16.7);
+  check('qualidade: a 60 Hz por ~10 s sobe de volta', q.scale === LEVELS[0]);
   for (let i = 0; i < 90 * 10; i++) q.sample(40);
   check('qualidade: nunca abaixo do último nível', q.scale === LEVELS.at(-1));
   for (let i = 0; i < 90; i++) q.sample(1000);
   check('qualidade: aba voltando de segundo plano não conta', q.scale === LEVELS.at(-1));
   check('qualidade: desligada volta ao máximo', q.sample(16, false) === true && q.scale === LEVELS[0]);
+}
+
+// ---------- revisão da 0.9 ----------
+{
+  const { recordSeconds, planFrames } = await import('../src/io/video.js');
+  const { newProject: np } = await import('../src/doc/project.js');
+  const p = np();
+  p.layers[0].frames = Array.from({ length: 10 }, () => [{ id: 1, kind: 'ink', w: 5, pts: [1, 1, 1] }]);
+  p.layers[0].fps = 2;                                          // loop de 5 s
+  check('voltas: 3 voltas de 5 s não cortam o loop (ficam 2 voltas = 10 s)', recordSeconds(p, 3) === 10, recordSeconds(p, 3));
+  const q = np();
+  q.layers[0].fps = 12; q.layers[0].frames[0].push({ id: 1, kind: 'ink', w: 5, pts: [1, 1, 1] });
+  q.layers[1].fps = 8; q.layers[1].frames[0].push({ id: 2, kind: 'ink', w: 5, pts: [1, 1, 1] });
+  check('GIF com FPS diferentes usa 24 (nenhuma camada com frames desiguais)', planFrames(q, 1).fps === 24);
+  const { app } = makeApp();
+  app.applyFalseCmyk();
+  app.replaceProject(np());
+  check('trocar de projeto esquece as tintas de antes do Falso CMYK', app.inksBeforePreset === null);
+  // caneta cancelada pelo sistema não deixa os dedos presos como "palma"
+  const { app: a2, wet } = makeApp();
+  wet.autoPenAway = false;
+  stroke(wet, 300, 300);
+  const pen = pointer(wet); pen.down(300, 300); pen.cancel(300, 300);
+  await sleep(350);                    // passa o tempo de guarda (300 ms) de verdade
+  const f1 = pointer(wet, 'touch'), f2 = pointer(wet, 'touch');
+  f1.down(500, 400); f2.down(700, 400); f1.up(500, 400); f2.up(700, 400);
+  check('depois de um pointercancel da caneta, o toque de 2 dedos volta a desfazer', all(a2).length === 0);
 }
 
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);

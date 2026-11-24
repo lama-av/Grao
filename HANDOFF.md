@@ -541,6 +541,42 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 ### #059 — Fechar a 0.8.0
 - **Status:** Feito · **Resposta do VS Code:** `VERSION` 0.8.0 (b16), CHANGELOG, docx; 255 verificações.
 
+### #060 — Meia resolução automática
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.9.0 · **Origem:** T-081, meta de 8 ms do compositor
+- **Resposta do VS Code:** `src/quality.js` mede o intervalo entre quadros (o navegador não dá o tempo da GPU sem
+  extensão). Média de 90 quadros acima de 21 ms → desce um nível do canvas do riso (1,5 / 1 / 0,75 / 0,5 da densidade
+  da tela); abaixo de 17,5 ms por 6 medições (~10 s) → sobe. Parado durante gravação e exportação. Menu → Qualidade
+  automática (ligada). O nível aparece no painel Teste da Fase 0.
+  **Testar:** 8 camadas reticuladas: o painel deve mostrar a qualidade descendo e os quadros/s voltando a ~60.
+
+### #061 — Sessão de 1 hora sem travar nem perder desenho
+- **Status:** Parcial (o teste de 1 h é do Raphael) · **Versão alvo:** 0.9.0 · **Origem:** T-080
+- **Resposta do VS Code:** salvar também em `pagehide`; `navigator.storage.persist()`; histórico limitado a 300
+  passos; texturas de camadas apagadas são liberadas (`prune`); máscaras refeitas com limite por quadro.
+  **O teste de 1 hora não foi feito** (precisa do tablet).
+  **Testar:** animar 1 h; recarregar no meio; ver se o app fica lento (painel: quadros/s) e se nada se perde.
+
+### #062 — Correções do beta (revisão de código)
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.9.0
+- **Resposta do VS Code:** revisão automática (nível alto) de `4ab5267..9dc37c7` (0.3.1 → 0.9), 10 achados:
+  1. Qualidade automática nunca voltava a subir a 60 Hz (limite de 15 ms < 16,7 ms) → 17,5 ms. **Corrigido.**
+  2. Separações liam o frame de cada camada em momentos diferentes → frames fixados no início. **Corrigido.**
+  3. Voltas cortavam o loop no meio (limite de 12 s) → só voltas inteiras. **Corrigido.**
+  4. `pointercancel`/`blur` da caneta deixavam o filtro de palma preso → `penGone`. **Corrigido** (teste de mutação).
+  5. Qualidade mudava o tamanho do canvas durante a gravação → parada durante gravação/exportação. **Corrigido.**
+  6. Erro antes do `try` travava o app (`exporting` ficava ligado) → tudo dentro do `try/finally`. **Corrigido.**
+  7. "Do projeto" e dicas vazavam para outro projeto → limpos ao trocar. **Corrigido.**
+  8. Decisão 7: máscaras preparadas de uma vez antes de exportar → agora aos poucos (`flushMasks`). **Corrigido.**
+     **Fica como limitação:** a rasterização das separações a 300 dpi (≈ 8 milhões de pixels por camada, com balde)
+     roda na linha principal e congela o loop alguns segundos por tinta. É uma ação de exportação pedida pela pessoa,
+     com aviso "Espere terminar" e papel bloqueado. Resolver exigiria um Worker com OffscreenCanvas (fica para depois
+     do teste no tablet, se incomodar).
+  9. Commit da 0.9 sem subir `VERSION`/`BUILD` → resolvido no fechamento (b17). **Corrigido.**
+  10. GIF com FPS diferentes tinha frames desiguais → 24 quadros/s quando os FPS diferem. **Corrigido.**
+
+### #063 — Fechar a 0.9.0
+- **Status:** Feito · **Resposta do VS Code:** `VERSION` 0.9.0 (b17), CHANGELOG, docx; 265 verificações.
+
 ### Pedidos já feitos (v0.2.0 a v0.3.1)
 
 ### #001 — Papel em tela cheia e canvas de interface

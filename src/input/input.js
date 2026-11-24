@@ -390,12 +390,12 @@ export function setupInput(app, wetCanvas) {
   });
   wetCanvas.addEventListener('pointercancel', (e) => {
     if (uiPointers.delete(e.pointerId)) { app.ui.up(e, true); if (isPen(e)) penAway(); return; }
-    if (isPen(e)) { finishPen(e, true); penAway(); } else touchUp(e, true);
+    if (isPen(e)) { finishPen(e, true); penAway(); if (e.pointerType === 'pen') gestures.penGone(performance.now()); } else touchUp(e, true);
   });
   wetCanvas.addEventListener('pointerleave', (e) => {
     if (e.pointerType === 'pen') { penAway(); gestures.penGone(performance.now()); }
   });
-  window.addEventListener('blur', penAway);
+  window.addEventListener('blur', () => { penAway(); gestures.penGone(performance.now()); });
   wetCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
   function colorFor(s) {
