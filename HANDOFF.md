@@ -51,7 +51,8 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 
 > **v0.2.0 fechada em 24/11** (pedidos #001–#009 feitos). **v0.2.1 feita em 24/11** (#010–#013, a partir da D3,
 > a pedido do Raphael: "continue a produção e melhoria do app"). **v0.3.0 feita em 24/11** (#014–#017: balde,
-> linha reta, exportar vídeo, correções). Nenhuma das duas foi testada no tablet ainda.
+> linha reta, exportar vídeo, correções). **v0.3.1 feita em 24/11** (#019–#021: zoom, pincéis, suavização).
+> Nenhuma dessas foi testada no tablet ainda.
 >
 > **Relatório da v0.2 para a auditoria:** `docs/relatorio-v0.2.md` (o que saiu diferente, extras, pendências,
 > decisões). Sessão de animação só com a roda feita pelo Raphael em 24/11: funcionou tudo certo.
@@ -382,6 +383,41 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   propósito: o balde precisa ler pixels, e o envio CPU → GPU evita a leitura da GPU que a v0.1 acusava ("GPU stall
   due to ReadPixels"). **Medir no tablet** (painel Teste da Fase 0: tempo do quadro ao confirmar traços).
 - Teste de lógica: 98 verificações, com uma verificação de mutação para o item 1.
+
+### #019 — Zoom e mover o papel (T-020)
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.3.1
+- **Origem:** plano da v0.3 ("pode prosseguir", Raphael, 24/11).
+- **Resposta do VS Code:**
+  - 2 dedos **fora** da seleção: pinça = zoom (100% a 400%), arrastar = mover o papel. O ponto sob os dedos fica
+    sob os dedos. O papel sempre cobre a tela (não dá para afastar além de 100%). Soltar abaixo de 108% encaixa em
+    100%. Leitura "200%". Menu → **Encaixar papel (100%)** (só ativo com zoom).
+  - O toque rápido de 2 dedos continua desfazendo (só vira zoom depois de 12 px de movimento). 2 dedos sobre a
+    seleção (+80 px) continuam girando a seleção (decisão 10).
+  - A vista é da sessão (não vai para o `.grao`). Matemática em `src/view.js` (uv da tela; o shader recebe `uView`).
+    O traço molhado, o laço, a caixa e os chips da seleção e a prévia de tamanho seguem o zoom. PNG e vídeo sempre
+    com o papel inteiro.
+  - **Testar no tablet:** pinça para 200–300% e desenhar detalhes; arrastar com 2 dedos; voltar a 100% (encaixa);
+    toque rápido de 2 dedos com zoom (desfaz); laçar e girar com zoom; conferir que o traço cai sob a caneta.
+
+### #020 — Pincéis: Lápis, Marcador, Giz (T-021)
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.3.1
+- **Resposta do VS Code:**
+  - Pétala Ferramenta com 7 pastilhas: Pincel, Lápis, Marcador, Giz, Borracha, Balde, Laço. Cada ferramenta tem
+    tamanho próprio (`settings.sizes`); o arco de Tamanho mexe na atual (com Balde/Laço, no último pincel).
+  - Lápis: metade da largura e tom de 62% na máscara, então o grão do riso falha o traço como grafite (com Grão em
+    0 ele fica cheio). Marcador: largura fixa. Giz: carimbos espalhados e falhados, gerados pelo id do traço, iguais
+    na tela e na máscara. Borracha sempre no formato do Pincel.
+  - O traço guarda o pincel (`b`); Pincel comum não grava nada (arquivo menor). Arquivos antigos abrem iguais.
+  - Botão 1 da caneta: alterna a Borracha com o último pincel. Botão da roda: L, M ou G no miolo.
+  - **Testar no tablet:** cada pincel com pressão leve e forte; Lápis com Grão alto e baixo; Giz devagar e rápido;
+    trocar tamanhos e ver que cada ferramenta lembra o seu.
+
+### #021 — Suavizar traço (T-025)
+- **Status:** Feito · **Prioridade:** P3 · **Versão alvo:** 0.3.1
+- **Resposta do VS Code:** Menu → **Suavizar traço** (0 a 1, padrão 0 = desligado, decisão 6). Cada ponto anda até
+  15% do caminho até a caneta (no máximo); ao soltar, o traço alcança o último ponto real. Vale para todos os
+  pincéis (o plano dizia "por pincel"; ficou um ajuste só, mais simples; dá para separar se o chat quiser).
+  - **Testar no tablet:** escrever com Suavizar em 0, 0,5 e 1; ver se o atraso incomoda.
 
 ## Dúvidas do VS Code
 

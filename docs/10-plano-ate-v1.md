@@ -84,8 +84,8 @@ Objetivo: trocar a zona lateral pela roda de canto, com desfazer e refazer à m�
 
 ### v0.3 — Papel e ferramentas
 Objetivo: navegar pelo desenho e ter ferramentas diferentes, ainda poucas.
-> **0.3.0 em 24/11/2026:** T-022 (Balde) e T-023 (Linha reta) feitos, mais o vídeo do T-052. Ficam para a **0.3.1**:
-> T-020 (zoom), T-021 (pincéis) e T-025 (suavização).
+> **0.3.0 em 24/11/2026:** T-022 (Balde) e T-023 (Linha reta) feitos, mais o vídeo do T-052. **0.3.1:** T-020 (zoom),
+> T-021 (pincéis) e T-025 (suavização, um ajuste para todos os pincéis). A v0.3 está completa; falta o teste no tablet.
 - T-020 Zoom e mover o papel com 2 dedos (pinça fora da seleção); "Encaixar papel" na folha Mais; encaixe
   automático em 100 %.
 - T-021 Pincéis: **Lápis** (grão, pressão no tamanho), **Marcador** (chapado), **Giz** (falhado, textura).

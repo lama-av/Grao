@@ -5,6 +5,11 @@ import { DEFAULT_FRAMES, DEFAULT_INKS, INKS, PAPERS, FPS_OPTIONS, MAX_FRAMES } f
 
 const LAYERS = 4;                         // o compositor riso mistura exatamente 4 tintas
 
+// Ferramentas com tamanho próprio (unidades do documento) e o intervalo do arco de Tamanho.
+export const DEFAULT_SIZES = { brush: 10, pencil: 6, marker: 16, chalk: 14, eraser: 20 };
+export const SIZE_MIN = 2, SIZE_MAX = 40;
+const INK_BRUSHES = ['pencil', 'marker', 'chalk'];
+
 export function newProject(paper = 'natural') {
   return {
     format: 'grao-projeto',
@@ -20,17 +25,26 @@ export function newProject(paper = 'natural') {
       frames: Array.from({ length: DEFAULT_FRAMES }, () => []),
     })),
     // wheelCorner: null = automático (inferior esquerdo; inferior direito no modo Canhoto)
-    settings: { grain: 0.6, mis: 0.5, ferver: true, auto: true, brush: 10, lefty: false, wheelCorner: null, pinWheel: false },
+    // sizes: tamanho de cada ferramenta (T-021). smooth: suavização do traço, 0 = desligada (decisão 6, T-025).
+    settings: {
+      grain: 0.6, mis: 0.5, ferver: true, auto: true, lefty: false, wheelCorner: null, pinWheel: false,
+      sizes: { ...DEFAULT_SIZES }, smooth: 0,
+    },
   };
 }
 
-export function newStroke(project, kind, w) {
+export function newStroke(project, kind, w, brush) {
   // kind: 'ink' (pincel) | 'cut' (borracha) | 'fill' (balde: só o ponto tocado, a área é feita na máscara)
-  return { id: project.nextId++, kind, w, pts: [] }; // pts = [x, y, pressão, x, y, pressão, …]
+  // b: pincel do traço de tinta ('pencil' | 'marker' | 'chalk'); sem b = Pincel comum.
+  const s = { id: project.nextId++, kind, w, pts: [] }; // pts = [x, y, pressão, x, y, pressão, …]
+  if (kind === 'ink' && brush && brush !== 'brush') s.b = brush;
+  return s;
 }
 
 export function cloneStroke(s, newId) {
-  return { id: newId ?? s.id, kind: s.kind, w: s.w, pts: s.pts.slice() };
+  const c = { id: newId ?? s.id, kind: s.kind, w: s.w, pts: s.pts.slice() };
+  if (s.b) c.b = s.b;
+  return c;
 }
 
 // Balde: as paredes do preenchimento são as linhas da própria tinta e as das outras tintas que aparecem junto
@@ -118,7 +132,15 @@ export function sanitize(p) {
   const set = out.settings;
   set.grain = num(s.grain, 0, 1, set.grain);
   set.mis = num(s.mis, 0, 1, set.mis);
-  set.brush = Math.round(num(s.brush, 2, 40, set.brush));
+  const hasSizes = s.sizes && typeof s.sizes === 'object';
+  const sz = hasSizes ? s.sizes : {};
+  set.sizes = { ...DEFAULT_SIZES };
+  // projetos até a 0.3.0 tinham um tamanho só (settings.brush): vale para o Pincel e a Borracha
+  if (!hasSizes && Number.isFinite(s.brush)) set.sizes.brush = set.sizes.eraser = s.brush;
+  for (const k of Object.keys(DEFAULT_SIZES)) {
+    set.sizes[k] = Math.round(num(sz[k], SIZE_MIN, SIZE_MAX, num(set.sizes[k], SIZE_MIN, SIZE_MAX, DEFAULT_SIZES[k])));
+  }
+  set.smooth = num(s.smooth, 0, 1, 0);
   for (const k of ['ferver', 'auto', 'lefty', 'pinWheel']) if (typeof s[k] === 'boolean') set[k] = s[k];
   set.wheelCorner = ['bl', 'br', 'tl', 'tr'].includes(s.wheelCorner) ? s.wheelCorner : null;
   return out;
@@ -131,5 +153,7 @@ function cleanStroke(s) {
   const pts = s.pts;
   if (!Array.isArray(pts) || pts.length < 3 || pts.length % 3 !== 0 || pts.length > 300000) return null;
   for (const v of pts) if (!Number.isFinite(v)) return null;
-  return { id: s.id, kind: s.kind, w: Math.min(200, s.w), pts: pts.slice() };
+  const out = { id: s.id, kind: s.kind, w: Math.min(200, s.w), pts: pts.slice() };
+  if (s.kind === 'ink' && INK_BRUSHES.includes(s.b)) out.b = s.b;
+  return out;
 }

@@ -101,7 +101,7 @@ export class Masks {
     for (let i = from; i < strokes.length; i++) {
       const s = strokes[i];
       if (s.kind === 'fill') this.#fill(s, l, f, project);
-      else drawStroke(ctx, s, MASK_SCALE, s.kind === 'cut' ? '#000' : '#fff');
+      else drawStroke(ctx, s, MASK_SCALE, null, true);
     }
   }
 
@@ -128,7 +128,7 @@ export class Masks {
     for (const w of wallsFor(project, l, f)) {
       for (const s of project.layers[w.l].frames[w.f] || []) {
         if (s.kind === 'fill') continue;          // só linhas seguram o balde
-        drawStroke(ctx, s, MASK_SCALE, s.kind === 'cut' ? '#000' : '#fff');
+        drawStroke(ctx, s, MASK_SCALE, null, true);
         any = any || s.kind === 'ink';
       }
     }

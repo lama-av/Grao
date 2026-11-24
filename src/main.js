@@ -15,6 +15,7 @@ import { loadProject, saveProject, debounced } from './io/storage.js';
 import { downloadBlob, baseNameFor } from './io/file.js';
 import { videoFormat, recordSeconds, recordCanvas, fmtSeconds } from './io/video.js';
 import { rebuildDirty } from './schedule.js';
+import { createView, fitView } from './view.js';
 
 const MAX_MIS_UV = 0.004; // desalinhamento máximo (fração da largura) com o controle no máximo
 
@@ -33,6 +34,7 @@ async function start() {
     historyUntil: 0,
     lowLatency: false,
     dirty: new Set(),
+    view: createView(),     // zoom e posição do papel (só da sessão)
   };
 
   let riso;
@@ -80,7 +82,10 @@ async function start() {
   installActions(app);
 
   app.exportPNG = () => {
+    const view = { ...app.view };
+    fitView(app.view);                     // exporta o papel inteiro, mesmo com zoom
     draw(performance.now());               // desenha e copia no mesmo instante (o buffer ainda existe)
+    Object.assign(app.view, view);
     glCanvas.toBlob((blob) => {
       if (!blob) { app.toast('Não deu para exportar o PNG. Tente de novo.'); return; }
       downloadBlob(blob, `${baseNameFor(app.project)}.png`);
@@ -97,7 +102,8 @@ async function start() {
     if (!format) { app.toast('Este navegador não grava vídeo. Use o Chrome atualizado.'); return; }
     const seconds = recordSeconds(app.project);
     const c = app.clock;
-    const saved = { paused: c.paused, speed: c.speed };
+    const saved = { paused: c.paused, speed: c.speed, view: { ...app.view } };
+    fitView(app.view);                      // o vídeo mostra o papel inteiro
     app.selection = null;
     app.onSelectionChange();
     app.ui?.collapse();
@@ -116,6 +122,8 @@ async function start() {
     } finally {
       app.recording = false;
       c.paused = saved.paused; c.speed = saved.speed;
+      Object.assign(app.view, saved.view);
+      app.input?.redrawOverlay();
     }
   };
 
@@ -172,6 +180,7 @@ async function start() {
       grain: s.grain,
       seed,
       onion: app.clock.frozen && n > 1,
+      view: app.view,
     });
   }
 

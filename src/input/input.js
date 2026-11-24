@@ -5,7 +5,9 @@
 
 import { DOC_W, DOC_H, INKS, PAPERS } from '../config.js';
 import { newStroke, cloneStroke, boundsOf, fillDependents } from '../doc/project.js';
+import { BRUSHES } from '../render/stroke.js';
 import { drawLastSegment, drawStroke } from '../render/stroke.js';
+import { uvToDoc, pinch, settle } from '../view.js';
 
 // Captura o ponteiro; ignora a falha quando o ponteiro já sumiu (eventos sintéticos, cancelamentos).
 function capture(el, e) { try { el.setPointerCapture(e.pointerId); } catch { /* sem captura */ } }
@@ -38,6 +40,9 @@ export function setupInput(app, wetCanvas) {
 
   let mode = null;        // 'draw' | 'lasso' | 'move' | 'fill'
   let line = null;        // linha reta: { timer, ax, ay (ponto parado), on (já endireitou) }
+  let smooth = null;      // suavização: ponto suavizado atual e último ponto real
+  // 0 = sem suavização (padrão). Até 0,85: cada ponto anda 15% do caminho até a caneta.
+  const smoothFactor = () => (app.project.settings.smooth || 0) * 0.85;
   let stroke = null;
   let target = null;      // { l, f }
   let lasso = [];
@@ -52,15 +57,22 @@ export function setupInput(app, wetCanvas) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     wetCanvas.width = Math.round(r.width * dpr);
     wetCanvas.height = Math.round(r.height * dpr);
-    const k = wetCanvas.width / DOC_W;
-    ctx.setTransform(k, 0, 0, k, 0, 0); // desenhamos em unidades do documento
     redrawOverlay();
+  }
+
+  // Desenhamos em unidades do documento, com o zoom e a posição do papel (src/view.js).
+  function applyView() {
+    const v = app.view || { s: 1, ox: 0, oy: 0 };
+    const k = (wetCanvas.width / DOC_W) * v.s;
+    ctx.setTransform(k, 0, 0, k, v.ox * wetCanvas.width, v.oy * wetCanvas.height);
   }
 
   function toDoc(e) {
     const r = wetCanvas.getBoundingClientRect();
-    return { x: ((e.clientX - r.left) / r.width) * DOC_W, y: ((e.clientY - r.top) / r.height) * DOC_H };
+    const u = (e.clientX - r.left) / r.width, w = (e.clientY - r.top) / r.height;
+    return app.view ? uvToDoc(app.view, u, w) : { x: u * DOC_W, y: w * DOC_H };
   }
+  const zoom = () => app.view?.s || 1;
 
   function isPen(e) { return e.pointerType === 'pen' || e.pointerType === 'mouse'; }
 
@@ -69,9 +81,15 @@ export function setupInput(app, wetCanvas) {
     return e.pressure > 0 ? e.pressure : 0.5;
   }
 
-  function clearWet() { ctx.clearRect(0, 0, DOC_W, DOC_H); }
+  function clearWet() {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, wetCanvas.width, wetCanvas.height);
+    ctx.restore();
+  }
 
   function redrawOverlay() {
+    applyView();
     clearWet();
     if (mode === 'lasso' && lasso.length > 1) {
       ctx.save();
@@ -158,9 +176,11 @@ export function setupInput(app, wetCanvas) {
     setLassoHeld((b & BTN_LASSO) !== 0);
   }
 
+  // Alterna a Borracha com o último pincel usado (Pincel, Lápis, Marcador ou Giz).
   function toggleEraser() {
-    app.tool = app.tool === 'eraser' ? 'brush' : 'eraser';
-    app.ui?.say(app.tool === 'eraser' ? 'Borracha' : 'Pincel');
+    if (app.tool === 'eraser') app.tool = app.lastBrush || 'brush';
+    else { if (BRUSHES[app.tool]) app.lastBrush = app.tool; app.tool = 'eraser'; }
+    app.ui?.say(app.tool === 'eraser' ? 'Borracha' : BRUSHES[app.tool].name);
   }
 
   // Modo de mola: enquanto o botão do Laço estiver apertado, a caneta faz laço e o loop fica parado.
@@ -232,9 +252,12 @@ export function setupInput(app, wetCanvas) {
       return;
     }
     const cut = app.tool === 'eraser';
+    const brush = BRUSHES[app.tool] ? app.tool : (app.lastBrush || 'brush');
+    const sizes = app.project.settings.sizes;
     mode = 'draw';
-    stroke = newStroke(app.project, cut ? 'cut' : 'ink', app.project.settings.brush);
+    stroke = newStroke(app.project, cut ? 'cut' : 'ink', cut ? sizes.eraser : sizes[brush], brush);
     stroke.pts.push(p.x, p.y, pressureOf(e));
+    smooth = { x: p.x, y: p.y, last: null };
     drawLastSegment(ctx, stroke, colorFor(stroke));
     line = { timer: 0, ax: p.x, ay: p.y, on: false };
     armLine();
@@ -298,8 +321,11 @@ export function setupInput(app, wetCanvas) {
     if (mode === 'draw') {
       if (line.on) { moveLineEnd(toDoc(e)); return; }
       const color = colorFor(stroke);
+      const k = smoothFactor();
       for (const ce of events.length ? events : [e]) {
         const p = toDoc(ce);
+        smooth.last = { x: p.x, y: p.y };   // cópia: p vira o ponto suavizado logo abaixo
+        if (k) { smooth.x += (p.x - smooth.x) * (1 - k); smooth.y += (p.y - smooth.y) * (1 - k); p.x = smooth.x; p.y = smooth.y; }
         stroke.pts.push(p.x, p.y, pressureOf(ce));
         drawLastSegment(ctx, stroke, color);
       }
@@ -321,6 +347,11 @@ export function setupInput(app, wetCanvas) {
     if (!mode) return;
     if (mode === 'draw') {
       clearTimeout(line?.timer);
+      // Com suavização, o traço fica para trás da caneta: no fim, ele alcança o último ponto real.
+      if (smoothFactor() && smooth?.last && !line?.on) {
+        const n = stroke.pts.length;
+        stroke.pts.push(smooth.last.x, smooth.last.y, stroke.pts[n - 1]);
+      }
       line = null;
       if (!cancelled && stroke.pts.length >= 3) {
         commitStroke(stroke);
@@ -387,14 +418,25 @@ export function setupInput(app, wetCanvas) {
       const sb = selectionBounds();
       if (sb) {
         const r = wetCanvas.getBoundingClientRect();
-        const marginDoc = (SELECTION_MARGIN_PX / r.width) * DOC_W;
+        const marginDoc = (SELECTION_MARGIN_PX / r.width) * DOC_W / zoom();
         const pa = toDoc({ clientX: a.x, clientY: a.y });
         const pb = toDoc({ clientX: b.x, clientY: b.y });
         if (insideBounds(pa, sb, marginDoc) && insideBounds(pb, sb, marginDoc)) {
           gesture.xf = { start: twoFinger(pa, pb), t: beginTransform() };
         }
       }
+      // Fora da seleção, 2 dedos movem o papel: pinça = zoom, arrastar = mover (T-020).
+      if (!gesture.xf && app.view) gesture.pan = { view: { ...app.view }, ...screenPair(a, b) };
     }
+  }
+
+  // Meio e distância de 2 dedos em uv da tela.
+  function screenPair(a, b) {
+    const r = wetCanvas.getBoundingClientRect();
+    return {
+      mid: { u: ((a.x + b.x) / 2 - r.left) / r.width, w: ((a.y + b.y) / 2 - r.top) / r.height },
+      dist: Math.hypot((b.x - a.x) / r.width, (b.y - a.y) / r.width),
+    };
   }
 
   function touchMove(e) {
@@ -419,6 +461,11 @@ export function setupInput(app, wetCanvas) {
       };
       if (!applyMatrix(gesture.xf.t, m)) gesture.xf = null;   // a seleção foi trocada no meio: para de girar
       redrawOverlay();
+    } else if (gesture.pan && touches.size >= 2 && gesture.moved >= TAP_MOVE_PX) {
+      const [a, b] = [...touches.values()];
+      pinch(app.view, gesture.pan, screenPair(a, b));
+      redrawOverlay();
+      app.ui?.say(`${Math.round(app.view.s * 100)}%`);
     }
   }
 
@@ -437,6 +484,9 @@ export function setupInput(app, wetCanvas) {
         }
       } else if (quick && !cancelled) {
         app.undo();
+      } else if (g.pan && g.moved >= TAP_MOVE_PX) {
+        settle(app.view);                   // perto de 100%: encaixa o papel inteiro
+        if (app.view.s === 1) app.ui?.say('100%');
       }
       redrawOverlay();
     }

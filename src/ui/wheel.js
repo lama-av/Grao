@@ -5,6 +5,9 @@
 // Especificação: docs/10-plano-ate-v1.md, seção "A roda de canto". Textos: docs/11.
 
 import { INKS, PAPERS, DOC_W, WHEEL_STEP_DEG, HISTORY_MODE_MS } from '../config.js';
+import { docToUv } from '../view.js';
+import { BRUSHES } from '../render/stroke.js';
+import { SIZE_MIN, SIZE_MAX } from '../doc/project.js';
 
 const MARGIN = 16;
 const BTN_R = 32;                         // botão recolhido: 64 px
@@ -16,7 +19,6 @@ const PETAL_STEP = 17;                    // graus entre pastilhas
 const COLOR_R = 270, COLOR_PILL_R = 22;   // arco das 8 cores da tinta ativa (pétala Tinta), pastilhas de 44 px
 const COLOR_STEP = 14;
 const SIZE_R0 = 240, SIZE_R1 = 288;       // arco de tamanho (pétala Ferramenta)
-const BRUSH_MIN = 2, BRUSH_MAX = 40;
 const ANIM_MS = 150;
 const READ_MS = 1500;
 const LONG_MS = 500;                      // toque longo numa tinta
@@ -37,7 +39,8 @@ const SECTORS = [
   { id: 'ink', label: 'Tinta', a: 180 },
 ];
 
-const TOOLS = [['brush', 'Pincel'], ['eraser', 'Borracha'], ['bucket', 'Balde'], ['lasso', 'Laço']];
+const TOOLS = [['brush', 'Pincel'], ['pencil', 'Lápis'], ['marker', 'Marcador'], ['chalk', 'Giz'],
+  ['eraser', 'Borracha'], ['bucket', 'Balde'], ['lasso', 'Laço']];
 
 const C = {
   panel: '#252320', plate: '#2e2b27', hub: '#1f1d1a', line: '#3a3732', hi: '#3a3631',
@@ -138,8 +141,9 @@ export function setupWheel(app, canvas) {
   function chipRects() {
     const b = app.input?.selectionBounds();
     if (!b) return null;
-    const k = docScale();
-    const box = { x0: b.x0 * k, y0: b.y0 * k, x1: b.x1 * k, y1: b.y1 * k };
+    const v = app.view || { s: 1, ox: 0, oy: 0 };
+    const p0 = docToUv(v, b.x0, b.y0), p1 = docToUv(v, b.x1, b.y1);   // caixa na tela, com o zoom
+    const box = { x0: p0.u * W, y0: p0.w * H, x1: p1.u * W, y1: p1.w * H };
     const h = 48, w1 = 124, w2 = 96, gap = 8;
     let y = box.y1 + 10;
     if (y + h > H - 8) y = box.y0 - 10 - h;
@@ -202,8 +206,14 @@ export function setupWheel(app, canvas) {
   function sizeFromPoint(p) {
     const { a } = polar(p, wheelCenter());
     const t = clamp((angDiff(a, BASE[corner()]) + SPEED_SPAN / 2) / SPEED_SPAN, 0, 1);
-    settings().brush = Math.round(BRUSH_MIN + t * (BRUSH_MAX - BRUSH_MIN));
-    say(`${settings().brush}`);
+    settings().sizes[sizeTool()] = Math.round(SIZE_MIN + t * (SIZE_MAX - SIZE_MIN));
+    say(`${settings().sizes[sizeTool()]}`);
+  }
+
+  // O arco de Tamanho mexe na ferramenta atual; com Balde ou Laço, no último pincel usado.
+  function sizeTool() {
+    if (app.tool === 'eraser' || BRUSHES[app.tool]) return app.tool;
+    return app.lastBrush || 'brush';
   }
 
   function stepPlate(dir) {
@@ -248,6 +258,7 @@ export function setupWheel(app, canvas) {
       say(INKS[it.j].name);
     } else if (it.kind === 'tool') {
       app.tool = it.tool;
+      if (BRUSHES[it.tool]) app.lastBrush = it.tool;
       petal = null;
       say(it.label);
     }
@@ -429,6 +440,8 @@ export function setupWheel(app, canvas) {
       ctx.fillStyle = ink;
       ctx.fill();
     }
+    const letter = { pencil: 'L', marker: 'M', chalk: 'G' }[app.tool];
+    if (letter && !app.lassoHeld) text(letter, c.x, c.y + 1, 12, '#1b1a18', 700);
     if (app.tool === 'lasso' || app.lassoHeld) {
       disc(c.x, c.y, 17);
       ctx.setLineDash([3, 3]); ctx.lineWidth = 1.5; ctx.strokeStyle = C.text; ctx.stroke(); ctx.setLineDash([]);
@@ -539,8 +552,8 @@ export function setupWheel(app, canvas) {
       ring(c, SIZE_R0, SIZE_R1, base - SPEED_SPAN / 2, base + SPEED_SPAN / 2);
       ctx.fillStyle = 'rgba(37,35,32,0.94)'; ctx.fill();
       ctx.lineWidth = 1; ctx.strokeStyle = C.line; ctx.stroke();
-      const b = settings().brush;
-      const a = (base - SPEED_SPAN / 2 + ((b - BRUSH_MIN) / (BRUSH_MAX - BRUSH_MIN)) * SPEED_SPAN) * RAD;
+      const b = settings().sizes[sizeTool()];
+      const a = (base - SPEED_SPAN / 2 + ((b - SIZE_MIN) / (SIZE_MAX - SIZE_MIN)) * SPEED_SPAN) * RAD;
       const r = (SIZE_R0 + SIZE_R1) / 2;
       disc(c.x + Math.cos(a) * r, c.y + Math.sin(a) * r, 13);
       ctx.fillStyle = C.text; ctx.fill();
@@ -587,7 +600,7 @@ export function setupWheel(app, canvas) {
   }
 
   function drawSizePreview() {
-    const r = (settings().brush * docScale()) / 2;
+    const r = (settings().sizes[sizeTool()] * docScale() * (app.view?.s || 1)) / 2;
     disc(W / 2, H / 2, Math.max(1, r));
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = '#222';
@@ -628,10 +641,11 @@ export function setupWheel(app, canvas) {
     noteSelection(!!sb);
     const sig = [
       W, H, open, petal, petalLayer, corner(), n, f, ink, app.clock.paused, app.clock.speed, plateHeld,
-      now < app.historyUntil, now < readUntil ? readText : '', app.tool, settings().brush, sizePreview,
+      now < app.historyUntil, now < readUntil ? readText : '', app.tool, settings().sizes[sizeTool()], sizePreview,
       dragPos && `${dragPos.x | 0},${dragPos.y | 0}`, app.sheet?.mode, app.history.canUndo, app.history.canRedo,
       sb && `${sb.x0 | 0},${sb.y0 | 0},${sb.x1 | 0},${sb.y1 | 0}`,
       app.project.layers.map((L) => L.ink).join(','), hover, app.lassoHeld, app.project.paper, showHint, app.recording,
+      app.view && `${app.view.s.toFixed(3)},${app.view.ox.toFixed(4)},${app.view.oy.toFixed(4)}`,
     ].join('|');
     if (!animating && sig === lastSig) return;
     lastSig = animating ? '' : sig;

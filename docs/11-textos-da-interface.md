@@ -76,7 +76,9 @@ apaga a tinta e mostra o papel).
 | Leitura: linha reta | Linha |
 | Leitura: balde em cima da linha | Nada para pintar |
 | Erro: PNG | Não deu para exportar o PNG. Tente de novo. |
-| Pétala Ferramenta | Pincel · Borracha · Balde · Laço · Tamanho |
+| Pétala Ferramenta | Pincel · Lápis · Marcador · Giz · Borracha · Balde · Laço · Tamanho |
+| Leitura: zoom | 200% · 100% |
+| Menu: zoom e traço | Encaixar papel (100%) · Suavizar traço |
 | Menu: vídeo | Exportar vídeo do loop |
 | Aviso: gravando | Gravando o loop: 3 s. Espere terminar. |
 | Sucesso: vídeo | Vídeo exportado (MP4). Procure em Downloads. |

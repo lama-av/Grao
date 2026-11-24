@@ -24,6 +24,7 @@ uniform float uTex;
 uniform float uGrain;         // 0 a 1
 uniform float uSeed;          // muda a cada reimpressão ("ferver")
 uniform float uOnion;         // 0 ou 1
+uniform vec3 uView;           // zoom e posição: (s, ox, oy) em uv da tela (src/view.js)
 
 out vec4 outColor;
 
@@ -60,7 +61,8 @@ float inkLayer(sampler2D m, vec2 uv, vec2 dp, float s) {
 }
 
 void main() {
-  vec2 uv = vec2(gl_FragCoord.x / uRes.x, 1.0 - gl_FragCoord.y / uRes.y);
+  vec2 st = vec2(gl_FragCoord.x / uRes.x, 1.0 - gl_FragCoord.y / uRes.y);   // ponto da tela (0..1)
+  vec2 uv = (st - uView.yz) / uView.x;    // ponto do papel sob este pixel (zoom)
   vec2 dp = uv * uDoc;
 
   // Papel: cor, textura, fibras horizontais e impurezas.

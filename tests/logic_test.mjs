@@ -40,12 +40,13 @@ const { Clock } = await import('../src/clock/clock.js');
 const { installActions } = await import('../src/actions.js');
 const { setupWheel } = await import('../src/ui/wheel.js');
 const { setupInput } = await import('../src/input/input.js');
+const { createView, docToUv, uvToDoc, pinch, settle, fitView } = await import('../src/view.js');
 
 const toasts = [];
 function makeApp() {
   const app = {
     version: 'teste', project: newProject(), clock: new Clock(), selection: null, lassoHeld: false,
-    tool: 'brush', historyUntil: 0, lowLatency: false, dirty: new Set(),
+    tool: 'brush', historyUntil: 0, lowLatency: false, dirty: new Set(), view: createView(),
   };
   app.history = new History(app);
   app.markDirty = (l, f) => app.dirty.add(`${l}:${f}`);
@@ -219,7 +220,7 @@ for (const code of [4]) {
   check('arrastar até a cor troca a cor da tinta', app.project.layers[0].ink === 5, app.project.layers[0].ink);
   // pétala Ferramenta: Borracha
   tap(wet, ...at(58, 0));
-  tap(wet, ...at(206, base - (step * 3) / 2 + step));   // 4 ferramentas: Pincel, Borracha, Balde, Laço
+  tap(wet, ...at(206, base - step * 3 + step * 4));   // 7 ferramentas: Pincel, Lápis, Marcador, Giz, Borracha, Balde, Laço
   check('escolher Borracha na pétala', app.tool === 'eraser');
   app.tool = 'brush';
   // recolhe ao desenhar
@@ -283,7 +284,7 @@ for (const code of [4]) {
   bad.layers[1].ink = 99; bad.layers[1].fps = 7;
   bad.layers.length = 2;                                                                 // faltam 2 tintas
   bad.nextId = 3; bad.activeLayer = 9; bad.paper = 'papelão';
-  bad.settings.brush = 9999; bad.settings.wheelCorner = 'meio';
+  bad.settings.sizes = { brush: 9999 }; bad.settings.wheelCorner = 'meio';
   const fixed = projectFromText(JSON.stringify(bad));
   const f0 = fixed.layers[0].frames[0];
   check('arquivo estragado: só os traços bons ficam', f0.length === 2 && f0[1].id === 902, f0.map((s) => s.id).join(','));
@@ -291,7 +292,7 @@ for (const code of [4]) {
   check('arquivo estragado: sempre 4 tintas', fixed.layers.length === 4);
   check('arquivo estragado: próximo id passa do maior id', fixed.nextId === 903, fixed.nextId);
   check('arquivo estragado: tinta ativa, papel e ajustes conferidos',
-    fixed.activeLayer === 0 && fixed.paper === 'natural' && fixed.settings.brush === 40 && fixed.settings.wheelCorner === null);
+    fixed.activeLayer === 0 && fixed.paper === 'natural' && fixed.settings.sizes.brush === 40 && fixed.settings.wheelCorner === null);
   // abrir troca o projeto e recomeça o histórico
   app.replaceProject(back);
   check('abrir arquivo troca o projeto', app.project === back);
@@ -544,6 +545,134 @@ for (const code of [4]) {
   P.layers[0].fps = 12;
   rebuildDirty(app, 4000);
   check('mudou o FPS: frames com balde são refeitos', built.includes('1:0'), built.join(' '));
+}
+
+// ---------- zoom e mover o papel (T-020) ----------
+{
+  const v = createView();
+  const d = uvToDoc(v, 0.25, 0.5);
+  check('sem zoom: uv 0,25 = x 300', Math.abs(d.x - 300) < 1e-9 && Math.abs(d.y - 400) < 1e-9);
+  pinch(v, { view: createView(), mid: { u: 0.5, w: 0.5 }, dist: 0.1 }, { mid: { u: 0.5, w: 0.5 }, dist: 0.2 });
+  check('pinça dobra o zoom', v.s === 2, v.s);
+  const c = uvToDoc(v, 0.5, 0.5);
+  check('o ponto sob os dedos fica no lugar', Math.abs(c.x - 600) < 1e-9 && Math.abs(c.y - 400) < 1e-9);
+  const back = docToUv(v, 600, 400);
+  check('ida e volta documento/tela', Math.abs(back.u - 0.5) < 1e-9 && Math.abs(back.w - 0.5) < 1e-9);
+  pinch(v, { view: createView(), mid: { u: 0.5, w: 0.5 }, dist: 0.1 }, { mid: { u: 0.5, w: 0.5 }, dist: 9 });
+  check('zoom máximo 400%', v.s === 4);
+  pinch(v, { view: { s: 2, ox: -0.5, oy: -0.5 }, mid: { u: 0.5, w: 0.5 }, dist: 0.1 }, { mid: { u: 3, w: 3 }, dist: 0.1 });
+  check('arrastar não deixa o papel sair da tela', v.ox <= 0 && v.ox >= 1 - v.s && v.oy <= 0 && v.oy >= 1 - v.s);
+  const near = { s: 1.05, ox: -0.02, oy: -0.01 };
+  settle(near);
+  check('soltar perto de 100% encaixa', near.s === 1 && near.ox === 0 && near.oy === 0);
+  const far = { s: 1.5, ox: -0.2, oy: -0.1 };
+  settle(far);
+  check('longe de 100% fica onde está', far.s === 1.5);
+}
+{
+  const { app, wet } = makeApp();
+  // pinça com 2 dedos fora da seleção: zoom 2x no meio da tela
+  const a = pointer(wet, 'touch'), b = pointer(wet, 'touch');
+  a.down(490, 360); b.down(590, 360);
+  a.move(440, 360); b.move(640, 360);
+  a.up(440, 360); b.up(640, 360);
+  check('pinça de 2 dedos dá zoom', Math.abs(app.view.s - 2) < 0.02, app.view.s.toFixed(3));
+  check('pinça não desfaz', app.history.depth === 0);
+  // desenhar com zoom: o traço cai no lugar certo do papel
+  const pen = pointer(wet);
+  pen.down(540, 360); pen.move(550, 360, 1); pen.up(550, 360);
+  const s0 = all(app)[0];
+  const expect = uvToDoc(app.view, 540 / W, 360 / H);
+  check('com zoom, a caneta desenha no ponto certo do papel', Math.abs(s0.pts[0] - expect.x) < 1e-6 && Math.abs(s0.pts[1] - expect.y) < 1e-6);
+  check('com zoom, 10 px de caneta andam 10 px divididos pelo zoom no papel', Math.abs(s0.pts[3] - s0.pts[0] - 10 * 1200 / W / app.view.s) < 1e-6);
+  // toque rápido de 2 dedos continua desfazendo, mesmo com zoom
+  const c = pointer(wet, 'touch'), d = pointer(wet, 'touch');
+  c.down(300, 300); d.down(600, 300); c.up(300, 300); d.up(600, 300);
+  check('toque rápido de 2 dedos ainda desfaz com zoom', all(app).length === 0);
+  // 2 dedos sobre a seleção giram a seleção e não mexem no zoom
+  stroke(wet, 400, 300);
+  app.tool = 'lasso';
+  const l = pointer(wet);
+  l.down(350, 250);
+  for (const [x, y] of [[560, 250], [560, 420], [350, 420], [350, 260]]) l.move(x, y, 1);
+  l.up(350, 260);
+  app.tool = 'brush';
+  const zoomBefore = app.view.s;
+  const e = pointer(wet, 'touch'), f = pointer(wet, 'touch');
+  e.down(420, 320); f.down(500, 330); f.move(520, 400); e.up(420, 320); f.up(520, 400);
+  check('2 dedos sobre a seleção não mudam o zoom', app.view.s === zoomBefore && app.history.depth === 2);
+  fitView(app.view);
+}
+
+// ---------- pincéis (T-021) e suavização (T-025) ----------
+{
+  const { app, wet } = makeApp();
+  const toolAt = (k) => at(206, -45 - 17 * 3 + 17 * k);
+  const pick = (k) => { app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 0)); tap(wet, ...toolAt(k)); app.ui.collapse(); };
+  pick(1);
+  check('pétala: Lápis', app.tool === 'pencil');
+  stroke(wet, 200, 200);
+  const s1 = all(app).at(-1);
+  check('traço de Lápis guarda o pincel e o tamanho do Lápis', s1.b === 'pencil' && s1.w === app.project.settings.sizes.pencil);
+  pick(2); stroke(wet, 200, 300);
+  check('traço de Marcador', all(app).at(-1).b === 'marker' && all(app).at(-1).w === 16);
+  pick(3); stroke(wet, 200, 400);
+  check('traço de Giz', all(app).at(-1).b === 'chalk');
+  pick(0); stroke(wet, 200, 500);
+  check('Pincel comum não grava "b" (arquivo menor)', !('b' in all(app).at(-1)));
+  // botão 1 da caneta: Giz → Borracha → volta ao Giz
+  pick(3);
+  const pen = pointer(wet);
+  pen.down(600, 300, 2, 2); pen.up(600, 300, 0, 2);
+  check('botão 1 vai do Giz para a Borracha', app.tool === 'eraser');
+  stroke(wet, 600, 300);
+  check('borracha usa o tamanho dela', all(app).at(-1).kind === 'cut' && all(app).at(-1).w === app.project.settings.sizes.eraser);
+  const pen2 = pointer(wet);
+  pen2.down(600, 300, 2, 2); pen2.up(600, 300, 0, 2);
+  check('botão 1 de novo volta ao Giz (último pincel)', app.tool === 'chalk');
+  // arco de Tamanho mexe só na ferramenta atual
+  app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 0));
+  const before = { ...app.project.settings.sizes };
+  const sz = pointer(wet, 'touch');
+  sz.down(...at(264, -45 + 30)); sz.up(...at(264, -45 + 30));
+  check('arco de Tamanho muda só o Giz', app.project.settings.sizes.chalk === 40 && app.project.settings.sizes.brush === before.brush);
+  // projeto antigo com um tamanho só
+  const old = JSON.parse(JSON.stringify(app.project));
+  delete old.settings.sizes; old.settings.brush = 22;
+  const { sanitize } = await import('../src/doc/project.js');
+  const m = sanitize(old).settings.sizes;
+  check('projeto da 0.3.0 abre com o tamanho antigo no Pincel e na Borracha', m.brush === 22 && m.eraser === 22 && m.pencil === 6);
+  const bad = JSON.parse(JSON.stringify(app.project));
+  bad.layers[0].frames[0].push({ id: 999, kind: 'ink', b: 'aquarela', w: 5, pts: [1, 2, 0.5] });
+  check('pincel desconhecido no arquivo vira Pincel comum', !('b' in sanitize(bad).layers[0].frames[0].at(-1)));
+}
+{
+  // o Giz sai igual na tela (segmento a segmento) e na máscara (traço inteiro)
+  const { drawStroke, drawLastSegment, widthAt, BRUSHES } = await import('../src/render/stroke.js');
+  const rec = () => { const calls = []; return { calls, ctx: new Proxy({}, { get: (t, k) => (k in t ? t[k] : (...a) => calls.push([k, ...a.map((x) => (typeof x === 'number' ? Math.round(x * 1000) : x))])), set: (t, k, v) => { t[k] = v; return true; } }) }; };
+  const s = { id: 42, kind: 'ink', b: 'chalk', w: 14, pts: [] };
+  const wetRec = rec();
+  for (let i = 0; i < 8; i++) { s.pts.push(100 + i * 9, 200 + (i % 3) * 4, 0.4 + i * 0.05); drawLastSegment(wetRec.ctx, s, '#f0f'); }
+  const maskRec = rec();
+  drawStroke(maskRec.ctx, s, 1, null, true);
+  const arcs = (r) => JSON.stringify(r.calls.filter((c) => c[0] === 'arc'));
+  check('Giz: tela e máscara desenham os mesmos carimbos', arcs(wetRec) === arcs(maskRec) && wetRec.calls.some((c) => c[0] === 'arc'));
+  check('Marcador ignora a pressão', widthAt(16, 0.1, BRUSHES.marker) === widthAt(16, 1, BRUSHES.marker));
+  check('Lápis é mais fino que o Pincel', widthAt(10, 1, BRUSHES.pencil) < widthAt(10, 1, BRUSHES.brush));
+}
+{
+  // suavização: desligada por padrão; ligada, o traço fica liso e termina no ponto real da caneta
+  const { app, wet } = makeApp();
+  const zig = (p) => { p.down(200, 300); for (let i = 1; i <= 30; i++) p.move(200 + i * 10, 300 + (i % 2 ? 20 : -20), 1); p.up(500, 300 - 20); };
+  zig(pointer(wet));
+  const raw = all(app).at(-1).pts;
+  check('sem suavização, o traço passa pelos pontos da caneta', Math.abs(raw[4] - (320 * 1200 / W)) < 1e-6);
+  app.project.settings.smooth = 1;
+  zig(pointer(wet));
+  const sm = all(app).at(-1).pts;
+  const spread = (p) => { let lo = 1e9, hi = -1e9; for (let i = 30; i < p.length - 3; i += 3) { lo = Math.min(lo, p[i + 1]); hi = Math.max(hi, p[i + 1]); } return hi - lo; };
+  check('com suavização, o zigue-zague fica bem menor', spread(sm) < spread(raw) * 0.5, `${spread(sm).toFixed(1)} < ${spread(raw).toFixed(1)}`);
+  check('com suavização, o traço termina onde a caneta parou', Math.abs(sm.at(-3) - 500 * 1200 / W) < 1e-6, `${sm.at(-3)} ${sm.at(-2)} n=${sm.length}`);
 }
 
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);

@@ -4,6 +4,26 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [0.3.1] — 2026-11-24
+
+Fecha a v0.3 do plano ("Papel e ferramentas"): zoom, pincéis e suavização.
+
+### Adicionado
+- **Zoom e mover o papel** (T-020, #019): 2 dedos **fora** da seleção fazem pinça (zoom de 100% a 400%) e arrastam
+  o papel. Soltar perto de 100% encaixa o papel inteiro. Leitura "200%" na roda. **Encaixar papel (100%)** no Menu.
+  O toque rápido de 2 dedos continua desfazendo; 2 dedos **sobre** a seleção continuam girando a seleção.
+  O grão é do papel: com zoom, ele aumenta junto. PNG e vídeo sempre saem com o papel inteiro.
+- **Pincéis** (T-021, #020) na pétala Ferramenta: **Pincel**, **Lápis** (metade da largura, tom de 62%: o grão do
+  riso quebra o traço como grafite), **Marcador** (largura fixa, sem pressão) e **Giz** (carimbos falhados, sempre
+  iguais para o mesmo traço). Cada ferramenta tem o **próprio tamanho** (a Borracha também). O botão 1 da caneta
+  alterna a Borracha com o último pincel usado. O botão da roda mostra L, M ou G no miolo.
+- **Suavizar traço** (T-025, #021) no Menu: de 0 (desligado, padrão) a 1. O traço segue a caneta com atraso e
+  alcança o último ponto ao soltar.
+
+### Mudado
+- Projetos antigos (um tamanho só) abrem com esse tamanho no Pincel e na Borracha.
+- Teste de lógica: 129 verificações (zoom, pinça, pincéis, giz igual na tela e na máscara, suavização).
+
 ## [0.3.0] — 2026-11-24
 
 Ferramentas pedidas pelo Raphael (balde, linha) e exportar vídeo. Do plano da v0.3 ficam para a 0.3.1: zoom e mover

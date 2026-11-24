@@ -17,7 +17,7 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
-- **v0.3.0 (24/11/2026):** balde, linha reta, exportar vídeo. **v0.2.1:** Menu com arquivo `.grao`, cores à
+- **v0.3.1 (24/11/2026):** zoom, pincéis (Lápis, Marcador, Giz), suavização. **v0.3.0:** balde, linha reta, vídeo. **v0.2.1:** Menu com arquivo `.grao`, cores à
   vista, setor Tempo. A v0.2.0 (papel em tela cheia e roda de canto) foi testada pelo Raphael no tablet; a 0.2.1
   e a 0.3.0 ainda não.
   Relatório: `docs/relatorio-v0.2.md`. A Fase 0 completa (`docs/08-testes-fase-0.md`) ainda decide o ADR-001.
@@ -56,13 +56,14 @@ design; dúvidas vão para a seção "Dúvidas do VS Code"; ao terminar, preench
 index.html, styles.css, manifest.webmanifest, assets/icon.svg
 src/
   main.js              cria o objeto app, liga tudo, loop requestAnimationFrame
+  view.js              zoom e posição do papel (uv da tela), pinça, encaixe em 100%
   actions.js           ações do app (desfazer, seleção, duplicar, apagar, trocar/novo projeto); usado pelo teste
   schedule.js          quando refazer máscaras: ~8 ms por quadro, dependências do balde entre tintas
   config.js            constantes (documento 1200×800, tintas, papéis, FPS, passo da roda…)
   doc/project.js       projeto, traços, caixas, sanitize (confere cada campo; sempre 4 tintas)
   doc/history.js       desfazer/refazer por frame (listas "antes/depois")
   clock/clock.js       tempo virtual, velocidade, pausa, holds (molas), frame por camada, semente do ferver
-  render/stroke.js     desenho do traço com pressão (igual na tela e na máscara)
+  render/stroke.js     traço por pincel (Pincel, Lápis, Marcador, Giz), igual na tela e na máscara
   render/masks.js      traço → textura R8 960×640 por (camada, frame); desenha só os traços novos quando dá
   render/fill.js       balde: preenchimento por varredura dentro da máscara (função pura, testada)
   render/riso/         compositor WebGL2; riso.vert/riso.frag em GLSL ES 3.00
@@ -81,11 +82,13 @@ tests/smoke_test.py   teste com Chrome e GPU (Playwright)
 ### Contrato do objeto `app` (criado em `main.js`)
 
 Campos: `project`, `clock`, `history`, `masks`, `riso`, `selection` (`{l, f, ids:Set}` ou `null`),
-`lassoHeld`, `tool` (`brush`/`eraser`/`bucket`/`lasso`), `recording`, `historyUntil`, `lowLatency`, `debug`, `ui` (roda), `sheet`, `input`.
+`lassoHeld`, `tool` (`brush`/`pencil`/`marker`/`chalk`/`eraser`/`bucket`/`lasso`), `lastBrush`, `view`, `recording`, `historyUntil`, `lowLatency`, `debug`, `ui` (roda), `sheet`, `input`.
 Funções: `markDirty(l, f)` (refaz a máscara no próximo quadro), `requestSave()`, `undo()`, `redo()`,
 `onStrokeCommitted(target)`, `onSelectionChange()`, `duplicateSelectionToNextFrame()`, `deleteSelection()`,
 `newProject()`, `replaceProject(p)`, `saveNow()`, `exportPNG()`, `exportVideo()`, `toast(msg)`.
-Tipos de traço: `ink` (pincel), `cut` (borracha), `fill` (balde: só o ponto; a área é feita na máscara). `undo()/redo()` devolvem
+Tipos de traço: `ink` (pincel; `b` = pencil/marker/chalk, sem `b` = Pincel), `cut` (borracha), `fill` (balde: só o
+ponto; a área é feita na máscara). Tamanhos por ferramenta em `settings.sizes`; suavização em `settings.smooth`.
+Coordenadas da tela → papel sempre por `view.js` (`uvToDoc`), nunca dividindo pela largura direto. `undo()/redo()` devolvem
 `true/false` e mostram a leitura na roda. Ações ficam em `src/actions.js` (`installActions(app)`).
 Botões da caneta (`input.js`): botão 1 (`buttons & 2`) alterna `tool` entre `brush` e `eraser`; botão 2
 (`buttons & 4` ou `& 32`) liga `lassoHeld` e `clock.holds 'lasso'` enquanto apertado.

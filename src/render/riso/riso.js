@@ -15,7 +15,7 @@ export async function createRiso(canvas) {
 
   const U = {};
   const names = ['uRes', 'uDoc', 'uMask0', 'uMask1', 'uMask2', 'uMask3', 'uPrev', 'uNext', 'uInk', 'uOpac',
-    'uOff', 'uPaper', 'uFiber', 'uIncl', 'uTex', 'uGrain', 'uSeed', 'uOnion'];
+    'uOff', 'uPaper', 'uFiber', 'uIncl', 'uTex', 'uGrain', 'uSeed', 'uOnion', 'uView'];
   for (const n of names) U[n] = gl.getUniformLocation(program, n) ?? gl.getUniformLocation(program, n + '[0]');
 
   gl.useProgram(program);
@@ -24,7 +24,7 @@ export async function createRiso(canvas) {
   let lastMs = 0;
 
   // s = { masks: [t0..t3], prev, next, inks: [[r,g,b]x4], opac: [4], offsets: [8 floats],
-  //       paper: {rgb, fiber, incl, tex}, grain, seed, onion }
+  //       paper: {rgb, fiber, incl, tex}, grain, seed, onion, view: {s, ox, oy} }
   function draw(s) {
     const t0 = performance.now();
     gl.viewport(0, 0, canvas.width, canvas.height);
@@ -44,6 +44,8 @@ export async function createRiso(canvas) {
     gl.uniform1f(U.uGrain, s.grain);
     gl.uniform1f(U.uSeed, s.seed % 1000);
     gl.uniform1f(U.uOnion, s.onion ? 1 : 0);
+    const v = s.view || { s: 1, ox: 0, oy: 0 };
+    gl.uniform3f(U.uView, v.s, v.ox, v.oy);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     lastMs = performance.now() - t0;
   }

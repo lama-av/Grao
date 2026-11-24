@@ -1,6 +1,6 @@
 GRÃO — INSTRUÇÕES DE USO
 ========================
-Versão descrita: 0.3.0 (balde, linha reta e exportar vídeo)
+Versão descrita: 0.3.1 (zoom, pincéis e suavização)
 Atualizado em: 24/11/2026
 Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
 
@@ -8,7 +8,7 @@ Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
 1. ABRIR
 --------
 - No tablet (Chrome): https://lama-av.github.io/Grao/
-- Ao abrir, aparece um aviso com a versão (ex.: "Grão 0.3.0-b9"). Se o número for
+- Ao abrir, aparece um aviso com a versão (ex.: "Grão 0.3.1-b10"). Se o número for
   antigo, o Chrome está usando a cópia guardada: espere 10 minutos ou limpe os dados
   do site (Chrome > cadeado ao lado do endereço > Configurações do site > Limpar dados).
 - Para instalar como app: menu do Chrome > "Adicionar à tela inicial".
@@ -28,8 +28,9 @@ reimpressão.
 -----------------
 Caneta
 - Encostar e riscar: desenha com a ferramenta atual (pressão muda a espessura).
-- BOTÃO LATERAL 1: cada aperto ALTERNA entre Pincel e Borracha (no ar ou encostada).
-  Aparece "Borracha" ou "Pincel" perto do botão da roda.
+- BOTÃO LATERAL 1: cada aperto ALTERNA entre a Borracha e o último pincel
+  (Pincel, Lápis, Marcador ou Giz), no ar ou encostada. Aparece o nome perto do
+  botão da roda.
 - BOTÃO LATERAL 2: SEGURE para fazer laço. Enquanto ele está apertado, o loop
   para e a caneta contorna o desenho para selecionar. Soltou, volta ao normal.
   (Se o botão 2 não fizer nada no seu tablet, rode o teste da caneta: seção 9.)
@@ -46,6 +47,9 @@ Caneta
 Dedos (no papel)
 - 1 dedo NUNCA desenha (por causa da palma). Tocar o papel recolhe a roda.
 - Toque rápido com 2 dedos: Desfazer.
+- 2 dedos fora da seleção, mexendo: ZOOM e MOVER O PAPEL. Abra ou feche os
+  dedos para aproximar (até 400%) e arraste para passear. Soltar perto de
+  100% encaixa o papel inteiro. Também: Menu > Encaixar papel (100%).
 - 2 dedos pousados sobre a seleção (ou até 80 px em volta): mover, girar e mudar
   o tamanho da seleção (pinça e giro, como numa foto).
 - Não há gesto de 3 dedos nem toque duplo no papel (de propósito).
@@ -55,8 +59,9 @@ Dedos (no papel)
 ------------------
 Recolhida: um botão redondo no canto inferior esquerdo (direito no modo Canhoto).
 Mostra:
-- no miolo, a tinta ativa e a ferramenta: cheio = Pincel, vazado = Borracha,
-  quadrado = Balde, tracejado em volta = Laço;
+- no miolo, a tinta ativa e a ferramenta: cheio = Pincel (com L = Lápis,
+  M = Marcador, G = Giz), vazado = Borracha, quadrado = Balde, tracejado em
+  volta = Laço;
 - um ponto vermelho enquanto grava um vídeo;
 - um anel de pontos com o frame atual aceso;
 - um contorno fino quando o loop está parado.
@@ -86,8 +91,13 @@ PÉTALAS (aparecem em arco, fora da roda)
       trocar a cor da tinta. A pétala fica aberta para você ver o resultado.
       Um ponto escuro no meio = cor que outra tinta já usa.
     · Atalho: toque longo (0,5 s) numa tinta abre as cores daquela tinta.
-- Ferramenta: Pincel, Borracha, Balde, Laço e o arco de Tamanho (mostra o
-  tamanho do pincel num círculo no meio do papel).
+- Ferramenta: Pincel, Lápis, Marcador, Giz, Borracha, Balde, Laço e o arco de
+  Tamanho (mostra o tamanho num círculo no meio do papel). Cada ferramenta
+  lembra o próprio tamanho.
+    · Pincel: a pressão muda a espessura.
+    · Lápis: fino; o grão do riso falha o traço, como grafite.
+    · Marcador: espessura fixa, sem pressão.
+    · Giz: traço falhado, de carimbos.
 - Dá para escolher de dois jeitos:
     · tocar no botão (Tinta ou Ferramenta) e depois tocar na pastilha; ou
     · encostar no botão, arrastar até a pastilha e soltar em cima dela.
@@ -125,8 +135,10 @@ Menu (botão "Menu" da roda):
       parados (ponto vermelho no botão); espere o aviso "Vídeo exportado".
 - Impressão: Papel (Natural, Jornal, Kraft, Reciclado), Grão, Desalinhamento
   (registro fora do lugar), Ferver (grão que muda a cada reimpressão).
-- Desenho e roda: Auto (com o loop parado, cada traço pula para o próximo
-  frame), Fixar roda, Canhoto, Teste da Fase 0 (painel de números).
+- Desenho e roda: Suavizar traço (0 = desligado; mais alto = traço mais liso,
+  com um pouco de atraso), Auto (com o loop parado, cada traço pula para o
+  próximo frame), Fixar roda, Canhoto, Teste da Fase 0 (painel de números),
+  Encaixar papel (100%).
 
 Tempo (botão "Tempo" da roda), sempre da tinta ativa:
 - FPS (6, 8, 12 ou 24) e quantidade de frames (até 12). Mostra a duração do

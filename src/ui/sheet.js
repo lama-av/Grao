@@ -5,6 +5,7 @@ import { INKS, PAPERS, FPS_OPTIONS, MAX_FRAMES } from '../config.js';
 import { confirmDialog } from './dialog.js';
 import { downloadProject, pickProjectFile, projectFromText } from '../io/file.js';
 import { fmtSeconds } from '../io/video.js';
+import { fitView, isFit } from '../view.js';
 
 export function setupSheet(app) {
   const el = document.createElement('div');
@@ -62,10 +63,12 @@ export function setupSheet(app) {
       </div>
       <div class="sheet-group">
         <div class="sheet-title">Desenho e roda</div>
+        <label>Suavizar traço <input type="range" data-k="smooth" min="0" max="1" step="0.05"></label>
         <label class="check"><input type="checkbox" data-k="auto"> Auto (cada traço avança um frame)</label>
         <label class="check"><input type="checkbox" data-k="pinWheel"> Fixar roda</label>
         <label class="check"><input type="checkbox" data-k="lefty"> Canhoto</label>
         <label class="check"><input type="checkbox" data-k="debug"> Teste da Fase 0</label>
+        <button class="btn small" data-act="fit"${app.view && !isFit(app.view) ? '' : ' disabled'}>Encaixar papel (100%)</button>
       </div>
       <div class="version">Grão ${app.version}</div>`;
     const q = (k) => el.querySelector(`[data-k="${k}"]`);
@@ -76,6 +79,7 @@ export function setupSheet(app) {
     q('name').value = app.project.name;
     q('grain').value = s.grain;
     q('mis').value = s.mis;
+    q('smooth').value = s.smooth || 0;
     for (const k of ['ferver', 'auto', 'pinWheel', 'lefty']) q(k).checked = !!s[k];
     q('debug').checked = !!app.debug?.visible;
     refreshStatus();
@@ -84,6 +88,7 @@ export function setupSheet(app) {
     q('name').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };
     q('grain').oninput = (e) => { s.grain = +e.target.value; app.requestSave(); };
     q('mis').oninput = (e) => { s.mis = +e.target.value; app.requestSave(); };
+    q('smooth').oninput = (e) => { s.smooth = +e.target.value; app.requestSave(); };
     for (const k of ['ferver', 'auto', 'pinWheel']) q(k).onchange = (e) => { s[k] = e.target.checked; app.requestSave(); };
     q('lefty').onchange = (e) => { s.lefty = e.target.checked; app.requestSave(); position(); };
     paper.onchange = () => { app.project.paper = paper.value; app.requestSave(); };
@@ -106,6 +111,7 @@ export function setupSheet(app) {
       if (ok) { app.replaceProject(p); app.toast('Projeto aberto'); }
     };
     act('png').onclick = () => app.exportPNG();
+    act('fit').onclick = () => { fitView(app.view); app.input?.redrawOverlay(); close(); };
     act('video').onclick = () => { close(); app.exportVideo(); };
     act('new').onclick = async () => {
       close();
