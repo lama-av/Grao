@@ -21,6 +21,27 @@
   </main>
   <div id="toast" class="toast" role="status" hidden></div>
   <script>
+    // Fase de testes: qualquer erro aparece numa caixa vermelha na tela (no tablet não há console à mão).
+    (function () {
+      function show(msg) {
+        var box = document.getElementById('erros');
+        if (!box) {
+          box = document.createElement('pre');
+          box.id = 'erros';
+          box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;max-height:40vh;overflow:auto;' +
+            'margin:0;padding:10px;background:#b00020;color:#fff;font:13px/1.4 monospace;white-space:pre-wrap;border-radius:6px';
+          document.body.appendChild(box);
+        }
+        box.textContent += msg + '\n';
+      }
+      window.addEventListener('error', function (e) {
+        show('ERRO: ' + e.message + (e.filename ? '\n  em ' + e.filename.split('/').slice(-2).join('/') + ':' + e.lineno : ''));
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        var r = e.reason;
+        show('ERRO (promessa): ' + (r && (r.stack || r.message) || r));
+      });
+    })();
     // Aberto com dois cliques (file://), o navegador bloqueia os módulos: avisa em vez de ficar em branco.
     if (location.protocol === 'file:') {
       document.body.innerHTML = '<div class="fail"><h1>Abra pelo Live Server</h1>' +

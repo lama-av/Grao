@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grão — diagnóstico</title>
+  <style>
+    body { margin: 0; padding: 16px; background: #1b1a18; color: #eee; font: 14px/1.45 system-ui, sans-serif; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    p.hint { margin: 0 0 16px; color: #aaa; }
+    .grid { display: flex; flex-wrap: wrap; gap: 12px; }
+    .test { width: 300px; background: #2a2825; border-radius: 6px; padding: 8px; }
+    .test b { display: block; margin-bottom: 6px; }
+    .box { position: relative; width: 300px; height: 200px; background: #000; }
+    .box canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .res { margin-top: 6px; font: 12px/1.4 monospace; white-space: pre-wrap; }
+    .ok { color: #7fd38a; } .bad { color: #ff7a7a; }
+    pre#info { font: 12px/1.4 monospace; white-space: pre-wrap; background: #2a2825; padding: 8px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Grão: diagnóstico do tablet</h1>
+  <p class="hint">Tire um print desta página inteira e mande. Em cada quadro, diga também o que você VÊ (bege, vermelho, preto…).</p>
+  <pre id="info">carregando…</pre>
+  <div class="grid" id="grid"></div>
+
+<script type="module">
+import { createRiso } from './src/render/riso/riso.js';
+import { Masks } from './src/render/masks.js';
+import { DOC_W, DOC_H } from './src/config.js';
+
+const grid = document.getElementById('grid');
+const info = document.getElementById('info');
+
+function addTest(title, expect) {
+  const el = document.createElement('div');
+  el.className = 'test';
+  el.innerHTML = `<b>${title}</b><div class="box"></div><div class="res">esperado: ${expect}\n</div>`;
+  grid.appendChild(el);
+  const box = el.querySelector('.box');
+  const res = el.querySelector('.res');
+  return {
+    canvas(id) { const c = document.createElement('canvas'); c.width = 300; c.height = 200; if (id) c.id = id; box.appendChild(c); return c; },
+    log(msg, good) { const s = document.createElement('span'); if (good !== undefined) s.className = good ? 'ok' : 'bad'; s.textContent = msg + '\n'; res.appendChild(s); },
+  };
+}
+
+function px(gl, x, y) {
+  const p = new Uint8Array(4);
+  gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, p);
+  return [...p];
+}
+const isBlack = (p) => p[0] < 20 && p[1] < 20 && p[2] < 20;
+const errName = (gl, e) => ({ 0: 'nenhum', 1280: 'INVALID_ENUM', 1281: 'INVALID_VALUE', 1282: 'INVALID_OPERATION', 1285: 'OUT_OF_MEMORY', 1286: 'INVALID_FRAMEBUFFER_OPERATION', 37442: 'CONTEXT_LOST' })[e] ?? e;
+
+async function run(title, expect, fn) {
+  const t = addTest(title, expect);
+  try { await fn(t); } catch (err) { t.log('FALHOU: ' + (err && err.message || err), false); }
+}
+
+// Informações gerais
+{
+  const c = document.createElement('canvas');
+  const gl = c.getContext('webgl2');
+  let lines = [
+    `navegador: ${navigator.userAgent}`,
+    `tela: ${screen.width}×${screen.height}  devicePixelRatio: ${devicePixelRatio}`,
+    `WebGL2: ${gl ? 'sim' : 'NÃO'}`,
+  ];
+  if (gl) {
+    const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+    if (dbg) lines.push(`GPU: ${gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)} (${gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL)})`);
+    const hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+    lines.push(`highp no fragment: precisão ${hp.precision} bits, faixa ${hp.rangeMin}/${hp.rangeMax}`);
+    lines.push(`textura máx: ${gl.getParameter(gl.MAX_TEXTURE_SIZE)}  unidades de textura: ${gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)}`);
+  }
+  info.textContent = lines.join('\n');
+}
+
+// 1. WebGL2 só limpando a tela com bege
+await run('1. WebGL2: limpar com bege', 'bege', (t) => {
+  const c = t.canvas();
+  const gl = c.getContext('webgl2', { antialias: false, alpha: false });
+  gl.clearColor(0.95, 0.93, 0.90, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  const p = px(gl, 150, 100);
+  t.log(`pixel lido: ${p}`, !isBlack(p));
+});
+
+// 2. Shader mínimo com o mesmo triângulo do Grão
+await run('2. Shader mínimo (vermelho)', 'vermelho', (t) => {
+  const c = t.canvas();
+  const gl = c.getContext('webgl2', { antialias: false, alpha: false });
+  const vs = `#version 300 es
+void main(){ vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p*2.0-1.0,0.0,1.0); }`;
+  const fs = `#version 300 es
+precision highp float; out vec4 o; void main(){ o = vec4(0.9,0.1,0.1,1.0); }`;
+  const prog = gl.createProgram();
+  for (const [type, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) {
+    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    gl.attachShader(prog, s);
+  }
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+  gl.bindVertexArray(gl.createVertexArray());
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  const p = px(gl, 150, 100);
+  t.log(`pixel lido: ${p}   erro GL: ${errName(gl, gl.getError())}`, !isBlack(p));
+});
+
+// 3. O compositor riso de verdade, sem traços
+let riso3, masks3;
+await run('3. Compositor riso, papel vazio', 'papel bege com textura', async (t) => {
+  const c = t.canvas();
+  riso3 = await createRiso(c);
+  const gl = riso3.gl;
+  masks3 = new Masks(gl);
+  t.log(`máscaras criadas, erro GL: ${errName(gl, gl.getError())}`);
+  const draw = () => riso3.draw(state(masks3, 0));
+  draw();
+  const p = px(gl, 150, 100);
+  t.log(`pixel lido: ${p}   erro GL: ${errName(gl, gl.getError())}`, !isBlack(p));
+  const loop = () => { draw(); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+});
+
+function state(masks, seed) {
+  const m = masks.get(0, 0);
+  return {
+    masks: [m, masks.get(1, 0), masks.get(2, 0), masks.get(3, 0)],
+    prev: masks.empty, next: masks.empty,
+    inks: [[1, 0.28, 0.69], [0, 0.47, 0.75], [1, 0.91, 0], [0, 0, 0]],
+    opac: [1, 1, 1, 1],
+    offsets: [0, 0, 0, 0, 0, 0, 0, 0],
+    paper: { rgb: [0.95, 0.94, 0.90], fiber: 0.25, incl: 0.12, tex: 0.2 },
+    grain: 0.6, seed, onion: false,
+  };
+}
+
+// 4. Máscara com um traço (envio do canvas para a GPU)
+await run('4. Compositor com um traço rosa', 'papel bege com um X rosa', async (t) => {
+  const c = t.canvas();
+  const riso = await createRiso(c);
+  const gl = riso.gl;
+  const masks = new Masks(gl);
+  const pts = (x0, y0, x1, y1) => { const a = []; for (let i = 0; i <= 20; i++) a.push(x0 + (x1 - x0) * i / 20, y0 + (y1 - y0) * i / 20, 0.8); return a; };
+  masks.rebuild(0, 0, [
+    { id: 1, kind: 'ink', w: 60, pts: pts(200, 150, 1000, 650) },
+    { id: 2, kind: 'ink', w: 60, pts: pts(1000, 150, 200, 650) },
+  ]);
+  t.log(`traço enviado, erro GL: ${errName(gl, gl.getError())}`);
+  const draw = () => riso.draw(state(masks, 0));
+  draw();
+  const p = px(gl, 150, 100);
+  t.log(`pixel no centro: ${p}   erro GL: ${errName(gl, gl.getError())}`, !isBlack(p));
+  const loop = () => { draw(); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+});
+
+// 5 e 6. Canvas 2D transparente por cima do WebGL, como no app (normal e baixa latência)
+for (const desync of [false, true]) {
+  await run(`${desync ? '6' : '5'}. Camada 2D por cima (${desync ? 'baixa latência' : 'normal'})`,
+    'bege com uma linha azul', async (t) => {
+    const g = t.canvas();
+    const gl = g.getContext('webgl2', { antialias: false, alpha: false });
+    const paint = () => { gl.clearColor(0.95, 0.93, 0.90, 1); gl.clear(gl.COLOR_BUFFER_BIT); requestAnimationFrame(paint); };
+    paint();
+    const w = t.canvas();
+    const ctx = w.getContext('2d', { desynchronized: desync, alpha: true });
+    ctx.strokeStyle = '#0078BF'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(30, 170); ctx.lineTo(270, 30); ctx.stroke();
+    t.log(`baixa latência ativa: ${ctx.getContextAttributes?.().desynchronized ? 'sim' : 'não'}`);
+    t.log('olhe o quadro: se estiver preto com linha azul, esta camada esconde o papel.');
+  });
+}
+
+// 7. O tamanho real do app (canvas grande como no palco)
+await run('7. Compositor no tamanho do palco', 'bege (miniatura)', async (t) => {
+  const c = t.canvas();
+  c.width = Math.round(DOC_W * 1.5); c.height = Math.round(DOC_H * 1.5);
+  const riso = await createRiso(c);
+  const masks = new Masks(riso.gl);
+  riso.draw(state(masks, 0));
+  const p = px(riso.gl, c.width >> 1, c.height >> 1);
+  t.log(`canvas ${c.width}×${c.height}   pixel: ${p}   erro GL: ${errName(riso.gl, riso.gl.getError())}`, !isBlack(p));
+  t.log(`tempo do compositor: ${riso.lastMs.toFixed(1)} ms (CPU)`);
+});
+</script>
+</body>
+</html>

@@ -4,6 +4,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+### Adicionado
+- Caixa vermelha de erros na tela do app (fase de testes no tablet, onde não há console).
+- `diag.html`: página de diagnóstico do WebGL do tablet, com testes por partes do compositor.
+
 ### Corrigido
 - Canvas todo preto no tablet (Chrome do Android): o modo baixa latência do traço molhado deixava a camada de cima opaca. Agora vem desligado; para testá-lo, abrir com `?baixa=1` no endereço.
 - Publicado no GitHub Pages: https://lama-av.github.io/Grao/
