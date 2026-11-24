@@ -6,7 +6,19 @@ Você desenha dentro de um loop que nunca para; o grão da impressão ferve no r
 > **Status:** v0.1.0 — primeira build, em teste no tablet (Fase 0). Plataforma proposta no [ADR-001](docs/adr/ADR-001-plataforma-v0.1.md): app web (PWA) no Chrome do tablet.
 > Partes marcadas como *(planejado)* ainda não existem no código.
 
-## Como rodar no tablet
+## Abrir no tablet (online)
+
+| | Link |
+| --- | --- |
+| **App** | https://lama-av.github.io/Grao/ |
+| Teste da Fase 0 (caneta, palma, latência) | https://lama-av.github.io/Grao/teste-caneta.html |
+| Diagnóstico do WebGL | https://lama-av.github.io/Grao/diag.html |
+| App com baixa latência ligada (fica preto no Android) | https://lama-av.github.io/Grao/?baixa=1 |
+
+Cada envio para o GitHub atualiza o site em cerca de 1 minuto. O Chrome pode mostrar a versão antiga por até
+10 minutos; o aviso ao abrir o app mostra a versão (ex.: `0.1.0-b4`).
+
+## Como rodar no tablet (rede local, para desenvolvimento)
 
 1. Abra a pasta no VS Code e clique em **Go Live** (extensão Live Server).
 2. No PC, veja o IP na rede (`ipconfig`, linha IPv4), por exemplo `192.168.0.10`.
