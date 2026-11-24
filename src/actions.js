@@ -28,6 +28,7 @@ export function installActions(app) {
   // Auto: com o loop parado, cada traço terminado anda um frame (desenho quadro a quadro).
   // v0.5 (#041): pode voltar em vez de avançar, e pode parar no último frame (ou no primeiro, voltando).
   app.onStrokeCommitted = () => {
+    app.hintDone?.('draw');
     const c = app.clock, s = app.project.settings;
     if (!(s.auto && c.paused && c.holds.size === 0)) return;
     const layer = app.project.layers[app.project.activeLayer];

@@ -98,7 +98,7 @@ function stroke(wet, x0, y0, n = 10, type = 'pen') {
   p.up(x0 + n * 10, y0 + n * 5);
 }
 const all = (app) => app.project.layers.flatMap((L) => L.frames.flat());
-const BTN = [48, H - 48], WC = [136, H - 136];
+const BTN = [48, H - 48], WC = [148, H - 148];
 const at = (r, a) => [WC[0] + Math.cos(a * Math.PI / 180) * r, WC[1] + Math.sin(a * Math.PI / 180) * r];
 function tap(wet, x, y, type = 'touch') { const p = pointer(wet, type); p.down(x, y); p.up(x, y); }
 
@@ -203,7 +203,7 @@ for (const code of [4]) {
   check('Refazer pela roda', all(app).length === 1);
   // pétala Tinta por arrastar e soltar (setor em 180°)
   const base = -45, step = 17;
-  const inkAt = (k, n = 5) => at(206, base - (step * (n - 1)) / 2 + step * k);   // 4 camadas + "+"
+  const inkAt = (k, n = 5) => at(218, base - (step * (n - 1)) / 2 + step * k);   // 4 camadas + "+"
   const d = pointer(wet, 'touch');
   d.down(...at(58, 180));
   check('encostar em Camadas abre a pétala', app.ui.petal === 'ink');
@@ -225,7 +225,7 @@ for (const code of [4]) {
   // pétala Ferramenta: Borracha
   app.ui.collapse(); tap(wet, ...BTN);
   tap(wet, ...at(58, 0));
-  tap(wet, ...at(270, base - step));   // arco Mexer (fora): Borracha, Balde, Laço
+  tap(wet, ...at(282, base - step));   // arco Mexer (fora): Borracha, Balde, Laço
   check('escolher Borracha na pétala', app.tool === 'eraser');
   app.tool = 'brush';
   // recolhe ao desenhar
@@ -258,7 +258,7 @@ for (const code of [4]) {
   tap(wet, ...BTN);
   tap(wet, ...at(58, 180));
   check('pétala Tinta aberta', app.ui.petal === 'ink');
-  const colorArc = (j) => at(270, -45 - (14 * 8) / 2 + 14 * j);      // 9 cores
+  const colorArc = (j) => at(282, -45 - (14 * 8) / 2 + 14 * j);      // 9 cores
   tap(wet, ...colorArc(6));
   check('tocar numa cor do arco troca a cor da tinta (tambor) da camada ativa', app.project.inks[0] === 6, app.project.inks[0]);
   check('a pétala continua aberta depois de trocar a cor', app.ui.petal === 'ink');
@@ -612,7 +612,7 @@ for (const code of [4]) {
 // ---------- pincéis (T-021) e suavização (T-025) ----------
 {
   const { app, wet } = makeApp();
-  const toolAt = (k) => at(206, -45 - 17 * 1.5 + 17 * k);   // arco Riscar: Pincel, Lápis, Marcador, Giz
+  const toolAt = (k) => at(218, -45 - 17 * 1.5 + 17 * k);   // arco Riscar: Pincel, Lápis, Marcador, Giz
   const pick = (k) => { app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 0)); tap(wet, ...toolAt(k)); app.ui.collapse(); };
   pick(1);
   check('pétala: Lápis', app.tool === 'pencil');
@@ -639,7 +639,7 @@ for (const code of [4]) {
   app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 0));
   const before = { ...app.project.settings.sizes };
   const sz = pointer(wet, 'touch');
-  sz.down(...at(342, -45 + 30)); sz.up(...at(342, -45 + 30));
+  sz.down(...at(354, -45 + 30)); sz.up(...at(354, -45 + 30));
   check('arco de Tamanho muda só o Giz', app.project.settings.sizes.chalk === 40 && app.project.settings.sizes.brush === before.brush);
   // projeto antigo com um tamanho só
   const old = JSON.parse(JSON.stringify(app.project));
@@ -801,18 +801,18 @@ for (const code of [4]) {
 {
   const { app, wet } = makeApp();
   tap(wet, ...BTN); tap(wet, ...at(58, 0));
-  tap(wet, ...at(270, -45));
+  tap(wet, ...at(282, -45));
   check('arco Mexer: Balde em 2 toques', app.tool === 'bucket');
   app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 0));
-  tap(wet, ...at(270, -45 + 17));
+  tap(wet, ...at(282, -45 + 17));
   check('arco Mexer: Laço', app.tool === 'lasso');
   app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 0));
-  tap(wet, ...at(206, -45 + 17 * 1.5));
+  tap(wet, ...at(218, -45 + 17 * 1.5));
   check('arco Riscar: Giz', app.tool === 'chalk');
   const { INKS } = await import('../src/config.js');
   check('paleta com 9 tintas, Vermelho vivo no fim', INKS.length === 9 && INKS[8].name === 'Vermelho vivo' && INKS[8].hex === '#F15060');
   app.ui.collapse(); tap(wet, ...BTN); tap(wet, ...at(58, 180));
-  tap(wet, ...at(270, -45 - (14 * 8) / 2 + 14 * 8));
+  tap(wet, ...at(282, -45 - (14 * 8) / 2 + 14 * 8));
   check('Vermelho vivo escolhível no arco de cores', app.project.inks[0] === 8);
   const { projectToText, projectFromText } = await import('../src/io/file.js');
   check('Vermelho vivo (índice 8) salva e abre no .grao', projectFromText(projectToText(app.project)).inks[0] === 8);
@@ -1161,6 +1161,20 @@ for (const code of [4]) {
   check('shader: até 16 texturas (limite mínimo do WebGL2)', samplers <= 16, samplers);
   check('shader: começa com #version 300 es e tem precisão', frag.startsWith('#version 300 es') && /precision\s+highp\s+float/.test(code));
   check('shader: nenhum smoothstep com limites invertidos óbvios (r + aa, r - aa)', !/smoothstep\(\s*r\s*\+\s*aa\s*,\s*r\s*-\s*aa/.test(code));
+}
+
+// ---------- v0.8: primeira vez (#055) ----------
+{
+  const { welcomeProject, HINTS } = await import('../src/doc/welcome.js');
+  const { sanitize: san } = await import('../src/doc/project.js');
+  const w = welcomeProject();
+  const black = w.layers.find((L) => L.ink === 3), pink = w.layers.find((L) => L.ink === 0);
+  check('boas-vindas: bola em 8 frames na tinta Preto', w.name === 'Boas-vindas' && black.frames.every((fr) => fr.length === 1 && fr[0].kind === 'ink'));
+  check('boas-vindas: miolo por balde na Rosa flúor (balde com linha de outra tinta)', pink.frames.every((fr) => fr.length === 1 && fr[0].kind === 'fill'));
+  check('boas-vindas: a bola anda (alturas diferentes entre frames)', new Set(black.frames.map((fr) => Math.round(fr[0].pts[1]))).size > 3);
+  check('boas-vindas: traços com ids únicos', new Set(w.layers.flatMap((L) => L.frames.flat().map((s) => s.id))).size === w.layers.flatMap((L) => L.frames.flat()).length);
+  check('boas-vindas: marcado como tal (dicas) e preservado ao salvar', san(JSON.parse(JSON.stringify(w))).welcome === true && !san(JSON.parse(JSON.stringify({ ...w, welcome: 'x' }))).welcome);
+  check('3 dicas da primeira vez', HINTS.length === 3 && HINTS.map((h) => h.id).join() === 'draw,wheel,time');
 }
 
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);

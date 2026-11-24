@@ -73,7 +73,8 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
 
 
 .sheet label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); }
-.sheet label.check { flex-direction: row; align-items: center; gap: 8px; color: var(--text); min-height: 36px; }
+.sheet label.check { flex-direction: row; align-items: center; gap: 8px; color: var(--text); min-height: 48px; }
+.sheet input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--text); }
 .sheet select { font: inherit; padding: 6px; background: #2e2b27; color: var(--text); border: 1px solid var(--line); border-radius: 6px; }
 .sheet input[type="range"] { accent-color: var(--text); }
 .version { color: var(--muted); font-size: 12px; text-align: center; }
@@ -183,3 +184,8 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
 .fail { padding: 40px; max-width: 560px; line-height: 1.5; }
 
 [hidden] { display: none !important; }
+
+/* Só para leitor de tela (v0.8): fica fora da vista, mas é lido. */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

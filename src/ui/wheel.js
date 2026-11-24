@@ -11,17 +11,19 @@ import { SIZE_MIN, SIZE_MAX, MAX_LAYERS, inkOf, expoOf, layerTicks } from '../do
 
 const MARGIN = 16;
 const BTN_R = 32;                         // botão recolhido: 64 px
-const R_CENTER = 36, R_SECT = 80, R_PLATE = 120;
-const R_SPEED0 = 126, R_SPEED1 = 174;     // arco de velocidade: 48 px de espessura
+// v0.8 (#057): anel de setores e prato com 48 px de espessura (antes 44 e 40), como pede a regra de alvos.
+const R_CENTER = 36, R_SECT = 84, R_PLATE = 132;
+const R_SPEED0 = 138, R_SPEED1 = 186;     // arco de velocidade: 48 px de espessura
 const SPEED_SPAN = 60;                    // graus
-const PETAL_R = 206, PILL_R = 26;         // pastilhas de 52 px
+const PETAL_R = 218, PILL_R = 26;         // pastilhas de 52 px
 const PETAL_STEP = 17;                    // graus entre pastilhas
-const COLOR_R = 270, COLOR_PILL_R = 24;   // arco das 9 cores da tinta ativa (pétala Tinta), pastilhas de 48 px
+const COLOR_R = 282, COLOR_PILL_R = 24;   // arco das 9 cores da tinta ativa (pétala Tinta), pastilhas de 48 px
 const COLOR_STEP = 14;
-const MEXER_R = 270;                      // pétala Ferramenta: arco de fora (Borracha, Balde, Laço)
-const SIZE_R0 = 318, SIZE_R1 = 366;       // arco de tamanho (pétala Ferramenta), por fora dos dois arcos
+const MEXER_R = 282;                      // pétala Ferramenta: arco de fora (Borracha, Balde, Laço)
+const SIZE_R0 = 330, SIZE_R1 = 378;       // arco de tamanho (pétala Ferramenta), por fora dos dois arcos
 const RULER_FADE_MS = 400;                // régua de frames some 400 ms depois de soltar os 2 dedos
-const ANIM_MS = 150;
+// Movimento reduzido (acessibilidade): a roda abre sem animação.
+const ANIM_MS = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : 150;
 const READ_MS = 1500;
 const LONG_MS = 500;                      // toque longo numa tinta
 const DRAG_MS = 400;                      // segurar o botão para mover de canto
@@ -213,13 +215,16 @@ export function setupWheel(app, canvas) {
   }
 
   // ---------- ações ----------
-  function say(text, ms = READ_MS) { readText = text; readUntil = performance.now() + ms; }
+  function say(text, ms = READ_MS) {
+    readText = text; readUntil = performance.now() + ms;
+    app.announce?.(text);                   // leitor de tela (região aria-live criada no main.js)
+  }
 
   // Régua de frames do gesto de tempo (#023): aparece com os 2 dedos, some 400 ms depois de soltar.
   let rulerUntil = 0;
   function ruler(on) { rulerUntil = on ? Infinity : performance.now() + RULER_FADE_MS; }
 
-  function openWheel() { if (!open) { open = true; animT0 = performance.now(); } }
+  function openWheel() { if (!open) { open = true; animT0 = performance.now(); app.hintDone?.('wheel'); } }
   function collapse() {
     petal = null;
     if (open) { open = false; animT0 = performance.now(); }
@@ -261,6 +266,7 @@ export function setupWheel(app, canvas) {
     } else {
       const layer = app.project.layers[app.project.activeLayer];
       app.clock.step(layer, dir);
+      app.hintDone?.('time');
       say(app.frameLabel ? app.frameLabel(layer) : `${app.clock.frameOf(layer) + 1}/${layer.frames.length}`);
     }
   }
@@ -535,7 +541,7 @@ export function setupWheel(app, canvas) {
     ctx.stroke();
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-      disc(c.x + Math.cos(a) * 100, c.y + Math.sin(a) * 100, i === f ? 6 : 4);
+      disc(c.x + Math.cos(a) * ((R_SECT + R_PLATE) / 2), c.y + Math.sin(a) * ((R_SECT + R_PLATE) / 2), i === f ? 6 : 4);
       ctx.fillStyle = i === f ? C.text : '#4a463f';
       ctx.fill();
     }
@@ -549,7 +555,7 @@ export function setupWheel(app, canvas) {
       const off = (sec.id === 'undo' && !app.history.canUndo) || (sec.id === 'redo' && !app.history.canRedo);
       ctx.globalAlpha = clamp(s, 0, 1) * (off ? 0.5 : 1);
       const a = sec.a * RAD;
-      const lx = c.x + Math.cos(a) * 58, ly = c.y + Math.sin(a) * 58;
+      const lx = c.x + Math.cos(a) * ((R_CENTER + R_SECT) / 2), ly = c.y + Math.sin(a) * ((R_CENTER + R_SECT) / 2);
       if (sec.id === 'ink') { disc(lx, ly - 7, 6); ctx.fillStyle = ink; ctx.fill(); text(sec.label, lx, ly + 7, 10, C.text); }
       else text(sec.label, lx, ly, sec.label.length > 8 ? 9 : 10, C.text);
       ctx.globalAlpha = clamp(s, 0, 1);
@@ -679,6 +685,27 @@ export function setupWheel(app, canvas) {
   }
 
   // Régua: um tique por frame; frame com exposição (2+ tempos) ocupa mais espaço, com uma barra embaixo.
+  // Dicas da primeira vez (#055): cartões no papel; cada um some quando a pessoa faz o que ele diz.
+  function drawHints() {
+    const h = app.hints;
+    if (!h || open) return;
+    const card = (t, x, y) => {
+      ctx.font = '600 14px system-ui, sans-serif';
+      const w = Math.min(W - 32, ctx.measureText(t).width + 28);
+      const x0 = clamp(x - w / 2, 16, W - w - 16);
+      ctx.beginPath(); ctx.roundRect(x0, y - 22, w, 44, 22);
+      ctx.fillStyle = 'rgba(27,26,24,0.9)'; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = C.accent; ctx.stroke();
+      text(t, x0 + w / 2, y, 14, C.text, 600);
+    };
+    if (!h.draw) card('Desenhe com a caneta. O dedo não risca.', W / 2, 64);
+    if (!h.wheel) {
+      const b = btnCenter(), dir = BASE[corner()] * RAD;
+      card('Toque aqui: a roda tem tempo, tintas e ferramentas.', b.x + Math.cos(dir) * 60 + (corner()[1] === 'l' ? 150 : -150), b.y + Math.sin(dir) * 60);
+    }
+    if (!h.time && performance.now() >= rulerUntil) card('Arraste 2 dedos para os lados: o tempo anda.', W / 2, H - 52);
+  }
+
   function drawRuler() {
     const { layer, n, f, ink } = frameInfo();
     const total = layerTicks(layer);
@@ -747,7 +774,7 @@ export function setupWheel(app, canvas) {
       now < app.historyUntil, now < readUntil ? readText : '', app.tool, settings().sizes[sizeTool()], sizePreview,
       dragPos && `${dragPos.x | 0},${dragPos.y | 0}`, app.sheet?.mode, app.history.canUndo, app.history.canRedo,
       sb && `${sb.x0 | 0},${sb.y0 | 0},${sb.x1 | 0},${sb.y1 | 0}`, app.project.inks.join(','), app.project.activeLayer,
-      app.project.layers.map((L) => `${L.id}.${L.ink}.${L.visible ? 1 : 0}${L.locked ? 1 : 0}`).join(','), hover, app.lassoHeld, app.project.paper, showHint, app.recording, app.exporting, now < rulerUntil, !!app.updateReady, !!app.clipboard?.length,
+      app.project.layers.map((L) => `${L.id}.${L.ink}.${L.visible ? 1 : 0}${L.locked ? 1 : 0}`).join(','), hover, app.lassoHeld, app.project.paper, showHint, app.recording, app.exporting, app.hints && JSON.stringify(app.hints), now < rulerUntil, !!app.updateReady, !!app.clipboard?.length,
       app.view && `${app.view.s.toFixed(3)},${app.view.ox.toFixed(4)},${app.view.oy.toFixed(4)}`,
     ].join('|');
     if (!animating && sig === lastSig) return;
@@ -755,6 +782,7 @@ export function setupWheel(app, canvas) {
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
+    drawHints();
     drawSelection();
     drawPaste();
     if (sizePreview) drawSizePreview();

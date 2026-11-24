@@ -17,6 +17,7 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
+- **v0.8.0 (24/11/2026):** projeto de boas-vindas com dicas, roda com alvos de 48 px, leitor de tela, textos.
 - **v0.7.0 (24/11/2026):** sobreimpressão por passada, pontos linha/elipse, Prova de impressão, separações 300 dpi,
   imperfeições opcionais.
 - **v0.6.0 (24/11/2026):** galeria de projetos, exportar GIF e sequência de PNG, folha Exportar.
@@ -69,7 +70,8 @@ sw.js                  service worker: guarda o app para abrir sem internet; avi
   schedule.js          quando refazer máscaras: ~8 ms por quadro, dependências do balde entre tintas
   config.js            constantes (documento 1200×800, tintas, papéis, FPS, passo da roda…)
   doc/project.js       projeto, traços, caixas, sanitize (confere cada campo; sempre 4 tintas)
-  doc/history.js       desfazer/refazer por frame (listas "antes/depois")
+  doc/history.js       desfazer/refazer: frame, camadas e lista de frames (retratos "antes/depois")
+  doc/welcome.js       projeto de boas-vindas (bola quicando) e as 3 dicas da primeira vez
   clock/clock.js       tempo virtual, velocidade, pausa, holds (molas), frame por camada, semente do ferver
   render/stroke.js     traço por pincel (Pincel, Lápis, Marcador, Giz), igual na tela e na máscara
   render/masks.js      traço → textura R8 960×640 por (camada, frame); desenha só os traços novos quando dá

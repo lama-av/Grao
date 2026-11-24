@@ -39,7 +39,7 @@ async def main():
         drag = lambda t, i, pts, bt=1: pg.evaluate(DRAG, [t, i, pts, bt])
         tap = lambda t, i, x, y: drag(t, i, [(x, y)])
         BTN = (X + 48, Y + H - 48)                   # botão recolhido (canto inferior esquerdo)
-        WC = (X + 136, Y + H - 136)                  # centro da roda aberta
+        WC = (X + 148, Y + H - 148)                  # centro da roda aberta
         import math
         def at(r, a):                                # ponto da roda em raio r e ângulo a (graus, y para baixo)
             return (WC[0] + math.cos(math.radians(a)) * r, WC[1] + math.sin(math.radians(a)) * r)
@@ -80,12 +80,12 @@ async def main():
         await tap('touch', 25, *at(58, 180))
         step, base = 17, -45
         start = base - step * 1.5
-        await tap('touch', 26, *at(206, start + step))
+        await tap('touch', 26, *at(218, start + step))
         check('trocar tinta', await g("()=>window.grao.project.activeLayer") == 1)
 
         # pétala Ferramenta (0°): arco Riscar (perto) e arco Mexer (fora)
         await tap('touch', 27, *at(58, 0))
-        await tap('touch', 28, *at(270, base - step))   # arco Mexer (fora): Borracha, Balde, Laço
+        await tap('touch', 28, *at(282, base - step))   # arco Mexer (fora): Borracha, Balde, Laço
         check('escolher Borracha', await g("()=>window.grao.tool") == 'eraser')
         await g("()=>{window.grao.tool='brush'}")
 

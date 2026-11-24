@@ -497,6 +497,7 @@ export function setupInput(app, wetCanvas) {
           app.ui?.ruler?.(true);
           break;
         case 'scrub': {
+          app.hintDone?.('time');
           const layer = activeLayer();
           const dir = Math.sign(act.frames);
           for (let i = 0; i < Math.abs(act.frames); i++) app.clock.step(layer, dir);

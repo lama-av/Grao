@@ -226,6 +226,7 @@ export function sanitize(p) {
     out.layers.push(layer);
   }
   if (!out.layers.length) out.layers.push(newLayer(out, 0));
+  if (p.welcome === true) out.welcome = true;   // projeto de boas-vindas (mostra as dicas da primeira vez)
   // ids únicos (um id automático pode ter repetido um id escrito no arquivo)
   let topId = Math.max(0, ...out.layers.map((L) => L.id));
   const seen = new Set();

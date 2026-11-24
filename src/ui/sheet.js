@@ -21,7 +21,7 @@ export function setupSheet(app) {
 
   function position() {
     const c = app.ui?.corner || 'bl';
-    const side = 16 + 240 + 12;   // ao lado da roda aberta
+    const side = 16 + 264 + 12;   // ao lado da roda aberta (264 px de diâmetro desde a v0.8)
     el.style.left = c[1] === 'l' ? `${side}px` : '';
     el.style.right = c[1] === 'r' ? `${side}px` : '';
     el.style.top = c[0] === 't' ? '16px' : '';

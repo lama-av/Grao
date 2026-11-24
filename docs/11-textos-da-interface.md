@@ -167,6 +167,23 @@ Rodapé: "A palma apoiada é ignorada enquanto a caneta está perto da tela."
 | Exportar | Separações (gráfica) |
 | Avisos | Separando 3 tintas. Espere terminar. · Separações exportadas. Procure em Downloads. · Prova salva. Procure em Downloads. |
 | Erros | Não deu para fazer a prova. Tente de novo. · Não deu para separar as tintas. Tente de novo. |
+
+## Textos da v0.8 (escritos pelo VS Code, 24/11) e revisão geral
+
+| Onde | Texto |
+| --- | --- |
+| Dica 1 (papel, no alto) | Desenhe com a caneta. O dedo não risca. |
+| Dica 2 (junto do botão da roda) | Toque aqui: a roda tem tempo, tintas e ferramentas. |
+| Dica 3 (embaixo) | Arraste 2 dedos para os lados: o tempo anda. |
+| Fim das dicas | Pronto. Para começar o seu: Menu → Novo projeto. |
+| Projeto aberto da galeria | "nome" aberto |
+| Arquivo aberto | Projeto aberto |
+| Projeto apagado | Projeto apagado |
+| Exportação | PNGs exportados. Procure em Downloads. (antes: "PNGs exportado") |
+
+**Revisão de 24/11 (#056):** todos os avisos e leituras do código foram conferidos com este documento. Nenhum tem
+exclamação nem "Ops"; erros dizem o que falhou e o que fazer. Exceções aceitas ao limite de 12 caracteres das
+leituras: "Nada para pintar", "Camada travada" e a novidade de 3 s pedida pelo chat.
 | Apagar camada com desenho | Apagar a camada 3? O desenho dela some de todos os frames. · Apagar camada · Cancelar |
 | Folha da camada: rótulos | Tinta · Retícula · Estocástica · Reticulada · Densidade · Visível · Travar · Subir · Descer · Duplicar camada · Apagar camada |
 | Menu → Impressão | Lineatura · 40 · 60 · 85 |

@@ -4,6 +4,24 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [0.8.0] — 2026-11-24
+
+Primeira vez, textos e acessibilidade. Pedidos #055–#059 (escritos pelo VS Code a partir do roteiro).
+
+### Adicionado
+- **Projeto de boas-vindas** (#055): na primeira abertura no aparelho, o Grão abre com uma bola quicando (contorno
+  em Preto, miolo em Rosa por balde, chão em Azul) já tocando, e **3 dicas no papel**: "Desenhe com a caneta…",
+  "Toque aqui: a roda…", "Arraste 2 dedos para os lados…". Cada dica some quando a pessoa faz o que ela diz.
+- **Leitor de tela** (#057): as leituras da roda ("Desfeito", "3/8"…) vão para uma região `aria-live`.
+- **Movimento reduzido** (#057): com essa opção do sistema, a roda abre sem animação.
+- `docs/14-teste-com-pessoas.md` (#058): roteiro do teste com 3 pessoas (para o Raphael aplicar).
+
+### Mudado
+- **Roda com alvos de 48 px** (#057): anel de setores e prato com 48 px de espessura (antes 44 e 40); a roda aberta
+  tem 264 px; pétalas e arcos foram para fora na mesma proporção. Caixas de marcar com 48 px de altura.
+- **Textos revisados** (#056) contra o doc 11; corrigido "PNGs exportado" → "PNGs exportados".
+- Teste de lógica: 255 verificações.
+
 ## [0.7.0] — 2026-11-24
 
 Riso completo. Pedidos #048–#054 (escritos pelo VS Code a partir do roteiro do doc 13).

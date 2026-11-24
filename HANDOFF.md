@@ -512,6 +512,35 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 ### #054 — Fechar a 0.7.0
 - **Status:** Feito · **Resposta do VS Code:** `VERSION` 0.7.0 (b15), CHANGELOG, doc 05, docx; 249 verificações.
 
+### #055 — Projeto de boas-vindas e dicas no papel
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.8.0 · **Origem:** T-070, doc 13 (Hadid)
+- **Resposta do VS Code:** `src/doc/welcome.js` gera por código uma bola quicando em 8 frames (contorno Preto, miolo
+  Rosa por balde, chão e sombra em Azul). Só aparece quando o aparelho não tem projeto salvo. Dicas: 3 cartões
+  desenhados no `#ui` (sem DOM, sem tela cheia); somem ao desenhar, abrir a roda e andar no tempo (prato ou 2 dedos).
+  Guardadas no navegador (`grao.dicas`). No fim: "Pronto. Para começar o seu: Menu → Novo projeto."
+  **Testar:** limpar os dados do site e abrir.
+
+### #056 — Estados vazios, erros e confirmações
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.8.0 · **Origem:** T-071
+- **Resposta do VS Code:** todos os avisos e leituras do código conferidos com o doc 11 (lista no doc 11, seção v0.8).
+  Uma correção ("PNGs exportados"). Estados vazios: "Nenhum projeto guardado ainda." (galeria); leitura "Nada para
+  pintar"; botões desabilitados quando não fazem nada (Subir/Descer nas pontas, Encaixar papel em 100%).
+
+### #057 — Acessibilidade
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.8.0 · **Origem:** T-072, dúvida antiga do #003
+- **Resposta do VS Code:** setores e prato com 48 px de espessura (roda de 264 px; pétalas a 218, cores e Mexer a
+  282, Tamanho a 330–378). Leituras para leitor de tela via `aria-live`. `prefers-reduced-motion` desliga a animação
+  da roda. Contraste do texto secundário (#9a9384 sobre #1f1d1a) ≈ 6:1. Caixas de marcar com 48 px.
+  **Fora:** rótulo por setor para leitor de tela (a roda é desenho em canvas; anotado no ADR-002).
+  **Testar:** alcançar todos os setores com o polegar; nenhum toque errado de setor vizinho.
+
+### #058 — Teste com 3 pessoas
+- **Status:** Roteiro pronto (o teste é do Raphael) · **Versão alvo:** 0.8.0 · **Origem:** doc 10
+- **Resposta do VS Code:** `docs/14-teste-com-pessoas.md` com 8 tarefas cronometradas, perguntas e o que levar ao chat.
+
+### #059 — Fechar a 0.8.0
+- **Status:** Feito · **Resposta do VS Code:** `VERSION` 0.8.0 (b16), CHANGELOG, docx; 255 verificações.
+
 ### Pedidos já feitos (v0.2.0 a v0.3.1)
 
 ### #001 — Papel em tela cheia e canvas de interface

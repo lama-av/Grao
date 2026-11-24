@@ -2,6 +2,7 @@
 
 import { VERSION, BUILD, INKS, PAPERS, REPRINTS_PER_SECOND, PAPER_MM, DOC_W, hexToRgb } from './config.js';
 import { sanitize } from './doc/project.js';
+import { welcomeProject } from './doc/welcome.js';
 import { installActions } from './actions.js';
 import { History } from './doc/history.js';
 import { Clock } from './clock/clock.js';
@@ -35,7 +36,7 @@ async function start() {
 
   const app = {
     version: VERSION,
-    project: sanitize(await loadProject()),
+    project: null,
     clock: new Clock(),
     selection: null,
     lassoHeld: false,
@@ -45,6 +46,10 @@ async function start() {
     dirty: new Set(),
     view: createView(),     // zoom e posição do papel (só da sessão)
   };
+
+  // Primeira vez no aparelho: projeto de boas-vindas com um loop tocando (#055).
+  const saved = await loadProject();
+  app.project = saved ? sanitize(saved) : welcomeProject();
 
   let riso;
   try {
@@ -89,6 +94,29 @@ async function start() {
   };
 
   installActions(app);
+
+  // Leitor de tela (#057): as leituras da roda ("Desfeito", "3/8"…) também vão para uma região aria-live.
+  const live = document.createElement('div');
+  live.className = 'sr-only';
+  live.setAttribute('aria-live', 'polite');
+  live.setAttribute('role', 'status');
+  document.body.appendChild(live);
+  app.announce = (t) => { live.textContent = t; };
+
+  // Dicas da primeira vez (#055): só no projeto de boas-vindas, até a pessoa fazer as três coisas.
+  const HINTS_KEY = 'grao.dicas';
+  let hintsDone = {};
+  try { hintsDone = JSON.parse(localStorage.getItem(HINTS_KEY) || '{}'); } catch { hintsDone = { draw: true, wheel: true, time: true }; }
+  app.hints = app.project.welcome && !(hintsDone.draw && hintsDone.wheel && hintsDone.time) ? { ...hintsDone } : null;
+  app.hintDone = (id) => {
+    if (!app.hints || app.hints[id]) return;
+    app.hints[id] = true;
+    try { localStorage.setItem(HINTS_KEY, JSON.stringify(app.hints)); } catch { /* sem armazenamento */ }
+    if (app.hints.draw && app.hints.wheel && app.hints.time) {
+      app.hints = null;
+      app.toast('Pronto. Para começar o seu: Menu → Novo projeto.');
+    }
+  };
 
   app.exportPNG = () => {
     const view = { ...app.view };
@@ -346,7 +374,7 @@ async function start() {
       }
       if (gif) downloadBlob(new Blob([gif.finish()], { type: 'image/gif' }), `${name}.gif`);
       else downloadBlob(new Blob([makeZip(files)], { type: 'application/zip' }), `${name}_png.zip`);
-      app.toast(`${gif ? 'GIF' : 'PNGs'} exportado. Procure em Downloads.`);
+      app.toast(`${gif ? 'GIF exportado' : 'PNGs exportados'}. Procure em Downloads.`);
     } catch (err) {
       console.warn('Grão: exportação falhou', err);
       app.toast('Não deu para exportar. Tente uma escala menor ou menos voltas.');
