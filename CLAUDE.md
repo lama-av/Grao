@@ -40,7 +40,7 @@ desenvolvimento Android: explique decisões em linguagem simples e evite jargão
 ## Stack (v0.1)
 
 - HTML + JavaScript (módulos ES), sem build. p5.js permitido no protótipo.
-- Traço molhado: canvas 2D com `desynchronized: true`, por cima de tudo.
+- Traço molhado: canvas 2D por cima de tudo. `desynchronized: true` só com `?baixa=1`: no Chrome do Android ele deixa a camada opaca (canvas preto).
 - Loop: WebGL2, shaders GLSL ES 3.00 (portáveis para OpenGL ES 3 no Android).
 - Salvamento: IndexedDB a cada traço. Offline via service worker.
 - Entrada: Pointer Events (`pointerType` separa caneta de dedo; descartar `pointercancel`).

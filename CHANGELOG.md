@@ -4,6 +4,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+### Corrigido
+- Canvas todo preto no tablet (Chrome do Android): o modo baixa latência do traço molhado deixava a camada de cima opaca. Agora vem desligado; para testá-lo, abrir com `?baixa=1` no endereço.
+- Publicado no GitHub Pages: https://lama-av.github.io/Grao/
+
 ## [0.1.0] — 2026-11-23
 
 Primeira build: caderno web/PWA para testar no tablet (Fase 0 + núcleo do caderno).

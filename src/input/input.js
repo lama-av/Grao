@@ -14,7 +14,11 @@ const TAP_MS = 200;
 const TAP_MOVE_PX = 12;
 
 export function setupInput(app, wetCanvas) {
-  const ctx = wetCanvas.getContext('2d', { desynchronized: true, alpha: true });
+  // No Chrome do Android, o canvas "desynchronized" vai direto para a tela sem misturar transparência:
+  // as partes vazias ficam pretas e escondem o papel. Por isso fica desligado por padrão.
+  // Para testar a baixa latência no tablet: abrir com ?baixa=1 no fim do endereço.
+  const wantLowLatency = new URLSearchParams(location.search).get('baixa') === '1';
+  const ctx = wetCanvas.getContext('2d', { desynchronized: wantLowLatency, alpha: true });
   app.lowLatency = !!ctx.getContextAttributes?.().desynchronized;
 
   let mode = null;        // 'draw' | 'lasso' | 'move'
