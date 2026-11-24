@@ -3,6 +3,8 @@
 // em tempo real, com o loop tocando desde o frame 1, e a interface (roda, traço molhado) fica de fora,
 // porque está em outros canvases.
 
+import { layerTicks } from '../doc/project.js';
+
 const TYPES = [
   ['video/mp4;codecs=avc1.42E01E', 'mp4'],
   ['video/mp4;codecs=avc1', 'mp4'],
@@ -11,6 +13,7 @@ const TYPES = [
   ['video/webm;codecs=vp8', 'webm'],
   ['video/webm', 'webm'],
 ];
+
 const MAX_SECONDS = 12;     // loops muito longos (polimetria) são cortados aqui
 const MIN_SECONDS = 3;      // loop curto repete até dar pelo menos isso (bom para redes)
 
@@ -34,7 +37,7 @@ export function loopSeconds(project) {
   const layers = used.length ? used : [project.layers[project.activeLayer]];
   let lcm = 1;
   for (const L of layers) {
-    const ticks = Math.round((L.frames.length * 24) / L.fps);
+    const ticks = Math.round((layerTicks(L) * 24) / L.fps);   // com exposição (frames que ficam 2+ tempos)
     lcm = (lcm * ticks) / gcd(lcm, ticks);
     if (lcm / 24 > MAX_SECONDS) return MAX_SECONDS;
   }

@@ -185,6 +185,9 @@ async function start() {
       empty: app.masks.empty,
       prev: app.masks.get(active.id, (fa - 1 + n) % n),
       next: app.masks.get(active.id, (fa + 1) % n),
+      prev2: app.masks.get(active.id, (fa - 2 + 2 * n) % n),
+      next2: app.masks.get(active.id, (fa + 2) % n),
+      onionW: onionWeights(s.onion, n),
       inks: p.inks.map((i) => hexToRgb((INKS[i] || INKS[0]).hex)),
       offsets: offsets(seed, s.mis),
       angles: SCREEN_ANGLES,
@@ -195,6 +198,13 @@ async function start() {
       onion: app.clock.frozen && n > 1,
       view: app.view,
     });
+  }
+
+  // Papel-cebola (#040): até 2 frames antes e 2 depois; o segundo com metade da intensidade.
+  function onionWeights(o, n) {
+    const k = o?.strength ?? 0.4;
+    const w = (count, depth) => (count >= depth && n > depth ? (depth === 1 ? k : k * 0.5) : 0);
+    return [w(o?.before ?? 1, 1), w(o?.before ?? 1, 2), w(o?.after ?? 1, 1), w(o?.after ?? 1, 2)];
   }
 
   let last = performance.now();

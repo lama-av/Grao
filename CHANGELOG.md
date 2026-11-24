@@ -4,6 +4,27 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [0.5.0] — 2026-11-24
+
+Tempo: editar a animação sem sair do papel. Pedidos #036–#042, escritos pelo VS Code a partir do roteiro (doc 13),
+a pedido do Raphael ("execute os pedidos até a versão 1.0, sem pausas").
+
+### Adicionado
+- **Tira de frames** na folha Tempo (#036): miniatura de cada frame da camada ativa (com os baldes), número e
+  exposição; tocar vai para o frame e para o loop.
+- **Operações de frame** (#037): Inserir (vazio depois do atual), Duplicar, Apagar, ← Mover, Mover →; "+" e "−" no
+  fim. Tudo no desfazer.
+- **Exposição** (#038): o frame atual fica ×1 a ×4 tempos. O relógio, o prato, a régua, o gesto de tempo, as paredes
+  do balde e o vídeo contam a exposição. A régua mostra a exposição como uma barra.
+- **Copiar e colar** (#039): chip "Copiar" junto da seleção; com algo copiado e o loop parado, o chip "Colar" aparece
+  no alto e cola no frame atual da camada ativa (outra camada ou outro frame), no mesmo lugar, já selecionado.
+- **Papel-cebola configurável** (#040): Menu → Desenho e roda: até 2 frames antes e 2 depois, e a intensidade.
+- **Auto melhorado** (#041): pode voltar em vez de avançar e pode parar no último frame (no primeiro, voltando).
+
+### Mudado
+- Folha "Tempo" ficou mais larga (300 px) para a tira de frames.
+- Teste de lógica: 222 verificações.
+
 ## [0.4.0] — 2026-11-24
 
 Camadas, retícula e uso sem internet (pedidos #028–#033 e #035, escritos pelo chat; feitos sem a pausa de auditoria,

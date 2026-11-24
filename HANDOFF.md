@@ -388,6 +388,57 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 
 ---
 
+### Pedidos escritos pelo VS Code: v0.5 a v1.0 (24/11)
+
+> O Raphael pediu no VS Code: "execute os pedidos até a versão 1.0, sem pausas, faça um relatório detalhado e uma
+> lista de testes". O chat ainda não tinha escrito os pedidos da 0.5 em diante; o VS Code escreveu a partir do
+> roteiro do doc 13 (e do doc 10), já com a resposta. **O chat pode revisar cada decisão na auditoria.**
+
+### #036 — Tira de frames com miniaturas
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.5.0 · **Origem:** doc 13 (decisão 8), T-040
+- **Resposta do VS Code:** a folha Tempo mostra uma tira rolável com uma miniatura por frame da camada ativa
+  (`src/render/thumb.js`: traços e baldes em tons de cinza, cor da tinta sobre o papel, sem grão), número e "×2" se
+  houver exposição. Tocar numa miniatura para o loop e vai ao frame. A régua do gesto de tempo continua igual (a tira
+  fica na folha; juntar as duas fica para depois do teste).
+  **Testar:** abrir Tempo, rolar a tira, tocar num frame.
+
+### #037 — Inserir, duplicar, apagar e mover frame
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 0.5.0 · **Origem:** T-040
+- **Resposta do VS Code:** botões na folha Tempo, agindo no frame atual da camada ativa: Inserir (vazio depois),
+  Duplicar (cópia com ids novos depois), Apagar (a camada fica com pelo menos 1 frame), ← Mover / Mover → (sem dar a
+  volta); "+" e "−" no fim. Desfazer por retrato da camada `{ type: 'frames', l, before, after }`. Máximo de 12 frames.
+  Apagar frame com desenho não pede confirmação porque dá para desfazer.
+  **Testar:** cada botão e o desfazer; conferir que o desenho de cada frame continua no lugar.
+
+### #038 — Exposição (segurar um frame 2 a 4 tempos)
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.5.0 · **Origem:** T-041
+- **Resposta do VS Code:** `layer.expo` (opcional, 1 a 4 por frame). Botões ×1 a ×4 na folha Tempo. O relógio
+  (`frameOf`, `step`, `goTo`) pula a exposição inteira; prato, régua, gesto de tempo, paredes do balde e duração do
+  vídeo contam os tempos. Arquivo: `expo` só é gravado se algum frame passar de ×1.
+  **Testar:** um frame ×3 num loop de 8 frames: ele fica mais tempo; o prato pula ele num passo só.
+
+### #039 — Copiar e colar entre frames e camadas
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.5.0 · **Origem:** T-042
+- **Resposta do VS Code:** chip **Copiar** junto da seleção (ao lado de Duplicar → e Apagar). Com algo copiado,
+  nada selecionado e o loop parado, aparece o chip **Colar** no alto, no meio: cola no frame atual da camada ativa,
+  no mesmo lugar, com ids novos, e deixa selecionado (dá para mover em seguida). Camada travada recusa.
+  **Testar:** copiar na camada 1, ir para a camada 3 em outro frame, colar, mover.
+
+### #040 — Papel-cebola configurável
+- **Status:** Feito · **Prioridade:** P2 · **Versão alvo:** 0.5.0 · **Origem:** T-043
+- **Resposta do VS Code:** Menu → Desenho e roda: "Cebola" Antes 0/1/2 e Depois 0/1/2, e Intensidade (10–80%).
+  O segundo frame aparece com metade da intensidade. Shader com 2 texturas a mais (12 de 16 unidades).
+  **Testar:** 2 antes e 2 depois com o loop parado; intensidade alta e baixa.
+
+### #041 — Auto melhorado
+- **Status:** Feito · **Prioridade:** P3 · **Versão alvo:** 0.5.0 · **Origem:** T-044
+- **Resposta do VS Code:** Menu: "Auto volta em vez de avançar" e "Auto para no último frame" (leitura "Último
+  frame" quando para). **Testar:** desenhar quadro a quadro para trás; parar no fim.
+
+### #042 — Fechar a 0.5.0
+- **Status:** Feito · **Versão alvo:** 0.5.0
+- **Resposta do VS Code:** `VERSION` 0.5.0 (b13), `sw.js`, CHANGELOG, docx. Teste de lógica: 222 verificações.
+
 ### Pedidos já feitos (v0.2.0 a v0.3.1)
 
 ### #001 — Papel em tela cheia e canvas de interface

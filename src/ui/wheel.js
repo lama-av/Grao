@@ -7,7 +7,7 @@
 import { INKS, PAPERS, DOC_W, WHEEL_STEP_DEG, HISTORY_MODE_MS } from '../config.js';
 import { docToUv } from '../view.js';
 import { BRUSHES } from '../render/stroke.js';
-import { SIZE_MIN, SIZE_MAX, MAX_LAYERS, inkOf } from '../doc/project.js';
+import { SIZE_MIN, SIZE_MAX, MAX_LAYERS, inkOf, expoOf, layerTicks } from '../doc/project.js';
 
 const MARGIN = 16;
 const BTN_R = 32;                         // botão recolhido: 64 px
@@ -149,12 +149,23 @@ export function setupWheel(app, canvas) {
     const v = app.view || { s: 1, ox: 0, oy: 0 };
     const p0 = docToUv(v, b.x0, b.y0), p1 = docToUv(v, b.x1, b.y1);   // caixa na tela, com o zoom
     const box = { x0: p0.u * W, y0: p0.w * H, x1: p1.u * W, y1: p1.w * H };
-    const h = 48, w1 = 124, w2 = 96, gap = 8;
+    const h = 48, w1 = 124, w2 = 96, w3 = 96, gap = 8;
     let y = box.y1 + 10;
     if (y + h > H - 8) y = box.y0 - 10 - h;
     y = clamp(y, 8, H - h - 8);
-    const x = clamp(box.x0, 8, W - (w1 + gap + w2) - 8);
-    return { box, dup: { x, y, w: w1, h }, del: { x: x + w1 + gap, y, w: w2, h } };
+    const x = clamp(box.x0, 8, W - (w1 + w2 + w3 + 2 * gap) - 8);
+    return {
+      box,
+      dup: { x, y, w: w1, h },
+      copy: { x: x + w1 + gap, y, w: w2, h },
+      del: { x: x + w1 + w2 + 2 * gap, y, w: w3, h },
+    };
+  }
+
+  // "Colar" (#039): aparece no alto, no meio, quando há algo copiado, nada selecionado e o loop está parado.
+  function pasteRect() {
+    if (!app.clipboard?.length || app.selection || !app.clock.paused) return null;
+    return { x: W / 2 - 48, y: 12, w: 96, h: 48 };
   }
   const inRect = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
 
@@ -175,8 +186,11 @@ export function setupWheel(app, canvas) {
     const chips = chipRects();
     if (chips) {
       if (inRect(p, chips.dup)) return { kind: 'chip', id: 'dup' };
+      if (inRect(p, chips.copy)) return { kind: 'chip', id: 'copy' };
       if (inRect(p, chips.del)) return { kind: 'chip', id: 'del' };
     }
+    const pr = pasteRect();
+    if (pr && inRect(p, pr)) return { kind: 'chip', id: 'paste' };
     if (!open) {
       const b = btnCenter();
       return Math.hypot(p.x - b.x, p.y - b.y) <= BTN_R + 10 ? { kind: 'btn' } : null;
@@ -391,6 +405,8 @@ export function setupWheel(app, canvas) {
         runPill(g.item);
       } else if (g.kind === 'chip') {
         if (g.id === 'dup') app.duplicateSelectionToNextFrame();
+        else if (g.id === 'copy') app.copySelection?.();
+        else if (g.id === 'paste') app.paste?.();
         else app.deleteSelection();
       } else if (g.kind === 'update') {
         app.applyUpdate?.();
@@ -627,6 +643,15 @@ export function setupWheel(app, canvas) {
     text(t, x, y, 11, C.muted);
   }
 
+  function drawPaste() {
+    const r = pasteRect();
+    if (!r) return;
+    ctx.beginPath();
+    ctx.roundRect(r.x, r.y, r.w, r.h, 10);
+    ctx.fillStyle = 'rgba(27,26,24,0.92)'; ctx.fill();
+    text('Colar', r.x + r.w / 2, r.y + r.h / 2, 14, C.text, 500);
+  }
+
   function drawSelection() {
     const chips = chipRects();
     if (!chips) return;
@@ -637,7 +662,7 @@ export function setupWheel(app, canvas) {
     ctx.strokeStyle = '#222';
     ctx.strokeRect(box.x0, box.y0, box.x1 - box.x0, box.y1 - box.y0);
     ctx.restore();
-    for (const [r, t] of [[chips.dup, 'Duplicar →'], [chips.del, 'Apagar']]) {
+    for (const [r, t] of [[chips.dup, 'Duplicar →'], [chips.copy, 'Copiar'], [chips.del, 'Apagar']]) {
       ctx.beginPath();
       ctx.roundRect(r.x, r.y, r.w, r.h, 10);
       ctx.fillStyle = 'rgba(27,26,24,0.92)'; ctx.fill();
@@ -653,21 +678,27 @@ export function setupWheel(app, canvas) {
     }
   }
 
+  // Régua: um tique por frame; frame com exposição (2+ tempos) ocupa mais espaço, com uma barra embaixo.
   function drawRuler() {
-    const { n, f, ink } = frameInfo();
-    const step = Math.min(28, (W * 0.6) / n);
-    const w = step * n + 16, h = 30;
+    const { layer, n, f, ink } = frameInfo();
+    const total = layerTicks(layer);
+    const step = Math.min(28, (W * 0.6) / total);
+    const w = step * total + 16, h = 30;
     const x0 = (W - w) / 2, y0 = H - h - 14;
     ctx.beginPath();
     ctx.roundRect(x0, y0, w, h, 8);
     ctx.fillStyle = 'rgba(27,26,24,0.88)'; ctx.fill();
+    let at = 0;
     for (let i = 0; i < n; i++) {
-      const x = x0 + 8 + step * (i + 0.5);
+      const ex = expoOf(layer, i);
+      const x = x0 + 8 + step * (at + 0.5);
       ctx.beginPath();
       ctx.roundRect(x - 2, y0 + (i === f ? 6 : 10), 4, i === f ? 18 : 10, 2);
       ctx.fillStyle = i === f ? ink : '#6b655b';
       ctx.fill();
       if (i === f) { ctx.lineWidth = 1; ctx.strokeStyle = C.text; ctx.stroke(); }
+      if (ex > 1) { ctx.fillStyle = '#6b655b'; ctx.fillRect(x, y0 + h - 5, step * (ex - 1), 2); }
+      at += ex;
     }
   }
 
@@ -716,7 +747,7 @@ export function setupWheel(app, canvas) {
       now < app.historyUntil, now < readUntil ? readText : '', app.tool, settings().sizes[sizeTool()], sizePreview,
       dragPos && `${dragPos.x | 0},${dragPos.y | 0}`, app.sheet?.mode, app.history.canUndo, app.history.canRedo,
       sb && `${sb.x0 | 0},${sb.y0 | 0},${sb.x1 | 0},${sb.y1 | 0}`, app.project.inks.join(','), app.project.activeLayer,
-      app.project.layers.map((L) => `${L.id}.${L.ink}.${L.visible ? 1 : 0}${L.locked ? 1 : 0}`).join(','), hover, app.lassoHeld, app.project.paper, showHint, app.recording, now < rulerUntil, !!app.updateReady,
+      app.project.layers.map((L) => `${L.id}.${L.ink}.${L.visible ? 1 : 0}${L.locked ? 1 : 0}`).join(','), hover, app.lassoHeld, app.project.paper, showHint, app.recording, now < rulerUntil, !!app.updateReady, !!app.clipboard?.length,
       app.view && `${app.view.s.toFixed(3)},${app.view.ox.toFixed(4)},${app.view.oy.toFixed(4)}`,
     ].join('|');
     if (!animating && sig === lastSig) return;
@@ -725,6 +756,7 @@ export function setupWheel(app, canvas) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     drawSelection();
+    drawPaste();
     if (sizePreview) drawSizePreview();
     if (now < rulerUntil) drawRuler();
 

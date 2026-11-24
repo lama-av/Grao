@@ -17,6 +17,7 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
+- **v0.5.0 (24/11/2026):** tira de frames, operações de frame, exposição, copiar/colar, papel-cebola configurável.
 - **v0.4.0 (24/11/2026):** camadas separadas das tintas (ADR-004), retícula, trapping, abrir sem internet (`sw.js`).
   **v0.3.x:** gestos de 2 dedos, Vermelho vivo, zoom, pincéis, balde, linha reta, vídeo. **v0.2.1:** Menu com arquivo `.grao`, cores à
   vista, setor Tempo. A v0.2.0 (papel em tela cheia e roda de canto) foi testada pelo Raphael no tablet; a 0.2.1
@@ -70,6 +71,7 @@ sw.js                  service worker: guarda o app para abrir sem internet; avi
   render/stroke.js     traço por pincel (Pincel, Lápis, Marcador, Giz), igual na tela e na máscara
   render/masks.js      traço → textura R8 960×640 por (camada, frame); desenha só os traços novos quando dá
   render/fill.js       balde: preenchimento por varredura dentro da máscara (função pura, testada)
+  render/thumb.js      miniatura de um frame (tira de frames da folha Tempo)
   render/riso/         compositor WebGL2; riso.vert/riso.frag em GLSL ES 3.00
   input/input.js       Pointer Events no canvas: desenhar, recortar, laço, mover, gestos de 2 dedos
   ui/wheel.js          roda de canto no canvas #ui: botão, centro, setores, prato, velocidade, pétalas, chips

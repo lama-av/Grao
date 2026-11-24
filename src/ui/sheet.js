@@ -2,12 +2,14 @@
 // "Gestos" e a folha da camada (toque longo numa camada da pétala Camadas).
 // Só existem com a caneta parada: fecham quando o papel ou a roda são tocados (ver wheel.paperDown).
 
-import { INKS, PAPERS, FPS_OPTIONS, MAX_FRAMES } from '../config.js';
+import { INKS, PAPERS, FPS_OPTIONS } from '../config.js';
+import { layerTicks as loopTicks } from '../doc/project.js';
 import { confirmDialog } from './dialog.js';
 import { downloadProject, pickProjectFile, projectFromText } from '../io/file.js';
 import { fmtSeconds } from '../io/video.js';
 import { fitView, isFit } from '../view.js';
-import { inkOf, DRUMS } from '../doc/project.js';
+import { inkOf, DRUMS, expoOf, MAX_EXPO } from '../doc/project.js';
+import { drawThumb } from '../render/thumb.js';
 import { LPI_OPTIONS } from '../config.js';
 
 export function setupSheet(app) {
@@ -74,7 +76,12 @@ export function setupSheet(app) {
       <div class="sheet-group">
         <div class="sheet-title">Desenho e roda</div>
         <label>Suavizar traço <input type="range" data-k="smooth" min="0" max="1" step="0.05"></label>
-        <label class="check"><input type="checkbox" data-k="auto"> Auto (cada traço avança um frame)</label>
+        <label class="check"><input type="checkbox" data-k="auto"> Auto (cada traço anda um frame)</label>
+        <label class="check"><input type="checkbox" data-k="autoBack"> Auto volta em vez de avançar</label>
+        <label class="check"><input type="checkbox" data-k="autoStop"> Auto para no último frame</label>
+        <div class="lp-row"><span>Cebola</span><div class="lp-onion-b"></div></div>
+        <div class="lp-row"><span></span><div class="lp-onion-a"></div></div>
+        <label>Intensidade do papel-cebola <input type="range" data-k="onionStrength" min="0.1" max="0.8" step="0.05"></label>
         <label class="check"><input type="checkbox" data-k="pinWheel"> Fixar roda</label>
         <label class="check"><input type="checkbox" data-k="lefty"> Canhoto</label>
         <label class="check"><input type="checkbox" data-k="debug"> Teste da Fase 0</label>
@@ -91,7 +98,25 @@ export function setupSheet(app) {
     q('grain').value = s.grain;
     q('mis').value = s.mis;
     q('smooth').value = s.smooth || 0;
-    for (const k of ['ferver', 'auto', 'pinWheel', 'lefty', 'trapping']) q(k).checked = !!s[k];
+    for (const k of ['ferver', 'auto', 'pinWheel', 'lefty', 'trapping', 'autoStop']) q(k).checked = !!s[k];
+    q('autoBack').checked = s.autoDir === 'back';
+    q('autoBack').onchange = (e) => { s.autoDir = e.target.checked ? 'back' : 'forward'; app.requestSave(); };
+    q('autoStop').onchange = (e) => { s.autoStop = e.target.checked; app.requestSave(); };
+    q('onionStrength').value = s.onion.strength;
+    q('onionStrength').oninput = (e) => { s.onion.strength = +e.target.value; app.requestSave(); };
+    for (const [cls, key, label] of [['.lp-onion-b', 'before', 'Antes'], ['.lp-onion-a', 'after', 'Depois']]) {
+      const box = el.querySelector(cls);
+      const tag = document.createElement('span');
+      tag.className = 'lp-tag'; tag.textContent = label;
+      box.appendChild(tag);
+      [0, 1, 2].forEach((v) => {
+        const b = document.createElement('button');
+        b.className = 'btn small' + (s.onion[key] === v ? ' on' : '');
+        b.textContent = v;
+        b.onclick = () => { s.onion[key] = v; app.requestSave(); buildMenu(); };
+        box.appendChild(b);
+      });
+    }
     const lpi = el.querySelector('.lp-lpi');
     LPI_OPTIONS.forEach((v) => {
       const b = document.createElement('button');
@@ -164,19 +189,65 @@ export function setupSheet(app) {
       <div class="sheet-note">A palma apoiada é ignorada enquanto a caneta está perto da tela.</div>`;
   }
 
+  // Folha Tempo (#036): tira de frames com miniaturas, operações de frame, exposição, FPS.
   function buildTime() {
-    const i = app.project.activeLayer;
-    const layer = app.project.layers[i];
+    const p = app.project;
+    const i = p.activeLayer;
+    const layer = p.layers[i];
+    const cur = app.clock.frameOf(layer);
     el.setAttribute('aria-label', 'Tempo');
     el.innerHTML = `
-      <div class="sheet-title">Tempo da camada ${i + 1} · ${inkOf(app.project, layer).name}</div>
+      <div class="sheet-title">Tempo da camada ${i + 1} · ${inkOf(p, layer).name}</div>
+      <div class="strip" role="list"></div>
+      <div class="row">
+        <button class="btn small" data-act="ins">Inserir</button>
+        <button class="btn small" data-act="dupf">Duplicar</button>
+        <button class="btn small" data-act="delf">Apagar</button>
+      </div>
+      <div class="row">
+        <button class="btn small" data-act="left" aria-label="Mover frame para trás"${cur > 0 ? '' : ' disabled'}>← Mover</button>
+        <button class="btn small" data-act="right" aria-label="Mover frame para a frente"${cur < layer.frames.length - 1 ? '' : ' disabled'}>Mover →</button>
+      </div>
+      <div class="lp-row"><span>Exposição</span><div class="lp-expo"></div></div>
       <div class="lp-row"><span>FPS</span><div class="lp-fps"></div></div>
       <div class="lp-row"><span>Frames</span>
-        <button class="btn small" data-act="frames-" aria-label="Remover frame">−</button>
+        <button class="btn small" data-act="frames-" aria-label="Remover o último frame">−</button>
         <b class="lp-count">${layer.frames.length}</b>
-        <button class="btn small" data-act="frames+" aria-label="Adicionar frame">+</button>
+        <button class="btn small" data-act="frames+" aria-label="Adicionar frame no fim">+</button>
       </div>
-      <div class="sheet-note">Cada camada tem o próprio loop. Duração: ${fmtSeconds(layer.frames.length / layer.fps)}.</div>`;
+      <div class="sheet-note">Cada camada tem o próprio loop. Duração: ${fmtSeconds(loopTicks(layer) / layer.fps)}.</div>`;
+    const strip = el.querySelector('.strip');
+    const paper = (PAPERS[p.paper] || PAPERS.natural).hex;
+    layer.frames.forEach((fr, f) => {
+      const b = document.createElement('button');
+      b.className = 'thumb' + (f === cur ? ' on' : '');
+      b.setAttribute('role', 'listitem');
+      b.setAttribute('aria-label', `Frame ${f + 1}${expoOf(layer, f) > 1 ? `, ${expoOf(layer, f)} tempos` : ''}`);
+      const cv = document.createElement('canvas');
+      drawThumb(cv, fr, inkOf(p, layer).hex, paper);
+      const lab = document.createElement('span');
+      lab.textContent = `${f + 1}${expoOf(layer, f) > 1 ? ` ×${expoOf(layer, f)}` : ''}`;
+      b.append(cv, lab);
+      b.onclick = () => { app.clock.paused = true; app.clock.goTo(layer, f); buildTime(); };
+      strip.appendChild(b);
+    });
+    strip.querySelector('.on')?.scrollIntoView?.({ inline: 'center', block: 'nearest' });
+    const act = (a) => el.querySelector(`[data-act="${a}"]`);
+    const then = (ok) => { if (ok) app.clock.paused = true; buildTime(); };
+    act('ins').onclick = () => then(app.insertFrame());
+    act('dupf').onclick = () => then(app.duplicateFrame());
+    act('delf').onclick = () => then(app.deleteFrame());
+    act('left').onclick = () => then(app.moveFrame(-1));
+    act('right').onclick = () => then(app.moveFrame(+1));
+    const expo = el.querySelector('.lp-expo');
+    for (let n = 1; n <= MAX_EXPO; n++) {
+      const b = document.createElement('button');
+      b.className = 'btn small' + (expoOf(layer, cur) === n ? ' on' : '');
+      b.textContent = `×${n}`;
+      b.setAttribute('aria-label', `Frame fica ${n} tempos`);
+      b.onclick = () => then(app.setExpo(n));
+      expo.appendChild(b);
+    }
     const fps = el.querySelector('.lp-fps');
     FPS_OPTIONS.forEach((v) => {
       const b = document.createElement('button');
@@ -185,20 +256,8 @@ export function setupSheet(app) {
       b.onclick = () => { layer.fps = v; app.requestSave(); buildTime(); };
       fps.appendChild(b);
     });
-    el.querySelector('[data-act="frames+"]').onclick = () => {
-      if (layer.frames.length >= MAX_FRAMES) { app.toast('Máximo de 12 frames por camada.'); return; }
-      layer.frames.push([]);
-      app.selection = null; app.onSelectionChange?.();
-      app.requestSave(); buildTime();
-    };
-    el.querySelector('[data-act="frames-"]').onclick = () => {
-      if (layer.frames.length <= 1) return;
-      if (layer.frames[layer.frames.length - 1].length) { app.toast('Esse frame tem desenho. Apague antes de remover.'); return; }
-      layer.frames.pop();
-      app.masks.drop(layer.id, layer.frames.length);
-      app.selection = null; app.onSelectionChange?.();
-      app.requestSave(); buildTime();
-    };
+    act('frames+').onclick = () => then(app.appendFrame());
+    act('frames-').onclick = () => then(app.popFrame());
   }
 
   // Folha da camada (#029): tinta (tambor e cor), retícula (#030), visível, travar, ordem, duplicar, apagar.

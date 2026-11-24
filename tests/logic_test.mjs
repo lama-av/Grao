@@ -944,5 +944,93 @@ for (const code of [4]) {
   check('sw.js não lista arquivo que não existe (a instalação falharia inteira)', !extra.length, extra.join(', '));
 }
 
+// ---------- v0.5: tempo (#036–#041) ----------
+{
+  const { layerTicks, frameAtTick, frameStartTick, wallsFor, sanitize: san } = await import('../src/doc/project.js');
+  const { app, wet } = makeApp();
+  const layer = app.project.layers[0];
+  // exposição
+  app.clock.t = 0;
+  app.setExpo(3);                                    // frame 1 fica 3 tempos
+  check('exposição: loop com 8 frames e um ×3 tem 10 tempos', layerTicks(layer) === 10 && layer.expo[0] === 3);
+  check('exposição: tempos 0,1,2 mostram o frame 1; o 3 mostra o frame 2', frameAtTick(layer, 2) === 0 && frameAtTick(layer, 3) === 1);
+  app.clock.t = 0;
+  app.clock.step(layer, 1);
+  check('exposição: avançar pula o frame inteiro (3 tempos)', app.clock.frameOf(layer) === 1 && Math.floor(app.clock.t * 8 + 1e-6) === 3);
+  app.clock.step(layer, -1);
+  check('exposição: voltar volta ao começo do frame longo', app.clock.frameOf(layer) === 0 && Math.floor(app.clock.t * 8 + 1e-6) === 0);
+  app.clock.step(layer, -1);
+  check('exposição: voltar do frame 1 vai ao último', app.clock.frameOf(layer) === 7);
+  const { loopSeconds } = await import('../src/io/video.js');
+  layer.frames[0].push({ id: 900, kind: 'ink', w: 5, pts: [1, 1, 1] });
+  check('exposição: o vídeo conta os tempos a mais', loopSeconds(app.project) === 10 / 8 * 1 || loopSeconds(app.project) === 1.25, loopSeconds(app.project));
+  layer.frames[0].pop();
+  check('exposição: paredes do balde seguem o tempo com exposição', wallsFor(app.project, 1, 1).find((w) => w.l === 0).f === 0);
+  check('exposição salva e abre no .grao', san(JSON.parse(JSON.stringify(app.project))).layers[0].expo?.[0] === 3);
+  app.undo();
+  check('desfazer a exposição', !layer.expo && layerTicks(layer) === 8);
+}
+{
+  const { app, wet } = makeApp();
+  const L0 = () => app.project.layers[0];
+  app.project.settings.auto = false;
+  app.clock.paused = true; app.clock.t = 0;
+  stroke(wet, 300, 300);                              // frame 1
+  const id1 = L0().frames[0][0].id;
+  app.duplicateFrame();
+  check('duplicar frame: cópia com ids novos logo depois, e vai para ela', L0().frames.length === 9 && L0().frames[1][0].id !== id1 && app.clock.frameOf(L0()) === 1);
+  app.insertFrame();
+  check('inserir frame vazio depois do atual', L0().frames.length === 10 && L0().frames[2].length === 0 && app.clock.frameOf(L0()) === 2);
+  app.moveFrame(-1);
+  check('mover frame para trás', L0().frames[1].length === 0 && L0().frames[2].length === 1 && app.clock.frameOf(L0()) === 1);
+  app.deleteFrame();
+  check('apagar frame', L0().frames.length === 9 && L0().frames[1].length === 1);
+  app.undo(); app.undo(); app.undo(); app.undo();
+  check('desfazer as 4 operações volta ao começo', L0().frames.length === 8 && L0().frames[0][0].id === id1 && L0().frames[1].length === 0);
+  for (let i = 0; i < 6; i++) app.insertFrame();
+  check('máximo de 12 frames ao inserir', L0().frames.length === 12 && toasts.at(-1) === 'Máximo de 12 frames por camada.');
+  while (L0().frames.length > 1) app.deleteFrame();
+  app.deleteFrame();
+  check('a camada fica com pelo menos 1 frame', L0().frames.length === 1 && toasts.at(-1) === 'A camada precisa de pelo menos 1 frame.');
+}
+{
+  // copiar e colar entre frames e camadas
+  const { app, wet } = makeApp();
+  app.project.settings.auto = false;
+  app.clock.paused = true; app.clock.t = 0;
+  stroke(wet, 300, 300);
+  app.tool = 'lasso';
+  const l = pointer(wet);
+  l.down(250, 250);
+  for (const [x, y] of [[450, 250], [450, 400], [250, 400], [250, 260]]) l.move(x, y, 1);
+  l.up(250, 260);
+  app.tool = 'brush';
+  app.copySelection();
+  app.selection = null; app.onSelectionChange();
+  app.project.activeLayer = 2; app.clock.step(app.project.layers[2], 1);
+  app.paste();
+  const pasted = app.project.layers[2].frames[1];
+  check('colar em outra camada e outro frame, no mesmo lugar', pasted.length === 1 && pasted[0].pts[0] === app.project.layers[0].frames[0][0].pts[0] && pasted[0].id !== app.project.layers[0].frames[0][0].id);
+  check('o colado fica selecionado', app.selection?.ids.has(pasted[0].id));
+  app.undo();
+  check('desfazer o colar', app.project.layers[2].frames[1].length === 0);
+}
+{
+  // Auto: volta e para no último
+  const { app, wet } = makeApp();
+  app.clock.paused = true; app.clock.t = 0;
+  app.project.settings.autoDir = 'back';
+  stroke(wet, 300, 300);
+  check('Auto voltando: do frame 1 vai ao 8', app.clock.frameOf(app.project.layers[0]) === 7);
+  app.project.settings.autoDir = 'forward'; app.project.settings.autoStop = true;
+  stroke(wet, 300, 320);
+  check('Auto parando no último: no frame 8 não dá a volta', app.clock.frameOf(app.project.layers[0]) === 7);
+  const { sanitize: san } = await import('../src/doc/project.js');
+  const bad = JSON.parse(JSON.stringify(app.project));
+  bad.settings.onion = { before: 5, after: -1, strength: 3 }; bad.settings.autoDir = 'lado';
+  const ok = san(bad).settings;
+  check('ajustes do papel-cebola e do Auto conferidos ao abrir', ok.onion.before === 2 && ok.onion.after === 0 && ok.onion.strength === 0.8 && ok.autoDir === 'forward' && ok.autoStop === true);
+}
+
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);
 process.exit(fails ? 1 : 0);

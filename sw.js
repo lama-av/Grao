@@ -6,7 +6,7 @@
 // A CADA VERSÃO: atualizar VERSION abaixo (= VERSION-BUILD do src/config.js) e a lista FILES se entrar arquivo novo.
 // O teste de lógica confere as duas coisas.
 
-const VERSION = '0.4.0-b12';
+const VERSION = '0.5.0-b13';
 const CACHE = `grao-${VERSION}`;
 const FILES = [
   './',
@@ -31,6 +31,7 @@ const FILES = [
   'src/render/riso/riso.js',
   'src/render/riso/riso.vert',
   'src/render/stroke.js',
+  'src/render/thumb.js',
   'src/schedule.js',
   'src/ui/debug.js',
   'src/ui/dialog.js',

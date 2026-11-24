@@ -15,7 +15,7 @@ const parse = (k) => k.split(':').map(Number);
 const hasFill = (fr) => fr.some((s) => s.kind === 'fill');
 
 export function timingSignature(project) {
-  return project.layers.map((L) => `${L.fps}/${L.frames.length}`).join(',');
+  return project.layers.map((L) => `${L.fps}/${L.frames.length}/${(L.expo || []).join('')}`).join(',');
 }
 
 export function markAll(app, onlyFills = false) {

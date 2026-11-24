@@ -18,6 +18,9 @@ uniform sampler2D uMask6;
 uniform sampler2D uMask7;
 uniform sampler2D uPrev;      // papel-cebola: frame anterior da camada ativa
 uniform sampler2D uNext;      // papel-cebola: frame seguinte
+uniform sampler2D uPrev2;     // papel-cebola: 2 frames antes
+uniform sampler2D uNext2;     // papel-cebola: 2 frames depois
+uniform vec4 uOnionW;         // intensidade de cada um: (antes, 2 antes, depois, 2 depois)
 uniform float uLayerOn[8];    // 1 = camada existe e está visível
 uniform float uLayerInk[8];   // tambor da camada (0..3)
 uniform float uLayerType[8];  // retícula: 0 = estocástica, 1 = reticulada
@@ -122,10 +125,10 @@ void main() {
 
   // Papel-cebola quando o loop está congelado.
   if (uOnion > 0.5) {
-    float a = texture(uPrev, uv).r;
-    float b = texture(uNext, uv).r;
-    col = mix(col, col * vec3(0.72, 0.84, 1.0), a * 0.4);
-    col = mix(col, col * vec3(1.0, 0.78, 0.78), b * 0.4);
+    float a = clamp(texture(uPrev, uv).r * uOnionW.x + texture(uPrev2, uv).r * uOnionW.y, 0.0, 1.0);
+    float b = clamp(texture(uNext, uv).r * uOnionW.z + texture(uNext2, uv).r * uOnionW.w, 0.0, 1.0);
+    col = mix(col, col * vec3(0.72, 0.84, 1.0), a);
+    col = mix(col, col * vec3(1.0, 0.78, 0.78), b);
   }
 
   // Cobertura por tambor, depois as 4 tintas multiplicadas sobre o papel.

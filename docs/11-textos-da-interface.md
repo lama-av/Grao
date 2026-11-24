@@ -125,6 +125,20 @@ Rodapé: "A palma apoiada é ignorada enquanto a caneta está perto da tela."
 | Versão nova (botão da roda) | Nova versão. Toque para atualizar. |
 | Leitura: camada escolhida | Camada 3 |
 | Tintas prontas (leitura) | Falso CMYK |
+
+## Textos da v0.5 (escritos pelo VS Code, 24/11)
+
+| Onde | Texto |
+| --- | --- |
+| Folha Tempo: botões | Inserir · Duplicar · Apagar · ← Mover · Mover → · Exposição ×1 ×2 ×3 ×4 |
+| Folha Tempo: título | Tempo da camada 2 · Rosa flúor |
+| Folha Tempo: nota | Cada camada tem o próprio loop. Duração: 1,25 s. |
+| Aviso: frame mínimo | A camada precisa de pelo menos 1 frame. |
+| Chips da seleção | Duplicar → · Copiar · Apagar |
+| Chip de colar | Colar |
+| Leituras | Copiado · Colado · Último frame |
+| Menu: Auto | Auto (cada traço anda um frame) · Auto volta em vez de avançar · Auto para no último frame |
+| Menu: papel-cebola | Cebola · Antes · Depois · Intensidade do papel-cebola |
 | Apagar camada com desenho | Apagar a camada 3? O desenho dela some de todos os frames. · Apagar camada · Cancelar |
 | Folha da camada: rótulos | Tinta · Retícula · Estocástica · Reticulada · Densidade · Visível · Travar · Subir · Descer · Duplicar camada · Apagar camada |
 | Menu → Impressão | Lineatura · 40 · 60 · 85 |

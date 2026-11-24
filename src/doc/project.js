@@ -24,6 +24,32 @@ export function newLayer(project, ink = 0, fps = 8, nframes = DEFAULT_FRAMES) {
   };
 }
 
+// ---------- tempo da camada (exposição, v0.5 #038) ----------
+// layer.expo (opcional): quantos tempos cada frame fica na tela (1 a 4). Sem expo = todos 1.
+// "Tempo" = 1 / fps. O loop da camada tem layerTicks(layer) tempos.
+export const MAX_EXPO = 4;
+export const expoOf = (layer, f) => (layer.expo && layer.expo[f]) || 1;
+export function layerTicks(layer) {
+  let n = 0;
+  for (let f = 0; f < layer.frames.length; f++) n += expoOf(layer, f);
+  return n;
+}
+export function frameStartTick(layer, f) {
+  let n = 0;
+  for (let i = 0; i < f; i++) n += expoOf(layer, i);
+  return n;
+}
+// Qual frame aparece no tempo (inteiro) `tick` (com volta do loop).
+export function frameAtTick(layer, tick) {
+  const total = layerTicks(layer);
+  let k = ((tick % total) + total) % total;
+  for (let f = 0; f < layer.frames.length; f++) {
+    k -= expoOf(layer, f);
+    if (k < 0) return f;
+  }
+  return layer.frames.length - 1;
+}
+
 // Cor (entrada de INKS) com que a camada imprime.
 export const inkOf = (project, layer) => INKS[project.inks[layer.ink]] || INKS[0];
 
@@ -50,6 +76,8 @@ export function newProject(paper = 'natural') {
       grain: 0.6, mis: 0.5, ferver: true, auto: true, lefty: false, wheelCorner: null, pinWheel: false,
       sizes: { ...DEFAULT_SIZES }, smooth: 0,
       lpi: 60, trapping: true,            // lineatura da retícula reticulada (#030) e trapping do balde (#033)
+      autoDir: 'forward', autoStop: false, // Auto: avança ou volta; para no último frame (#041)
+      onion: { before: 1, after: 1, strength: 0.4 },   // papel-cebola: frames antes/depois (0–2), intensidade (#040)
     },
   };
   for (let d = 0; d < DRUMS; d++) p.layers.push(newLayer(p, d));
@@ -75,12 +103,11 @@ export function cloneStroke(s, newId) {
 // preenchimento em outra, como na gráfica. Devolve [{ l, f }] das outras tintas.
 export function wallsFor(project, l, f) {
   const L = project.layers[l];
-  const t = (f + 0.5) / L.fps;
+  const t = (frameStartTick(L, f) + expoOf(L, f) / 2) / L.fps;    // meio do tempo do frame (com exposição)
   const out = [];
   project.layers.forEach((M, m) => {
     if (m === l) return;
-    const n = M.frames.length;
-    out.push({ l: m, f: ((Math.floor(t * M.fps + 1e-6) % n) + n) % n });
+    out.push({ l: m, f: frameAtTick(M, Math.floor(t * M.fps + 1e-6)) });
   });
   return out;
 }
@@ -156,6 +183,10 @@ export function sanitize(p) {
       layer.frames = src.frames.slice(0, MAX_FRAMES).map((fr) => (Array.isArray(fr) ? fr : []).map(cleanStroke).filter(Boolean));
       for (const fr of layer.frames) for (const st of fr) maxId = Math.max(maxId, st.id);
       if (FPS_OPTIONS.includes(src.fps)) layer.fps = src.fps;
+      if (Array.isArray(src.expo)) {
+        const ex = layer.frames.map((_, f) => (Number.isInteger(src.expo[f]) ? Math.min(MAX_EXPO, Math.max(1, src.expo[f])) : 1));
+        if (ex.some((x) => x > 1)) layer.expo = ex;
+      }
     }
     if (!v1 && src && typeof src === 'object') {
       if (Number.isInteger(src.id) && src.id > 0 && !usedIds.has(src.id)) layer.id = src.id;
@@ -198,6 +229,14 @@ export function sanitize(p) {
   for (const k of ['ferver', 'auto', 'lefty', 'pinWheel', 'trapping']) if (typeof s[k] === 'boolean') set[k] = s[k];
   set.wheelCorner = ['bl', 'br', 'tl', 'tr'].includes(s.wheelCorner) ? s.wheelCorner : null;
   set.lpi = LPI_OPTIONS.includes(s.lpi) ? s.lpi : 60;
+  set.autoDir = s.autoDir === 'back' ? 'back' : 'forward';
+  if (typeof s.autoStop === 'boolean') set.autoStop = s.autoStop;
+  const on = s.onion && typeof s.onion === 'object' ? s.onion : {};
+  set.onion = {
+    before: Number.isInteger(on.before) ? Math.min(2, Math.max(0, on.before)) : 1,
+    after: Number.isInteger(on.after) ? Math.min(2, Math.max(0, on.after)) : 1,
+    strength: num(on.strength, 0.1, 0.8, 0.4),
+  };
   return out;
 }
 

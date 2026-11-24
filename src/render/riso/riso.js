@@ -16,10 +16,11 @@ export async function createRiso(canvas) {
   const program = link(gl, vs, fs);
   const vao = gl.createVertexArray();
 
-  const SAMPLERS = ['uMask0', 'uMask1', 'uMask2', 'uMask3', 'uMask4', 'uMask5', 'uMask6', 'uMask7', 'uPrev', 'uNext'];
+  const SAMPLERS = ['uMask0', 'uMask1', 'uMask2', 'uMask3', 'uMask4', 'uMask5', 'uMask6', 'uMask7', 'uPrev', 'uNext',
+    'uPrev2', 'uNext2'];
   const U = {};
   const names = [...SAMPLERS, 'uRes', 'uDoc', 'uLayerOn', 'uLayerInk', 'uLayerType', 'uLayerDens', 'uInk', 'uOff',
-    'uAngle', 'uCell', 'uPxDoc', 'uPaper', 'uFiber', 'uIncl', 'uTex', 'uGrain', 'uSeed', 'uOnion', 'uView'];
+    'uAngle', 'uCell', 'uPxDoc', 'uPaper', 'uFiber', 'uIncl', 'uTex', 'uGrain', 'uSeed', 'uOnion', 'uView', 'uOnionW'];
   for (const n of names) U[n] = gl.getUniformLocation(program, n) ?? gl.getUniformLocation(program, n + '[0]');
 
   gl.useProgram(program);
@@ -29,7 +30,7 @@ export async function createRiso(canvas) {
 
   // s = {
   //   layers: [{ mask, ink (0..3), type (0 estocástica | 1 reticulada), density, on }] (até 8),
-  //   prev, next, empty (textura vazia), inks: [[r,g,b] x4], offsets: [8 floats], angles: [4 rad],
+  //   prev, next, prev2, next2, onionW [4], empty (textura vazia), inks: [[r,g,b] x4], offsets: [8 floats], angles: [4 rad],
   //   cell (unidades do documento), paper: {rgb, fiber, incl, tex}, grain, seed, onion, view: {s, ox, oy}
   // }
   function draw(s) {
@@ -47,6 +48,9 @@ export async function createRiso(canvas) {
     }
     gl.activeTexture(gl.TEXTURE8); gl.bindTexture(gl.TEXTURE_2D, s.prev);
     gl.activeTexture(gl.TEXTURE9); gl.bindTexture(gl.TEXTURE_2D, s.next);
+    gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, s.prev2 || s.empty);
+    gl.activeTexture(gl.TEXTURE11); gl.bindTexture(gl.TEXTURE_2D, s.next2 || s.empty);
+    gl.uniform4fv(U.uOnionW, s.onionW || [0.4, 0, 0.4, 0]);
     gl.uniform2f(U.uRes, canvas.width, canvas.height);
     gl.uniform2f(U.uDoc, DOC_W, DOC_H);
     gl.uniform1fv(U.uLayerOn, on);
