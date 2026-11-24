@@ -19,6 +19,8 @@ Leia na ordem se estiver chegando agora. Cada arquivo começa pela conclusão.
 
 Como usar o app: [`INSTRUCOES.txt`](../INSTRUCOES.txt) na raiz.
 
+Relatórios de versão (resposta ao HANDOFF, para a auditoria no chat): [v0.2](relatorio-v0.2.md).
+
 ## Decisões de arquitetura (ADRs)
 
 | ADR | Título | Status |

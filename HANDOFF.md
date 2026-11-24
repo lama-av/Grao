@@ -49,6 +49,9 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 
 ## Fila
 
+> **Relatório da v0.2 para a auditoria:** `docs/relatorio-v0.2.md` (o que saiu diferente, extras, pendências,
+> decisões). Sessão de animação só com a roda feita pelo Raphael em 24/11: funcionou tudo certo.
+
 > **v0.2 — Tela limpa e roda de canto.** Especificação completa em `docs/10-plano-ate-v1.md` (seção "A roda de
 > canto") e textos em `docs/11-textos-da-interface.md`. Faça os pedidos na ordem. Ao terminar todos, suba
 > `VERSION` para 0.2.0 e gere o docx da versão.
