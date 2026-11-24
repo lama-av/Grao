@@ -3,7 +3,7 @@
 **Caderno de animação em loop com cara de impressão risográfica**, feito para desenhar com caneta num tablet
 Android. Você desenha dentro de um loop que nunca para; o grão da impressão ferve no ritmo da animação.
 
-> **Versão:** `1.0.0-rc.1`, candidata a 1.0 (24/11/2026). Todos os recursos do plano até a 1.0 estão no app;
+> **Versão:** `1.0.0-rc.2`, candidata a 1.0 (24/11/2026). Todos os recursos do plano até a 1.0 estão no app;
 > **falta o teste no tablet** para virar 1.0.0. Relatório: [docs/relatorio-v1.0.md](docs/relatorio-v1.0.md) ·
 > Lista de testes: [docs/15-lista-de-testes.md](docs/15-lista-de-testes.md).
 

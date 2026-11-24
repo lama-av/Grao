@@ -125,6 +125,7 @@ export function setupWheel(app, canvas) {
         kind: 'layer', i, color: inkOf(p, L).hex, on: i === p.activeLayer, hidden: !L.visible, locked: L.locked,
       }));
       if (p.layers.length < MAX_LAYERS) layers.push({ kind: 'add', label: '+' });
+      layers.push({ kind: 'layerSheet', label: 'Ajustes' });   // folha da camada ativa (retícula, tinta, ordem…)
       const drum = p.layers[p.activeLayer].ink;
       const cur = p.inks[drum];
       const colors = INKS.map((k, j) => ({
@@ -247,7 +248,7 @@ export function setupWheel(app, canvas) {
   function sizeFromPoint(p) {
     const { a } = polar(p, wheelCenter());
     const t = clamp((angDiff(a, BASE[corner()]) + SPEED_SPAN / 2) / SPEED_SPAN, 0, 1);
-    settings().sizes[sizeTool()] = Math.round(SIZE_MIN + t * (SIZE_MAX - SIZE_MIN));
+    settings().sizes[sizeTool()] = Math.round(SIZE_MIN + t * t * (SIZE_MAX - SIZE_MIN));   // quadrático: precisão nos pequenos
     say(`${settings().sizes[sizeTool()]}`);
   }
 
@@ -278,6 +279,7 @@ export function setupWheel(app, canvas) {
       app.redo();
     } else if (id === 'ink' || id === 'tool') {
       petal = petal === id ? null : id;
+      app.sheet?.close();                     // uma janela por vez: pétala fecha a folha (Menu, Tempo…)
     } else if (id === 'more' || id === 'time') {
       petal = null;
       if (sheetWas === id) app.sheet.close(); else app.sheet.open(id);
@@ -286,7 +288,13 @@ export function setupWheel(app, canvas) {
 
   function runPill(it) {
     const p = app.project;
-    if (it.kind === 'layer') {
+    if (it.kind === 'layer' && it.i === p.activeLayer) {
+      petal = null; collapse();
+      app.sheet?.open('layer', it.i);         // tocar de novo na camada ativa: abre os ajustes dela
+    } else if (it.kind === 'layerSheet') {
+      petal = null; collapse();
+      app.sheet?.open('layer', p.activeLayer);
+    } else if (it.kind === 'layer') {
       p.activeLayer = it.i;
       app.selection = null;
       app.onSelectionChange?.();
@@ -338,6 +346,7 @@ export function setupWheel(app, canvas) {
     } else if (h.kind === 'sector' && (h.sector.id === 'ink' || h.sector.id === 'tool') && petal !== h.sector.id) {
       // abre a pétala já ao encostar: dá para arrastar até a pastilha e soltar em cima dela
       petal = h.sector.id;
+      app.sheet?.close();
       g.openedOnDown = true;
     }
     active.set(e.pointerId, g);
@@ -534,11 +543,19 @@ export function setupWheel(app, canvas) {
     ctx.fillStyle = C.text; ctx.fill();
 
     // prato
-    ring(c, R_SECT, R_PLATE, 0, 360);
-    ctx.fillStyle = C.plate; ctx.fill();
+    // Anel inteiro (dois círculos, sem a emenda reta que aparecia no lado direito) e uma marca no frame 1.
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, R_PLATE, 0, Math.PI * 2);
+    ctx.moveTo(c.x + R_SECT, c.y);
+    ctx.arc(c.x, c.y, R_SECT, 0, Math.PI * 2, true);
+    ctx.fillStyle = C.plate; ctx.fill('evenodd');
     ctx.lineWidth = history ? 3 : plateHeld ? 2 : 1;
     ctx.strokeStyle = history ? C.accent : plateHeld ? C.text : C.line;
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(c.x, c.y, R_PLATE, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(c.x, c.y, R_SECT, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();                          // marca do frame 1, no alto
+    ctx.moveTo(c.x, c.y - R_PLATE + 3); ctx.lineTo(c.x, c.y - R_PLATE - 7);
+    ctx.lineWidth = 3; ctx.strokeStyle = C.muted; ctx.stroke();
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 - Math.PI / 2;
       disc(c.x + Math.cos(a) * ((R_SECT + R_PLATE) / 2), c.y + Math.sin(a) * ((R_SECT + R_PLATE) / 2), i === f ? 6 : 4);
@@ -605,7 +622,7 @@ export function setupWheel(app, canvas) {
     if (petal === 'ink') {
       const a0 = (base - (COLOR_STEP * (INKS.length - 1)) / 2) * RAD;
       label('Cor da tinta', c.x + Math.cos(a0) * (COLOR_R + 36), c.y + Math.sin(a0) * (COLOR_R + 36));
-      const nL = Math.min(MAX_LAYERS, app.project.layers.length + 1);
+      const nL = app.project.layers.length + (app.project.layers.length < MAX_LAYERS ? 1 : 0) + 1;
       const aL = (base - (PETAL_STEP * (nL - 1)) / 2 - PETAL_STEP) * RAD;
       label('Camadas', c.x + Math.cos(aL) * PETAL_R, c.y + Math.sin(aL) * PETAL_R);
     }
@@ -618,7 +635,7 @@ export function setupWheel(app, canvas) {
       ctx.fillStyle = 'rgba(37,35,32,0.94)'; ctx.fill();
       ctx.lineWidth = 1; ctx.strokeStyle = C.line; ctx.stroke();
       const b = settings().sizes[sizeTool()];
-      const a = (base - SPEED_SPAN / 2 + ((b - SIZE_MIN) / (SIZE_MAX - SIZE_MIN)) * SPEED_SPAN) * RAD;
+      const a = (base - SPEED_SPAN / 2 + Math.sqrt((b - SIZE_MIN) / (SIZE_MAX - SIZE_MIN)) * SPEED_SPAN) * RAD;
       const r = (SIZE_R0 + SIZE_R1) / 2;
       disc(c.x + Math.cos(a) * r, c.y + Math.sin(a) * r, 13);
       ctx.fillStyle = C.text; ctx.fill();

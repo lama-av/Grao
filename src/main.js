@@ -107,11 +107,16 @@ async function start() {
   document.body.appendChild(live);
   app.announce = (t) => { live.textContent = t; };
 
-  // Dicas da primeira vez (#055): só no projeto de boas-vindas, até a pessoa fazer as três coisas.
+  // Dicas da primeira vez (#055): uma vez por aparelho, em qualquer projeto, até a pessoa fazer as três coisas.
+  // (Antes só no projeto de boas-vindas, e quem já tinha projeto nunca via: teste do Raphael, 24/11.)
   const HINTS_KEY = 'grao.dicas';
   let hintsDone = {};
   try { hintsDone = JSON.parse(localStorage.getItem(HINTS_KEY) || '{}'); } catch { hintsDone = { draw: true, wheel: true, time: true }; }
-  app.hints = app.project.welcome && !(hintsDone.draw && hintsDone.wheel && hintsDone.time) ? { ...hintsDone } : null;
+  app.hints = !(hintsDone.draw && hintsDone.wheel && hintsDone.time) ? { ...hintsDone } : null;
+  app.resetHints = () => {
+    app.hints = { draw: false, wheel: false, time: false };
+    try { localStorage.removeItem(HINTS_KEY); } catch { /* sem armazenamento */ }
+  };
   app.hintDone = (id) => {
     if (!app.hints || app.hints[id]) return;
     app.hints[id] = true;

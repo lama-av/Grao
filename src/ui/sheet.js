@@ -86,6 +86,7 @@ export function setupSheet(app) {
         <label>Intensidade do papel-cebola <input type="range" data-k="onionStrength" min="0.1" max="0.8" step="0.05"></label>
         <label class="check"><input type="checkbox" data-k="pinWheel"> Fixar roda</label>
         <label class="check"><input type="checkbox" data-k="lefty"> Canhoto</label>
+        <label class="check"><input type="checkbox" data-k="fingerDraw"> Desenhar com o dedo (sem sensibilidade)</label>
         <label class="check"><input type="checkbox" data-k="autoQuality"> Qualidade automática (se o tablet engasgar)</label>
         <label class="check"><input type="checkbox" data-k="debug"> Teste da Fase 0</label>
         <button class="btn small" data-act="gestures">Gestos</button>
@@ -102,6 +103,8 @@ export function setupSheet(app) {
     q('mis').value = s.mis;
     q('smooth').value = s.smooth || 0;
     for (const k of ['ferver', 'auto', 'pinWheel', 'lefty', 'trapping', 'autoStop']) q(k).checked = !!s[k];
+    q('fingerDraw').checked = s.fingerDraw === true;
+    q('fingerDraw').onchange = (e) => { s.fingerDraw = e.target.checked; app.requestSave(); };
     q('autoQuality').checked = s.autoQuality !== false;
     q('autoQuality').onchange = (e) => { s.autoQuality = e.target.checked; app.requestSave(); };
     q('autoBack').checked = s.autoDir === 'back';
@@ -195,7 +198,9 @@ export function setupSheet(app) {
         <dt>Abrir ou fechar os dedos</dt><dd>Aproxima e afasta o papel. Com zoom, arrastar move o papel.</dd>
         <dt>Sobre a seleção</dt><dd>Move, gira e muda o tamanho do que foi selecionado.</dd>
       </dl>
-      <div class="sheet-note">A palma apoiada é ignorada enquanto a caneta está perto da tela.</div>`;
+      <div class="sheet-note">A palma apoiada é ignorada enquanto a caneta está perto da tela.</div>
+      <button class="btn small" data-act="hints">Mostrar as dicas de novo</button>`;
+    el.querySelector('[data-act="hints"]').onclick = () => { close(); app.resetHints?.(); };
   }
 
   // Folha Tempo (#036): tira de frames com miniaturas, operações de frame, exposição, FPS.

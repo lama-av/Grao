@@ -79,7 +79,6 @@ export function installActions(app) {
   app.replaceProject = (project) => {
     app.project = project;
     app.inksBeforePreset = null;            // "Do projeto" não pode levar as tintas de outro projeto
-    if (!project.welcome) app.hints = null; // dicas só no projeto de boas-vindas
     app.masks.clear();
     app.dirty.clear();
     markAll(app);                           // as máscaras voltam aos poucos, sem travar o loop (schedule.js)

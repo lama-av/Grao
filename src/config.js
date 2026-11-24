@@ -1,8 +1,8 @@
 // Constantes do Grão.
 // Documento em unidades fixas (3:2, como a tela do tablet); máscaras em 80% disso.
 
-export const VERSION = '1.0.0-rc.1';
-export const BUILD = 'b18';                // muda a cada publicação: mostra no tablet se a versão nova chegou
+export const VERSION = '1.0.0-rc.2';
+export const BUILD = 'b19';                // muda a cada publicação: mostra no tablet se a versão nova chegou
 export const DOC_W = 1200;
 export const DOC_H = 800;
 export const MASK_SCALE = 0.8;            // máscara = 960 × 640, 1 canal
@@ -22,7 +22,9 @@ export const TAP_MS = 200;                // toque rápido de 2 dedos = desfazer
 export const TAP_MOVE_PX = 12;
 export const SCRUB_PX_PER_FRAME = 48;     // arrastar 2 dedos: 48 px = 1 frame
 export const PEN_GUARD_MS = 300;          // toque até 300 ms depois da caneta = palma
-export const PALM_CONTACT_PX = 40;        // área de contato maior que isso = palma
+// Área de contato maior que isso = palma. Era 40 px: a ponta de um dedo no tablet (~10 mm) já dá ~42 px de tela,
+// e o filtro ignorava os dedos (gestos e transformação pararam, teste do Raphael em 24/11). Palma: 30 mm ou mais.
+export const PALM_CONTACT_PX = 120;
 
 // Cores da lista riso-colors, de Matt DesLauriers (MIT).
 // https://github.com/mattdesl/riso-colors

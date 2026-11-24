@@ -54,7 +54,7 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 > **Novo roteiro até a v1.0** (decidido no chat em 24/11, conselho de design): `docs/13-conselho-v0.3.md`.
 > Ele substitui a ordem de versões do doc 10. Arquitetura dos gestos: `docs/adr/ADR-003-gestos-de-dois-dedos.md`.
 >
-> **Estado (24/11, fim do dia):** **1.0.0-rc.1 publicada** (pedidos #022–#064 feitos). Nada testado no tablet desde
+> **Estado (24/11, fim do dia):** **1.0.0-rc.2 publicada** (pedidos #022–#065 feitos; o #065 corrige o 1º teste da rc.1). Nada testado no tablet desde
 > a 0.2.0. Próximo passo: o Raphael passa pela lista `docs/15-lista-de-testes.md` e leva o resultado ao chat.
 >
 > **Atualização (24/11, Raphael no VS Code):** "execute os pedidos até a versão 1.0, sem pausas". A v0.4 foi feita
@@ -587,6 +587,24 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
   **Por que "candidata":** os critérios da 1.0 pedem as metas de desempenho medidas no tablet, nenhum P1/P2 aberto e
   o teste com 3 pessoas; nada disso dá para verificar no PC. Passando pela lista de testes sem P1/P2, a versão sobe
   para 1.0.0 sem mudança de código.
+
+### #065 — Correções do teste da rc.1 no tablet
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 1.0.0-rc.2 · **Origem:** teste do Raphael (24/11)
+- **O que o Raphael viu:** gestos não funcionam; dicas não aparecem; não achou as retículas; várias janelas abertas
+  ao mesmo tempo (Menu fica por baixo da pétala); divisão no anel de frames no lado direito; tamanho só até 40;
+  transformar a seleção com os dedos não funciona; propôs desenhar com o dedo para quem não tem caneta.
+- **Resposta do VS Code (build b19):**
+  - Gestos e transformação: o filtro de palma usava 40 px de contato e a ponta do dedo no tablet já dá ~42 px. Limite
+    agora 120 px. **Confirmar no painel Teste da Fase 0 a linha "último toque"** (tamanho real de um dedo e da palma).
+  - Dicas: uma vez por aparelho, em qualquer projeto; Menu → Gestos → "Mostrar as dicas de novo".
+  - Retícula: tocar de novo na camada ativa ou na pastilha "Ajustes" da pétala Camadas abre a folha da camada.
+  - Uma janela por vez: abrir pétala fecha Menu/Tempo (abrir folha já fechava a pétala).
+  - Anel de frames contínuo (era a emenda reta do desenho do anel no ângulo 0°) e marca do frame 1 no alto.
+  - Tamanho 2–200 com arco quadrático (meio do arco ≈ 50).
+  - **Desenhar com o dedo** (opção, desligada): o dedo desenha sem pressão; segundo dedo descarta o risco e vira gesto;
+    perto da seleção o primeiro dedo espera. Muda a decisão 2 do `CLAUDE.md` (exceção por opção).
+  - **Testar no tablet:** 2 dedos (desfazer, tempo, zoom, girar seleção) com e sem a caneta por perto; dicas; folha
+    da camada pela pastilha Ajustes; abrir Menu e depois Ferramenta; tamanho 200; Desenhar com o dedo.
 
 ### Pedidos já feitos (v0.2.0 a v0.3.1)
 

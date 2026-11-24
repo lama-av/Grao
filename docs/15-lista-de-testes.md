@@ -1,11 +1,11 @@
-# 15 · Lista de testes no tablet (1.0.0-rc.1)
+# 15 · Lista de testes no tablet (1.0.0-rc.2)
 
 **Para quem:** o Raphael, no XPPen Magic Drawing Pad, e o chat na auditoria.
 **Como usar:** marque **ok** ou descreva o **problema** (com print ou vídeo curto se puder). P1 = trava o uso,
 P2 = atrapalha, P3 = detalhe. A coluna **Pedido** aponta para o `HANDOFF.md`.
 
 **Antes de começar:**
-1. Abra https://lama-av.github.io/Grao/ e confira o aviso: **`Grão 1.0.0-rc.1-b18`**.
+1. Abra https://lama-av.github.io/Grao/ e confira o aviso: **`Grão 1.0.0-rc.2-b19`**.
 2. Se aparecer a caixa vermelha com "Shader: …", pare e mande print: o shader não pôde ser compilado no PC.
 3. Para ver o projeto de boas-vindas: limpe os dados do site antes (perde os projetos guardados; salve arquivos).
 
@@ -117,6 +117,20 @@ P2 = atrapalha, P3 = detalhe. A coluna **Pedido** aponta para o `HANDOFF.md`.
 | --- | --- | --- | --- |
 | J1 | 1 hora animando: o app não fica lento (quadros/s no painel) e nada se perde | #061 | |
 | J2 | Fechar o Chrome no meio de um desenho e reabrir: o desenho está lá | #061 | |
+
+## L. Correções da rc.2 (#065)
+
+| # | Teste | Pedido | Resultado |
+| --- | --- | --- | --- |
+| L1 | 2 dedos: toque rápido desfaz, para os lados anda no tempo, pinça dá zoom | #065 | |
+| L2 | Painel: "último toque" com um dedo ___ px e com a palma ___ px (o filtro usa 120 px) | #065 | |
+| L3 | Laço + 2 dedos sobre a seleção: move, gira, escala | #065 | |
+| L4 | Dicas aparecem (ou Menu → Gestos → Mostrar as dicas de novo) | #065 | |
+| L5 | Pétala Camadas → "Ajustes" (ou tocar de novo na camada ativa) abre a folha com a Retícula | #065 | |
+| L6 | Abrir o Menu e depois a pétala Ferramenta: o Menu fecha | #065 | |
+| L7 | Anel de frames contínuo, com marca no frame 1 no alto | #065 | |
+| L8 | Tamanho até 200; tamanhos pequenos fáceis de acertar | #065 | |
+| L9 | Menu → Desenhar com o dedo: desenhar com o dedo; um 2º dedo apaga o risco e vira gesto | #065 | |
 
 ## K. Pessoas
 

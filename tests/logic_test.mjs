@@ -203,7 +203,7 @@ for (const code of [4]) {
   check('Refazer pela roda', all(app).length === 1);
   // pétala Tinta por arrastar e soltar (setor em 180°)
   const base = -45, step = 17;
-  const inkAt = (k, n = 5) => at(218, base - (step * (n - 1)) / 2 + step * k);   // 4 camadas + "+"
+  const inkAt = (k, n = 6) => at(218, base - (step * (n - 1)) / 2 + step * k);   // 4 camadas + "+" + "Ajustes"
   const d = pointer(wet, 'touch');
   d.down(...at(58, 180));
   check('encostar em Camadas abre a pétala', app.ui.petal === 'ink');
@@ -297,7 +297,7 @@ for (const code of [4]) {
   check('arquivo estragado: mantém as 2 camadas e sempre 4 tintas', fixed.layers.length === 2 && fixed.inks.length === 4);
   check('arquivo estragado: próximo id passa do maior id', fixed.nextId === 903, fixed.nextId);
   check('arquivo estragado: tinta ativa, papel e ajustes conferidos',
-    fixed.activeLayer === 0 && fixed.paper === 'natural' && fixed.settings.sizes.brush === 40 && fixed.settings.wheelCorner === null);
+    fixed.activeLayer === 0 && fixed.paper === 'natural' && fixed.settings.sizes.brush === 200 && fixed.settings.wheelCorner === null);
   // abrir troca o projeto e recomeça o histórico
   app.replaceProject(back);
   check('abrir arquivo troca o projeto', app.project === back);
@@ -640,7 +640,7 @@ for (const code of [4]) {
   const before = { ...app.project.settings.sizes };
   const sz = pointer(wet, 'touch');
   sz.down(...at(354, -45 + 30)); sz.up(...at(354, -45 + 30));
-  check('arco de Tamanho muda só o Giz', app.project.settings.sizes.chalk === 40 && app.project.settings.sizes.brush === before.brush);
+  check('arco de Tamanho muda só o Giz (vai até 200)', app.project.settings.sizes.chalk === 200 && app.project.settings.sizes.brush === before.brush);
   // projeto antigo com um tamanho só
   const old = JSON.parse(JSON.stringify(app.project));
   delete old.settings.sizes; old.settings.brush = 22;
@@ -758,8 +758,10 @@ for (const code of [4]) {
   g = G(); g.penEvent(0, false);                                                   // pairando
   check('palma: caneta pairando ignora toques', types(g.down({ id: 1, x: 1, y: 1, t: 500 }, {})) === 'ignored');
   g = G();
-  check('palma: contato largo (> 40 px) é ignorado', types(g.down({ id: 1, x: 1, y: 1, t: 0, w: 60, h: 30 }, {})) === 'ignored');
-  check('palma: conta os ignorados para o painel', g.stats.ignored === 1 && g.stats.lastW === 60);
+  check('palma: contato largo (> 120 px) é ignorado', types(g.down({ id: 1, x: 1, y: 1, t: 0, w: 150, h: 60 }, {})) === 'ignored');
+  check('palma: conta os ignorados para o painel', g.stats.ignored === 1 && g.stats.lastW === 150);
+  g = G();
+  check('dedo de verdade (45 × 40 px de contato) não é palma', types(g.down({ id: 1, x: 1, y: 1, t: 0, w: 45, h: 40 }, {})) === '');
 }
 {
   // TEMPO no app: segura o loop, anda na tinta ativa, a régua aparece; cancelado volta
@@ -1220,6 +1222,68 @@ for (const code of [4]) {
   const f1 = pointer(wet, 'touch'), f2 = pointer(wet, 'touch');
   f1.down(500, 400); f2.down(700, 400); f1.up(500, 400); f2.up(700, 400);
   check('depois de um pointercancel da caneta, o toque de 2 dedos volta a desfazer', all(a2).length === 0);
+}
+
+// ---------- 1.0.0-rc.2: correções do teste do Raphael (24/11) ----------
+{
+  const { app, wet } = makeApp();
+  const base = -45, step = 17;
+  const layerAt = (k, n = 6) => at(218, base - (step * (n - 1)) / 2 + step * k);
+  // tocar na camada ativa abre os ajustes dela; a pastilha "Ajustes" também
+  tap(wet, ...BTN); tap(wet, ...at(60, 180));
+  tap(wet, ...layerAt(0));                         // camada 1 já é a ativa
+  check('tocar na camada ativa abre a folha da camada (retícula etc.)', app.sheet.mode === 'layer');
+  app.sheet.close(); app.ui.collapse();
+  tap(wet, ...BTN); tap(wet, ...at(60, 180));
+  tap(wet, ...layerAt(5));                         // "Ajustes"
+  check('pastilha "Ajustes" abre a folha da camada ativa', app.sheet.mode === 'layer');
+  // uma janela por vez: abrir uma pétala fecha a folha
+  app.sheet.open('more'); app.ui.collapse();
+  tap(wet, ...BTN); tap(wet, ...at(60, 0));
+  check('abrir a pétala Ferramenta fecha o Menu', app.sheet.mode === null && app.ui.petal === 'tool');
+  // tamanho até 200, com o arco mais fino nos pequenos (meio do arco ≈ 51)
+  const sz = pointer(wet, 'touch'); sz.down(...at(354, -45)); sz.up(...at(354, -45));
+  const mid = app.project.settings.sizes.brush;
+  check('meio do arco de Tamanho dá um tamanho pequeno (precisão)', mid > 40 && mid < 60, mid);
+  const { sanitize: san } = await import('../src/doc/project.js');
+  const big = JSON.parse(JSON.stringify(app.project)); big.settings.sizes.marker = 180;
+  check('tamanho 180 salva e abre', san(big).settings.sizes.marker === 180);
+}
+{
+  // desenhar com o dedo (opção)
+  const { app, wet } = makeApp();
+  stroke(wet, 300, 300, 10, 'touch');
+  check('sem a opção, 1 dedo não desenha', all(app).length === 0);
+  app.project.settings.fingerDraw = true;
+  stroke(wet, 300, 300, 10, 'touch');
+  const s1 = all(app)[0];
+  check('com "Desenhar com o dedo", o dedo desenha sem sensibilidade (pressão fixa)', s1 && s1.pts.length > 9 && s1.pts.every((v, i) => i % 3 !== 2 || v === 0.6));
+  // segundo dedo: o risco do primeiro some e vira gesto (toque rápido = desfazer)
+  const a = pointer(wet, 'touch'), b = pointer(wet, 'touch');
+  a.down(500, 400); a.move(505, 401); b.down(800, 400); a.up(505, 401); b.up(800, 400);
+  check('segundo dedo descarta o risco e o toque rápido de 2 dedos desfaz', all(app).length === 0 && app.history.canRedo);
+  app.redo();
+  // 2 dedos sobre a seleção transformam, mesmo com o dedo desenhando
+  app.tool = 'lasso';
+  const l = pointer(wet); l.down(250, 250);
+  for (const [x, y] of [[450, 250], [450, 400], [250, 400], [250, 260]]) l.move(x, y, 1);
+  l.up(250, 260);
+  app.tool = 'brush';
+  const x0 = all(app)[0].pts[0];
+  const c = pointer(wet, 'touch'), d = pointer(wet, 'touch');
+  c.down(320, 310); d.down(400, 320);
+  for (let i = 1; i <= 10; i++) { c.move(320 + i * 8, 310); d.move(400 + i * 8, 320); }
+  c.up(400, 310); d.up(480, 320);
+  check('com o dedo desenhando ligado, 2 dedos sobre a seleção ainda movem a seleção', all(app).length === 1 && all(app)[0].pts[0] !== x0);
+  // primeiro dedo perto da seleção (na folga de 80 px, fora da caixa): não risca nem solta a seleção
+  const x1 = all(app)[0].pts[0];
+  const e1 = pointer(wet, 'touch'), e2 = pointer(wet, 'touch');
+  e1.down(480, 300);                               // fora da caixa, dentro da folga
+  check('dedo perto da seleção não risca nem solta a seleção', !!app.selection && all(app).length === 1);
+  e2.down(560, 330);
+  for (let i = 1; i <= 10; i++) { e1.move(480 + i * 8, 300); e2.move(560 + i * 8, 330); }
+  e1.up(560, 300); e2.up(640, 330);
+  check('e o segundo dedo transforma a seleção', all(app)[0].pts[0] !== x1);
 }
 
 console.log(`\n${fails ? `${fails} FALHA(S) de ${total}` : `TUDO OK (${total} verificações)`}`);

@@ -60,6 +60,8 @@ export function createGestures(cfg = {}) {
     if (active.length !== 2 || g) return [];
     const [a, b] = active;
     g = { a, b, t0: tc.t, moved: 0, intent: 'deciding', scrubbed: 0, lifted: new Set(), cancelled: false };
+    // o movimento conta a partir daqui (o primeiro dedo pode ter andado sozinho antes, desenhando com o dedo)
+    for (const id of [a, b]) { const q = touches.get(id); q.x0 = q.x; q.y0 = q.y; }
     g.start = pair();
     if (ctx.overSelection?.(g.start.a, g.start.b)) {
       g.intent = 'xf';

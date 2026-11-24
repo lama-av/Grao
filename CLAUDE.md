@@ -17,6 +17,7 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
+- **1.0.0-rc.2 (24/11/2026):** correções do 1º teste da rc.1 (gestos, dicas, retícula, janelas, anel, tamanho 200, dedo).
 - **1.0.0-rc.1 (24/11/2026):** candidata a 1.0 — todos os recursos do roteiro; falta o teste no tablet.
   Relatório: `docs/relatorio-v1.0.md`; lista de testes: `docs/15-lista-de-testes.md`.
 - **v0.9.0 (24/11/2026):** qualidade automática, salvar ao sair, correções de uma revisão de código.
@@ -122,7 +123,9 @@ Regras de fluxo:
 ## Decisões que não devem ser desfeitas sem conversa
 
 1. **Um gesto, uma função.** Nenhum gesto muda de função conforme um estado escondido.
-2. **Nada de 3 dedos nem toque duplo no canvas** (a palma dispara toques falsos). Toque de 1 dedo nunca desenha.
+2. **Nada de 3 dedos nem toque duplo no canvas** (a palma dispara toques falsos). Toque de 1 dedo não desenha,
+   **exceto** com a opção "Desenhar com o dedo" (Menu, desligada por padrão; pedido do Raphael em 24/11): o dedo
+   desenha sem pressão e um segundo dedo descarta o risco e vira gesto.
 3. **O papel é a tela inteira; a interface é uma roda de canto que se recolhe** (a partir da v0.2). A caneta
    desenha e faz laço; o tempo fica na roda, no canto da mão livre. A roda é desenhada no canvas `#ui`, por baixo
    do traço molhado, nunca em DOM por cima dele.

@@ -4,6 +4,30 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [1.0.0-rc.2] — 2026-11-24
+
+Correções do primeiro teste do Raphael no tablet com a rc.1 (pedido #065).
+
+### Corrigido
+- **Gestos de 2 dedos e transformar a seleção com os dedos não funcionavam:** o filtro de palma ignorava toques com
+  mais de 40 px de contato, e a ponta de um dedo no tablet já passa disso. Agora só acima de 120 px (palma).
+- **Dicas não apareciam** para quem já tinha projeto (só vinham no projeto de boas-vindas). Agora aparecem uma vez por
+  aparelho, em qualquer projeto; Menu → Gestos → "Mostrar as dicas de novo".
+- **Várias janelas abertas ao mesmo tempo:** abrir uma pétala (Ferramenta, Camadas) agora fecha o Menu/Tempo.
+- **Divisão no anel de frames** (lado direito da roda): o anel agora é contínuo e tem uma marca no frame 1, no alto.
+
+### Adicionado
+- **Retícula fácil de achar:** tocar de novo na camada ativa (pétala Camadas) ou na pastilha **Ajustes** abre a folha da
+  camada (tinta, retícula, visível, travar, ordem). O toque longo continua valendo.
+- **Tamanho até 200** em todas as ferramentas; o arco de Tamanho é mais fino nos tamanhos pequenos.
+- **Desenhar com o dedo** (Menu → Desenho e roda, desligado por padrão): o dedo usa a ferramenta como a caneta, sem
+  sensibilidade. Um segundo dedo descarta o risco e vira gesto; perto da seleção o primeiro dedo espera o segundo.
+  Sem caneta e com a opção desligada, depois de duas tentativas aparece "Sem caneta? Menu → Desenhar com o dedo."
+
+### Mudado
+- Decisão 2 do `CLAUDE.md`: "toque de 1 dedo nunca desenha" ganhou a exceção da opção acima (pedido do Raphael).
+- Teste de lógica: 277 verificações.
+
 ## [1.0.0-rc.1] — 2026-11-24
 
 Candidata a 1.0. Todos os recursos do roteiro até a 1.0 (doc 13) estão no app. Para virar 1.0.0 falta o que só o

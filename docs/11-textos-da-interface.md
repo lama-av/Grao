@@ -180,6 +180,10 @@ Rodapé: "A palma apoiada é ignorada enquanto a caneta está perto da tela."
 | Arquivo aberto | Projeto aberto |
 | Projeto apagado | Projeto apagado |
 | Exportação | PNGs exportados. Procure em Downloads. (antes: "PNGs exportado") |
+| Pétala Camadas | Ajustes (abre a folha da camada ativa) |
+| Menu: dedo | Desenhar com o dedo (sem sensibilidade) |
+| Aviso: sem caneta | Sem caneta? Menu → Desenhar com o dedo. |
+| Folha Gestos | Mostrar as dicas de novo |
 
 **Revisão de 24/11 (#056):** todos os avisos e leituras do código foram conferidos com este documento. Nenhum tem
 exclamação nem "Ops"; erros dizem o que falhou e o que fazer. Exceções aceitas ao limite de 12 caracteres das

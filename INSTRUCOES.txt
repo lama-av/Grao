@@ -1,6 +1,6 @@
 GRÃO — INSTRUÇÕES DE USO
 ========================
-Versão descrita: 1.0.0-rc.1 (candidata a 1.0)
+Versão descrita: 1.0.0-rc.2 (candidata a 1.0)
 Atualizado em: 24/11/2026
 Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
 
@@ -31,12 +31,13 @@ SUMÁRIO
 - No tablet (Chrome): https://lama-av.github.io/Grao/
 - Para instalar como app: menu do Chrome > "Adicionar à tela inicial". Depois de
   aberto uma vez com internet, o Grão abre SEM INTERNET.
-- Ao abrir, aparece a versão (ex.: "Grão 1.0.0-rc.1-b18").
+- Ao abrir, aparece a versão (ex.: "Grão 1.0.0-rc.2-b19").
 - Versão nova publicada: com o loop parado, aparece no botão da roda
   "Nova versão. Toque para atualizar." Tocar salva e atualiza. O app nunca
   recarrega sozinho.
-- Na primeira vez no aparelho, o Grão abre com uma bola quicando e 3 dicas no
-  papel. Cada dica some quando você faz o que ela diz.
+- Na primeira vez no aparelho, o Grão abre com uma bola quicando. As 3 dicas no
+  papel aparecem uma vez por aparelho (em qualquer projeto) e cada uma some quando
+  você faz o que ela diz. Para ver de novo: Menu > Gestos > Mostrar as dicas de novo.
 - No PC: servir a pasta com o Live Server (Go Live) e abrir http://localhost:5500.
 - Se algo der errado, uma caixa vermelha aparece embaixo com o erro: mande print.
 
@@ -59,7 +60,9 @@ Caneta
   endireita ("Linha") e a ponta segue a caneta até você soltar.
 
 Dedos no papel
-- 1 dedo NUNCA desenha (proteção contra a palma). Tocar o papel recolhe a roda.
+- 1 dedo não desenha (proteção contra a palma). Tocar o papel recolhe a roda.
+- SEM CANETA? Menu > Desenhar com o dedo: o dedo desenha como a caneta, sem
+  sensibilidade. Um segundo dedo apaga o risco que começou e vira gesto.
 - Toque rápido com 2 dedos: Desfazer.
 - Arrastar 2 dedos para os lados (papel inteiro na tela): anda no tempo, frame a
   frame (direita = para frente). Uma régua de frames aparece embaixo.
@@ -84,10 +87,12 @@ Recolhida: um botão redondo no canto inferior esquerdo (direito no Canhoto).
 Roda aberta, de dentro para fora:
 - CENTRO: toca / pausa. Leituras rápidas aparecem aqui ("3/8", "1,5×").
 - 6 BOTÕES: Desfazer, Refazer, Ferramenta, Menu, Tempo, Camadas.
-- PRATO DO TEMPO: encostar congela o loop; girar 30° anda 1 frame.
+- PRATO DO TEMPO: encostar congela o loop; girar 30° anda 1 frame. A marca no
+  alto do anel é o frame 1.
 - ARCO DE VELOCIDADE: de −2× a 2× (encaixa em 1× e 0×; toque duplo = 1×).
 - Desfazer abre o MODO HISTÓRICO por 3 s: girar o prato desfaz/refaz.
 - A roda recolhe sozinha quando você desenha, a não ser com "Fixar roda".
+- Uma janela por vez: abrir uma pétala fecha o Menu ou a folha Tempo.
 
 Pétalas: escolha tocando duas vezes, ou encostando no botão, arrastando até a
 pastilha e soltando em cima dela.
@@ -106,7 +111,8 @@ Arco de fora, MEXER:
   camadas também seguram o balde (linha em Preto, miolo em Rosa). Falhas pequenas
   na linha não vazam. Em cima da linha: "Nada para pintar".
 - Laço: contorne para selecionar (traços e baldes).
-Por fora, o arco de TAMANHO (cada ferramenta lembra o seu).
+Por fora, o arco de TAMANHO, de 2 a 200 (mais fino nos tamanhos pequenos; cada
+ferramenta lembra o seu).
 
 
 6. CAMADAS E TINTAS (pétala Camadas)
@@ -116,7 +122,8 @@ Por fora, o arco de TAMANHO (cada ferramenta lembra o seu).
   "+" cria uma camada (até 8).
 - Arco de fora: as 9 cores da paleta, para trocar a cor da tinta da camada ativa
   (a tinta é um tambor: muda para todas as camadas que usam ela).
-- TOQUE LONGO numa camada abre a FOLHA DA CAMADA:
+- AJUSTES DA CAMADA (tocar de novo na camada ativa, tocar em "Ajustes" ou toque
+  longo numa camada) abre a FOLHA DA CAMADA:
     · Tinta: qual dos 4 tambores ela usa, e a cor desse tambor.
     · Retícula: Estocástica (o grão) ou Reticulada (pontos em grade, ângulo por
       tinta); Densidade de 5% a 100%; na Reticulada, ponto Redondo, Linha ou Elipse.
@@ -155,8 +162,8 @@ Por fora, o arco de TAMANHO (cada ferramenta lembra o seu).
   Projetos, Novo projeto, Exportar…
 - Impressão: Papel, Grão, Desalinhamento (até 3 mm), Ferver, Lineatura (40/60/85),
   Trapping, Marcas de rolo, Transferência, Prova de impressão, Tintas prontas.
-- Desenho e roda: Suavizar traço, Auto, Cebola, Fixar roda, Canhoto, Qualidade
-  automática, Teste da Fase 0, Gestos, Encaixar papel (100%).
+- Desenho e roda: Suavizar traço, Auto, Cebola, Fixar roda, Canhoto, Desenhar com
+  o dedo, Qualidade automática, Teste da Fase 0, Gestos, Encaixar papel (100%).
 
 
 10. IMPRESSÃO

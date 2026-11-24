@@ -72,7 +72,7 @@ export const inkOf = (project, layer) => INKS[project.inks[layer.ink]] || INKS[0
 
 // Ferramentas com tamanho próprio (unidades do documento) e o intervalo do arco de Tamanho.
 export const DEFAULT_SIZES = { brush: 10, pencil: 6, marker: 16, chalk: 14, eraser: 20 };
-export const SIZE_MIN = 2, SIZE_MAX = 40;
+export const SIZE_MIN = 2, SIZE_MAX = 200;   // até 200 (pedido do Raphael, 24/11); o arco é mais fino nos pequenos
 const INK_BRUSHES = ['pencil', 'marker', 'chalk'];
 
 export function newProject(paper = 'natural') {
@@ -98,6 +98,7 @@ export function newProject(paper = 'natural') {
       onion: { before: 1, after: 1, strength: 0.4 },   // papel-cebola: frames antes/depois (0–2), intensidade (#040)
       flaws: { rollers: false, transfer: false },        // imperfeições opcionais: marcas de rolo, transferência (#053)
       autoQuality: true,                                  // qualidade automática do compositor (#060)
+      fingerDraw: false,                                  // desenhar com o dedo (sem caneta), opção do Menu
     },
   };
   for (let d = 0; d < DRUMS; d++) p.layers.push(newLayer(p, d));
@@ -249,7 +250,7 @@ export function sanitize(p) {
     set.sizes[k] = Math.round(num(sz[k], SIZE_MIN, SIZE_MAX, num(set.sizes[k], SIZE_MIN, SIZE_MAX, DEFAULT_SIZES[k])));
   }
   set.smooth = num(s.smooth, 0, 1, 0);
-  for (const k of ['ferver', 'auto', 'lefty', 'pinWheel', 'trapping', 'autoQuality']) if (typeof s[k] === 'boolean') set[k] = s[k];
+  for (const k of ['ferver', 'auto', 'lefty', 'pinWheel', 'trapping', 'autoQuality', 'fingerDraw']) if (typeof s[k] === 'boolean') set[k] = s[k];
   set.wheelCorner = ['bl', 'br', 'tl', 'tr'].includes(s.wheelCorner) ? s.wheelCorner : null;
   set.lpi = LPI_OPTIONS.includes(s.lpi) ? s.lpi : 60;
   set.autoDir = s.autoDir === 'back' ? 'back' : 'forward';
