@@ -35,7 +35,8 @@ export function setupDebug(app, box) {
       `inclinação: x ${p.tiltX ?? '—'}  y ${p.tiltY ?? '—'}`,
       `pontos por evento: ${p.coalesced ?? '—'}`,
       `qualidade do riso: ${String(app.quality?.scale ?? 1).replace('.', ',')}× (automática: ${app.project.settings.autoQuality === false ? 'não' : 'sim'})`,
-      `toques ignorados (palma): ${app.input?.gestures?.stats.ignored ?? 0}`,
+      `versão: ${app.version}-${app.build || ''}`,
+      `toques ignorados (palma): ${app.input?.gestures?.stats.ignored ?? 0}  último motivo: ${app.input?.gestures?.stats.lastReason || '—'}`,
       `último toque: ${app.input?.gestures?.stats.lastW ?? '—'} × ${app.input?.gestures?.stats.lastH ?? '—'} px`,
     ].join('\n');
   }

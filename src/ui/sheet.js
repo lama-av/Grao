@@ -86,13 +86,13 @@ export function setupSheet(app) {
         <label>Intensidade do papel-cebola <input type="range" data-k="onionStrength" min="0.1" max="0.8" step="0.05"></label>
         <label class="check"><input type="checkbox" data-k="pinWheel"> Fixar roda</label>
         <label class="check"><input type="checkbox" data-k="lefty"> Canhoto</label>
-        <label class="check"><input type="checkbox" data-k="fingerDraw"> Desenhar com o dedo (sem sensibilidade)</label>
         <label class="check"><input type="checkbox" data-k="autoQuality"> Qualidade automática (se o tablet engasgar)</label>
         <label class="check"><input type="checkbox" data-k="debug"> Teste da Fase 0</label>
         <button class="btn small" data-act="gestures">Gestos</button>
         <button class="btn small" data-act="fit"${app.view && !isFit(app.view) ? '' : ' disabled'}>Encaixar papel (100%)</button>
       </div>
-      <div class="version">Grão ${app.version}</div>`;
+      ${app.updateReady ? '<button class="btn small" data-act="update">Atualizar agora (versão nova pronta)</button>' : ''}
+      <div class="version">Grão ${app.version}-${app.build || ''}</div>`;
     const q = (k) => el.querySelector(`[data-k="${k}"]`);
     const act = (a) => el.querySelector(`[data-act="${a}"]`);
     const paper = q('paper');
@@ -103,8 +103,6 @@ export function setupSheet(app) {
     q('mis').value = s.mis;
     q('smooth').value = s.smooth || 0;
     for (const k of ['ferver', 'auto', 'pinWheel', 'lefty', 'trapping', 'autoStop']) q(k).checked = !!s[k];
-    q('fingerDraw').checked = s.fingerDraw === true;
-    q('fingerDraw').onchange = (e) => { s.fingerDraw = e.target.checked; app.requestSave(); };
     q('autoQuality').checked = s.autoQuality !== false;
     q('autoQuality').onchange = (e) => { s.autoQuality = e.target.checked; app.requestSave(); };
     q('autoBack').checked = s.autoDir === 'back';
@@ -175,6 +173,7 @@ export function setupSheet(app) {
       if (ok) { app.replaceProject(p); app.toast('Projeto aberto'); }
     };
     act('gallery').onclick = () => open('gallery');
+    el.querySelector('[data-act="update"]')?.addEventListener('click', () => app.applyUpdate?.());
     act('export').onclick = () => open('export');
     act('gestures').onclick = () => open('gestures');
     act('fit').onclick = () => { fitView(app.view); app.input?.redrawOverlay(); close(); };

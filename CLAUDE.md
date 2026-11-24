@@ -17,6 +17,7 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
+- **1.0.0-rc.3 (24/11/2026):** palma só com a caneta encostada; dedo e caneta juntos; aviso de versão sempre visível.
 - **1.0.0-rc.2 (24/11/2026):** correções do 1º teste da rc.1 (gestos, dicas, retícula, janelas, anel, tamanho 200, dedo).
 - **1.0.0-rc.1 (24/11/2026):** candidata a 1.0 — todos os recursos do roteiro; falta o teste no tablet.
   Relatório: `docs/relatorio-v1.0.md`; lista de testes: `docs/15-lista-de-testes.md`.
@@ -123,9 +124,9 @@ Regras de fluxo:
 ## Decisões que não devem ser desfeitas sem conversa
 
 1. **Um gesto, uma função.** Nenhum gesto muda de função conforme um estado escondido.
-2. **Nada de 3 dedos nem toque duplo no canvas** (a palma dispara toques falsos). Toque de 1 dedo não desenha,
-   **exceto** com a opção "Desenhar com o dedo" (Menu, desligada por padrão; pedido do Raphael em 24/11): o dedo
-   desenha sem pressão e um segundo dedo descarta o risco e vira gesto.
+2. **Nada de 3 dedos nem toque duplo no canvas** (a palma dispara toques falsos). **Dedo e caneta juntos** (pedido do
+   Raphael, 24/11): o dedo desenha sem pressão quando a caneta não está perto; com a caneta pairando, o dedo só faz
+   gesto; com a caneta encostada (ou até 300 ms depois), o toque é palma e é ignorado. Segundo dedo descarta o risco.
 3. **O papel é a tela inteira; a interface é uma roda de canto que se recolhe** (a partir da v0.2). A caneta
    desenha e faz laço; o tempo fica na roda, no canto da mão livre. A roda é desenhada no canvas `#ui`, por baixo
    do traço molhado, nunca em DOM por cima dele.
@@ -140,8 +141,8 @@ Regras de fluxo:
 9. **Desfazer abre a roda de histórico por 3 s.** Leituras ficam no centro da roda.
 10. **Gestos de 2 dedos (ADR-003), decididos uma vez por gesto:** sobre a seleção (caixa + 80 px) = transformar;
     toque rápido = desfazer; pinça = zoom; arrastar com o papel em 100% = tempo (48 px = 1 frame); arrastar com
-    zoom = mover o papel. Toques com a caneta perto da tela (até 300 ms) ou largos demais são palma: ignorados
-    (menos na roda).
+    zoom = mover o papel. Toques com a caneta encostada (ou até 300 ms depois) ou largos demais (> 120 px) são
+    palma: ignorados (menos na roda). Caneta pairando não bloqueia gesto (rc.3).
 11. **Grão / Palco / Prensa são produtos separados.** MIDI (clock na 1.1), modo ao vivo e impressão não entram no Grão v0.1.
 12. **Retícula é por camada:** estocástica (padrão, o grão) ou reticulada (pontos em grade, ângulo por tinta),
     com densidade. É aplicada no compositor; os traços não guardam retícula.

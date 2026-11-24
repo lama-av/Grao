@@ -107,8 +107,10 @@ function tap(wet, x, y, type = 'touch') { const p = pointer(wet, type); p.down(x
   const { app, wet } = makeApp();
   stroke(wet, 300, 200);
   check('caneta desenha um traço', all(app).length === 1 && all(app)[0].kind === 'ink');
+  wet.autoPenAway = false;                          // a caneta acabou de levantar (< 300 ms): o dedo é palma
   stroke(wet, 500, 300, 10, 'touch');
-  check('1 dedo não desenha', all(app).length === 1);
+  check('dedo logo depois da caneta não desenha (palma)', all(app).length === 1);
+  wet.autoPenAway = true;
 }
 
 // ---------- botão lateral 1: alterna Pincel / Borracha ----------
@@ -756,7 +758,10 @@ for (const code of [4]) {
   check('palma: depois de 300 ms vale', types(out) === '' && !g.active);
   check('palma: toque ignorado continua ignorado (não forma gesto com o novo)', !g.active);
   g = G(); g.penEvent(0, false);                                                   // pairando
-  check('palma: caneta pairando ignora toques', types(g.down({ id: 1, x: 1, y: 1, t: 500 }, {})) === 'ignored');
+  check('caneta pairando NÃO ignora toques (gesto vale)', types(g.down({ id: 1, x: 1, y: 1, t: 500 }, {})) === '' && g.penNear(500));
+  check('caneta longe: penNear desliga depois de 1 s sem eventos', !g.penNear(1600));
+  g = G(); g.penEvent(0, true); g.penEvent(100, false);                           // levantou em t=100
+  check('logo depois de levantar a caneta (< 300 ms) o toque é palma', types(g.down({ id: 1, x: 1, y: 1, t: 300 }, {})) === 'ignored' && g.stats.lastReason === 'caneta acabou de sair');
   g = G();
   check('palma: contato largo (> 120 px) é ignorado', types(g.down({ id: 1, x: 1, y: 1, t: 0, w: 150, h: 60 }, {})) === 'ignored');
   check('palma: conta os ignorados para o painel', g.stats.ignored === 1 && g.stats.lastW === 150);
@@ -1250,14 +1255,16 @@ for (const code of [4]) {
   check('tamanho 180 salva e abre', san(big).settings.sizes.marker === 180);
 }
 {
-  // desenhar com o dedo (opção)
+  // dedo e caneta juntos (rc.3): dedo desenha com a caneta longe; com a caneta pairando, só gesto
   const { app, wet } = makeApp();
-  stroke(wet, 300, 300, 10, 'touch');
-  check('sem a opção, 1 dedo não desenha', all(app).length === 0);
-  app.project.settings.fingerDraw = true;
+  app.input.gestures.penEvent(performance.now(), false);                           // caneta pairando
+  wet.autoPenAway = false;
+  const h = pointer(wet, 'touch'); h.down(300, 300); for (let i = 1; i <= 10; i++) h.move(300 + i * 10, 300); h.up(400, 300);
+  check('caneta pairando perto: 1 dedo não risca (seria a palma)', all(app).length === 0);
+  wet.autoPenAway = true;
   stroke(wet, 300, 300, 10, 'touch');
   const s1 = all(app)[0];
-  check('com "Desenhar com o dedo", o dedo desenha sem sensibilidade (pressão fixa)', s1 && s1.pts.length > 9 && s1.pts.every((v, i) => i % 3 !== 2 || v === 0.6));
+  check('caneta longe: o dedo desenha sem sensibilidade (pressão fixa), sem opção nenhuma', s1 && s1.pts.length > 9 && s1.pts.every((v, i) => i % 3 !== 2 || v === 0.6));
   // segundo dedo: o risco do primeiro some e vira gesto (toque rápido = desfazer)
   const a = pointer(wet, 'touch'), b = pointer(wet, 'touch');
   a.down(500, 400); a.move(505, 401); b.down(800, 400); a.up(505, 401); b.up(800, 400);
@@ -1274,7 +1281,7 @@ for (const code of [4]) {
   c.down(320, 310); d.down(400, 320);
   for (let i = 1; i <= 10; i++) { c.move(320 + i * 8, 310); d.move(400 + i * 8, 320); }
   c.up(400, 310); d.up(480, 320);
-  check('com o dedo desenhando ligado, 2 dedos sobre a seleção ainda movem a seleção', all(app).length === 1 && all(app)[0].pts[0] !== x0);
+  check('com o dedo desenhando, 2 dedos sobre a seleção ainda movem a seleção', all(app).length === 1 && all(app)[0].pts[0] !== x0);
   // primeiro dedo perto da seleção (na folga de 80 px, fora da caixa): não risca nem solta a seleção
   const x1 = all(app)[0].pts[0];
   const e1 = pointer(wet, 'touch'), e2 = pointer(wet, 'touch');

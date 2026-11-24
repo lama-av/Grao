@@ -92,6 +92,13 @@ parte do uso. A pinça que encaixa em 100% (#019) faz a volta ao modo de tempo c
   - se o filtro de palma bloqueia toques legítimos da mão livre na roda (a roda **não** passa pelo filtro de
     tempo da caneta: tocar a roda com a caneta perto continua valendo).
 
+## Revisão após o teste no tablet (24/11, rc.2 e rc.3)
+
+- **40 px de contato era pouco:** a ponta do dedo no XPPen dá de 30 a 80 px. Limite agora 120 px.
+- **"Pairando" bloqueava tudo:** a X3 Pro Slim manda eventos de pairar a vários centímetros da tela; com a caneta na
+  mão, todo toque virava palma. Agora a caneta pairando **não** ignora toques; só impede o dedo de riscar (o dedo
+  passou a desenhar quando a caneta está longe). Palma = caneta encostada ou até 300 ms depois de levantar.
+
 ## Itens de ação
 
 1. [ ] `src/input/gestures.js` com a máquina e os limites em `config.js` (#022).

@@ -54,7 +54,7 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 > **Novo roteiro até a v1.0** (decidido no chat em 24/11, conselho de design): `docs/13-conselho-v0.3.md`.
 > Ele substitui a ordem de versões do doc 10. Arquitetura dos gestos: `docs/adr/ADR-003-gestos-de-dois-dedos.md`.
 >
-> **Estado (24/11, fim do dia):** **1.0.0-rc.2 publicada** (pedidos #022–#065 feitos; o #065 corrige o 1º teste da rc.1). Nada testado no tablet desde
+> **Estado (24/11, fim do dia):** **1.0.0-rc.3 publicada** (pedidos #022–#066; #065 e #066 corrigem os testes no tablet). Nada testado no tablet desde
 > a 0.2.0. Próximo passo: o Raphael passa pela lista `docs/15-lista-de-testes.md` e leva o resultado ao chat.
 >
 > **Atualização (24/11, Raphael no VS Code):** "execute os pedidos até a versão 1.0, sem pausas". A v0.4 foi feita
@@ -605,6 +605,22 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
     perto da seleção o primeiro dedo espera. Muda a decisão 2 do `CLAUDE.md` (exceção por opção).
   - **Testar no tablet:** 2 dedos (desfazer, tempo, zoom, girar seleção) com e sem a caneta por perto; dicas; folha
     da camada pela pastilha Ajustes; abrir Menu e depois Ferramenta; tamanho 200; Desenhar com o dedo.
+
+### #066 — Toques ainda viram palma; dedo e caneta juntos
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 1.0.0-rc.3 · **Origem:** 2º teste do Raphael (24/11)
+- **O que o Raphael viu:** toque de dedo de 30 a 80 px, todos contados como palma; não achou "Desenhar com o dedo";
+  pediu que não houvesse opção: dedo e caneta usáveis alternadamente.
+- **Resposta do VS Code (build b20):**
+  - Causa: o filtro do ADR-003 ignorava toques com a caneta **pairando** (eventos de caneta há menos de 1 s). A X3
+    Pro Slim manda eventos de pairar a vários cm da tela; com a caneta na mão, todo dedo virava palma. **Mudança no
+    ADR-003:** palma = caneta encostada, até 300 ms depois de levantar, ou contato > 120 px. Pairando não bloqueia.
+  - "Desenhar com o dedo" não aparecia porque o tablet ainda rodava a rc.1 guardada (o aviso de versão nova só
+    aparecia com o loop parado). Agora o aviso aparece sempre (roda recolhida), e o Menu tem **Atualizar agora**.
+  - Dedo e caneta juntos, sem opção: dedo desenha (pressão fixa) com a caneta longe; com a caneta pairando, o dedo só
+    faz gesto; segundo dedo descarta o risco do primeiro. Decisão 2 do `CLAUDE.md` atualizada.
+  - Painel: versão e motivo do último toque ignorado.
+  - **Testar no tablet:** confirmar `1.0.0-rc.3-b20`; 2 dedos com a caneta na mão; desenhar com o dedo com a caneta
+    deitada na mesa; palma apoiada desenhando com a caneta (não risca, não vira gesto); ver o motivo no painel.
 
 ### Pedidos já feitos (v0.2.0 a v0.3.1)
 

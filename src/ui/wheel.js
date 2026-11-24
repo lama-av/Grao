@@ -175,7 +175,7 @@ export function setupWheel(app, canvas) {
   // Aviso de versão nova (#035): só com o loop parado e a roda recolhida; tocar atualiza.
   const UPDATE_TEXT = 'Nova versão. Toque para atualizar.';
   function updateRect() {
-    if (!app.updateReady || !app.clock.paused || open || dragPos) return null;
+    if (!app.updateReady || open || dragPos) return null;   // rc.3: sempre visível (só com loop parado ninguém via)
     const c = btnCenter(), dir = BASE[corner()] * RAD;
     const x = c.x + Math.cos(dir) * 70, y = c.y + Math.sin(dir) * 70 + (corner()[0] === 'b' ? -46 : 46);
     ctx.font = '600 13px system-ui, sans-serif';

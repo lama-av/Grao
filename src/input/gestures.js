@@ -7,9 +7,12 @@
 //  filtrada)  de mov.)   └─ andaram juntos: papel em 100% e mais na horizontal → TEMPO ('time')
 //                                           com zoom (ou na vertical) ─────────→ PAPEL
 //
-// Filtro de palma (antes de tudo): toque que começa com a caneta encostada, pairando ou saída há menos de
-// PEN_GUARD_MS é ignorado; toque com área de contato maior que PALM_CONTACT_PX também. Ignorado fica ignorado até
+// Filtro de palma (antes de tudo): toque que começa com a caneta ENCOSTADA ou até PEN_GUARD_MS depois de ela
+// levantar é ignorado; toque com área de contato maior que PALM_CONTACT_PX também. Ignorado fica ignorado até
 // sair. (A roda não passa por aqui: o input.js entrega à roda antes.)
+// rc.3 (teste do Raphael, 24/11): a caneta PAIRANDO não bloqueia mais os toques. Com a caneta na mão, ela fica
+// a poucos cm da tela e manda eventos o tempo todo; todo dedo virava "palma". Pairando, o input.js só impede o
+// dedo de RISCAR (penNear), e os gestos de 2 dedos funcionam.
 //
 // Ações devolvidas (listas): {type:'ignored'} · {type:'xf-begin', start} · {type:'xf', start, now} ·
 // {type:'pan-begin', start} · {type:'pan', start, now} · {type:'time-begin'} · {type:'scrub', frames} ·
@@ -30,17 +33,23 @@ export function createGestures(cfg = {}) {
   const touches = new Map();          // id -> { x, y, x0, y0, ignored }
   let g = null;                       // gesto em andamento
   const pen = { contact: false, hover: false, last: -Infinity };
-  const stats = { ignored: 0, lastW: null, lastH: null };
+  const stats = { ignored: 0, lastW: null, lastH: null, lastReason: '' };
 
   // ---------- caneta (para o filtro de palma) ----------
-  function penEvent(t, contact) { pen.contact = contact; pen.hover = !contact; pen.last = t; }
-  function penGone(t) { pen.contact = false; pen.hover = false; pen.last = t; }
-  function isPalm(t, w, h) {
-    if (pen.contact) return true;
-    if (t - pen.last < C.penGuardMs) return true;
-    if (pen.hover && t - pen.last < HOVER_STALE_MS) return true;
-    return (w > C.palmPx) || (h > C.palmPx);
+  function penEvent(t, contact) {
+    if (pen.contact && !contact) pen.lifted = t;          // acabou de levantar: guarda de PEN_GUARD_MS
+    pen.contact = contact; pen.hover = !contact; pen.last = t;
   }
+  function penGone(t) { pen.contact = false; pen.hover = false; pen.last = t; pen.lifted = Math.min(pen.lifted ?? t, t); }
+  // Motivo para ignorar o toque ('' = vale).
+  function palmReason(t, w, h) {
+    if (pen.contact) return 'caneta encostada';
+    if (t - (pen.lifted ?? -Infinity) < C.penGuardMs || (!pen.hover && t - pen.last < C.penGuardMs)) return 'caneta acabou de sair';
+    if ((w > C.palmPx) || (h > C.palmPx)) return 'contato largo';
+    return '';
+  }
+  // Caneta pairando perto da tela (mandou evento há pouco): o dedo não risca, mas gesto vale.
+  const penNear = (t) => pen.contact || (pen.hover && t - pen.last < HOVER_STALE_MS) || t - pen.last < C.penGuardMs;
 
   const pos = (id) => { const p = touches.get(id); return { x: p.x, y: p.y }; };
   const pair = () => ({ a: pos(g.a), b: pos(g.b) });
@@ -50,9 +59,11 @@ export function createGestures(cfg = {}) {
   // ---------- toques ----------
   function down(tc, ctx = {}) {
     stats.lastW = tc.w ?? null; stats.lastH = tc.h ?? null;
-    if (isPalm(tc.t, tc.w || 0, tc.h || 0)) {
+    const why = palmReason(tc.t, tc.w || 0, tc.h || 0);
+    if (why) {
       touches.set(tc.id, { x: tc.x, y: tc.y, x0: tc.x, y0: tc.y, ignored: true });
       stats.ignored++;
+      stats.lastReason = why;
       return [{ type: 'ignored' }];
     }
     touches.set(tc.id, { x: tc.x, y: tc.y, x0: tc.x, y0: tc.y, ignored: false });
@@ -131,7 +142,7 @@ export function createGestures(cfg = {}) {
   }
 
   return {
-    down, move, up, penEvent, penGone, stats,
+    down, move, up, penEvent, penGone, stats, penNear,
     get intent() { return g?.intent ?? null; },
     get active() { return !!g; },
   };

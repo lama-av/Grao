@@ -37,6 +37,7 @@ async function start() {
 
   const app = {
     version: VERSION,
+    build: BUILD,
     project: null,
     clock: new Clock(),
     selection: null,

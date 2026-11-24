@@ -181,8 +181,8 @@ Rodapé: "A palma apoiada é ignorada enquanto a caneta está perto da tela."
 | Projeto apagado | Projeto apagado |
 | Exportação | PNGs exportados. Procure em Downloads. (antes: "PNGs exportado") |
 | Pétala Camadas | Ajustes (abre a folha da camada ativa) |
-| Menu: dedo | Desenhar com o dedo (sem sensibilidade) |
-| Aviso: sem caneta | Sem caneta? Menu → Desenhar com o dedo. |
+| Menu: atualizar | Atualizar agora (versão nova pronta) |
+| Painel: palma | toques ignorados (palma): 3 · último motivo: caneta encostada / caneta acabou de sair / contato largo |
 | Folha Gestos | Mostrar as dicas de novo |
 
 **Revisão de 24/11 (#056):** todos os avisos e leituras do código foram conferidos com este documento. Nenhum tem

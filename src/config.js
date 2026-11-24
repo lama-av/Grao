@@ -1,8 +1,8 @@
 // Constantes do Grão.
 // Documento em unidades fixas (3:2, como a tela do tablet); máscaras em 80% disso.
 
-export const VERSION = '1.0.0-rc.2';
-export const BUILD = 'b19';                // muda a cada publicação: mostra no tablet se a versão nova chegou
+export const VERSION = '1.0.0-rc.3';
+export const BUILD = 'b20';                // muda a cada publicação: mostra no tablet se a versão nova chegou
 export const DOC_W = 1200;
 export const DOC_H = 800;
 export const MASK_SCALE = 0.8;            // máscara = 960 × 640, 1 canal

@@ -453,26 +453,25 @@ export function setupInput(app, wetCanvas) {
     };
   }
 
-  // Desenhar com o dedo (opção do Menu, desligada por padrão; decisão 2 do CLAUDE.md com exceção aprovada pelo
-  // Raphael em 24/11): o primeiro dedo usa a ferramenta como a caneta, sem pressão. Se um segundo dedo encostar,
-  // o risco do primeiro é descartado e os dois viram gesto (zoom, tempo, desfazer, transformar).
+  // Dedo e caneta juntos (rc.3, pedido do Raphael): o dedo desenha como a caneta, sem pressão, quando a caneta
+  // não está perto da tela. Caneta encostada (ou até 300 ms depois) = palma, ignorada; caneta pairando = o dedo não
+  // risca (seria a palma), mas os gestos de 2 dedos valem. Um segundo dedo descarta o risco do primeiro e vira gesto.
   let fingerId = null;
-  let lone = null, fingerTries = 0, penEverSeen = false;
-  const fingerDraw = () => app.project.settings.fingerDraw === true;
+  let penEverSeen = false;
 
   function touchDown(e) {
     capture(wetCanvas, e);
+    const now = performance.now();
     const acts = gestures.down(touchOf(e), gestureCtx());
     const ignored = acts.some((a) => a.type === 'ignored');
     if (fingerId !== null && gestures.active) {
       finishPen(null, true);                  // segundo dedo: o risco do primeiro some e vira gesto
       fingerId = null;
-    } else if (fingerDraw() && !ignored && !gestures.active && fingerId === null && !mode && !nearSelection(e)) {
+    } else if (!ignored && !gestures.active && fingerId === null && !mode && !gestures.penNear(now) && !nearSelection(e)) {
       fingerId = e.pointerId;
       startTool(e);
       if (!mode) fingerId = null;             // camada travada
     }
-    lone = !gestures.active && !ignored ? { id: e.pointerId, x: e.clientX, y: e.clientY } : null;
     run(acts);
   }
   // Perto da seleção (caixa + 80 px), o primeiro dedo espera: pode ser o começo de "2 dedos transformam".
@@ -488,11 +487,6 @@ export function setupInput(app, wetCanvas) {
   }
   function touchUp(e, cancelled) {
     if (fingerId === e.pointerId) { fingerId = null; finishPen(e, !!cancelled); }
-    else if (lone && lone.id === e.pointerId && !fingerDraw() && !penEverSeen && !cancelled &&
-             Math.hypot(e.clientX - lone.x, e.clientY - lone.y) > 40 && ++fingerTries === 2) {
-      app.toast('Sem caneta? Menu → Desenhar com o dedo.');   // tentou riscar com o dedo duas vezes
-    }
-    if (lone?.id === e.pointerId) lone = null;
     run(gestures.up(e.pointerId, performance.now(), cancelled));
   }
 

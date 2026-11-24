@@ -4,6 +4,26 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [1.0.0-rc.3] — 2026-11-24
+
+Segundo teste do Raphael no tablet (pedido #066): os toques continuavam todos "palma" (de 30 a 80 px de contato),
+e a opção "Desenhar com o dedo" não aparecia no Menu.
+
+### Corrigido
+- **Todo toque virava palma:** o filtro ignorava os dedos sempre que a caneta estava **pairando** perto da tela. Com a
+  caneta na mão de desenho, ela fica a poucos centímetros e manda sinal o tempo todo. Agora só é palma o toque com a
+  caneta **encostada**, até 0,3 s depois de ela levantar, ou com contato maior que 120 px.
+- **A versão nova não chegava ao tablet:** o aviso "Nova versão. Toque para atualizar." só aparecia com o loop parado.
+  Agora aparece sempre que a roda está recolhida, e o Menu ganhou **Atualizar agora**. Menu e painel mostram a build.
+
+### Mudado
+- **Dedo e caneta juntos, sem opção** (pedido do Raphael): o dedo desenha como a caneta (sem sensibilidade) quando a
+  caneta não está perto. Com a caneta pairando, o dedo não risca (para a palma não desenhar), mas os gestos de 2
+  dedos funcionam. Um segundo dedo descarta o risco do primeiro e vira gesto. A opção "Desenhar com o dedo" saiu.
+- Painel Teste da Fase 0: versão e **motivo do último toque ignorado** (caneta encostada, caneta acabou de sair,
+  contato largo).
+- Teste de lógica: 279 verificações.
+
 ## [1.0.0-rc.2] — 2026-11-24
 
 Correções do primeiro teste do Raphael no tablet com a rc.1 (pedido #065).
