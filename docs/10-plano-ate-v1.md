@@ -150,6 +150,8 @@ Objetivo: estabilidade.
 - ⏸ Auditoria de lançamento.
 
 ### v1.0 — Lançamento
+> **1.0.0-rc.1 publicada em 24/11/2026** (todos os recursos). Situação de cada critério: `relatorio-v1.0.md`, seção 8.
+
 Critérios para chamar de v1.0:
 - Todas as metas de desempenho do `CLAUDE.md` cumpridas no tablet.
 - Nenhum bug P1 ou P2 aberto.

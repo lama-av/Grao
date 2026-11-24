@@ -54,6 +54,9 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 > **Novo roteiro até a v1.0** (decidido no chat em 24/11, conselho de design): `docs/13-conselho-v0.3.md`.
 > Ele substitui a ordem de versões do doc 10. Arquitetura dos gestos: `docs/adr/ADR-003-gestos-de-dois-dedos.md`.
 >
+> **Estado (24/11, fim do dia):** **1.0.0-rc.1 publicada** (pedidos #022–#064 feitos). Nada testado no tablet desde
+> a 0.2.0. Próximo passo: o Raphael passa pela lista `docs/15-lista-de-testes.md` e leva o resultado ao chat.
+>
 > **Atualização (24/11, Raphael no VS Code):** "execute os pedidos até a versão 1.0, sem pausas". A v0.4 foi feita
 > logo depois da 0.3.2, sem a auditoria; da 0.5 em diante os pedidos foram escritos pelo VS Code a partir do roteiro
 > (doc 13) e estão abaixo, já com resposta. Relatório geral: `docs/relatorio-v1.0.md`.
@@ -576,6 +579,14 @@ Copie o modelo, dê o próximo número e coloque em **Fila**. Um pedido = uma mu
 
 ### #063 — Fechar a 0.9.0
 - **Status:** Feito · **Resposta do VS Code:** `VERSION` 0.9.0 (b17), CHANGELOG, docx; 265 verificações.
+
+### #064 — Candidata a 1.0 (1.0.0-rc.1)
+- **Status:** Feito · **Prioridade:** P1 · **Versão alvo:** 1.0.0-rc.1 · **Origem:** doc 10 (critérios da 1.0)
+- **Resposta do VS Code:** `VERSION` 1.0.0-rc.1 (b18), README e INSTRUCOES reescritos, créditos conferidos,
+  `docs/relatorio-v1.0.md` (relatório detalhado) e `docs/15-lista-de-testes.md` (lista de testes), docx.
+  **Por que "candidata":** os critérios da 1.0 pedem as metas de desempenho medidas no tablet, nenhum P1/P2 aberto e
+  o teste com 3 pessoas; nada disso dá para verificar no PC. Passando pela lista de testes sem P1/P2, a versão sobe
+  para 1.0.0 sem mudança de código.
 
 ### Pedidos já feitos (v0.2.0 a v0.3.1)
 

@@ -1,108 +1,77 @@
 # Grão
 
-Caderno de animação em loop com tinta riso, feito para desenhar com caneta num tablet Android.
-Você desenha dentro de um loop que nunca para; o grão da impressão ferve no ritmo da animação.
+**Caderno de animação em loop com cara de impressão risográfica**, feito para desenhar com caneta num tablet
+Android. Você desenha dentro de um loop que nunca para; o grão da impressão ferve no ritmo da animação.
 
-> **Status:** v0.1.0 — primeira build, em teste no tablet (Fase 0). Plataforma proposta no [ADR-001](docs/adr/ADR-001-plataforma-v0.1.md): app web (PWA) no Chrome do tablet.
-> Partes marcadas como *(planejado)* ainda não existem no código.
+> **Versão:** `1.0.0-rc.1`, candidata a 1.0 (24/11/2026). Todos os recursos do plano até a 1.0 estão no app;
+> **falta o teste no tablet** para virar 1.0.0. Relatório: [docs/relatorio-v1.0.md](docs/relatorio-v1.0.md) ·
+> Lista de testes: [docs/15-lista-de-testes.md](docs/15-lista-de-testes.md).
 
-## Abrir no tablet (online)
+## Abrir
 
 | | Link |
 | --- | --- |
-| **App** | https://lama-av.github.io/Grao/ |
-| Teste da Fase 0 (caneta, palma, latência) | https://lama-av.github.io/Grao/teste-caneta.html |
+| **App** (Chrome do tablet; "Adicionar à tela inicial" para instalar e usar sem internet) | https://lama-av.github.io/Grao/ |
+| **Como usar** | [INSTRUCOES.txt](INSTRUCOES.txt) |
+| Lista de testes no tablet | [docs/15-lista-de-testes.md](docs/15-lista-de-testes.md) |
+| Teste da caneta (Fase 0: botões, palma, latência) | https://lama-av.github.io/Grao/teste-caneta.html |
 | Diagnóstico do WebGL | https://lama-av.github.io/Grao/diag.html |
-| Instruções de uso | https://github.com/lama-av/Grao/blob/main/INSTRUCOES.txt |
-| App com baixa latência ligada (fica preto no Android) | https://lama-av.github.io/Grao/?baixa=1 |
-
-Cada envio para o GitHub atualiza o site em cerca de 1 minuto. O Chrome pode mostrar a versão antiga por até
-10 minutos; o aviso ao abrir o app mostra a versão (ex.: `0.1.0-b6`).
-
-## Como rodar no tablet (rede local, para desenvolvimento)
-
-1. Abra a pasta no VS Code e clique em **Go Live** (extensão Live Server).
-2. No PC, veja o IP na rede (`ipconfig`, linha IPv4), por exemplo `192.168.0.10`.
-3. No tablet, na mesma rede Wi-Fi, abra no Chrome: `http://192.168.0.10:5500`.
-4. Menu do Chrome → **Adicionar à tela inicial** para abrir em tela cheia.
-
-O que testar: [testes da Fase 0](docs/08-testes-fase-0.md). Ligue **Ajustes → Teste da Fase 0** para ver pressão, inclinação e quadros por segundo.
-
-## Documentação
-
-Toda a documentação vive em [`docs/`](docs/README.md). Comece por:
-
-| Documento | Para quê |
-| --- | --- |
-| [Conceito](docs/01-conceito.md) | O que o Grão é, princípios, ferramentas, controles |
-| [Decisão do MVP](docs/02-decisao-mvp.md) | O que entra no v0.1, o que fica de fora e a divisão Grão / Palco / Prensa |
-| [Plataforma-alvo](docs/03-plataforma-alvo.md) | O tablet XPPen e o que ele permite |
-| [Design do sistema v0.1](docs/04-design-sistema-v0.1.md) | Componentes, dados, metas de desempenho |
-| [Motor riso](docs/05-motor-riso.md) | Como a risografia é simulada |
-| [Referências](docs/06-referencias.md) | Apps parecidos, código aberto útil, licenças, fontes |
-| [Roadmap](docs/07-roadmap.md) | Fases e portões |
-| [Testes da Fase 0](docs/08-testes-fase-0.md) | O que medir no tablet antes de construir o resto |
-| [Decisões (ADRs)](docs/adr/) | Registro das decisões de arquitetura |
-
-O documento original, com diagramas, está no claude.ai: [Conceito do Grão](https://claude.ai/artifact/5uRTqXfiXNv13SzJeMQ1b7). Os arquivos em `docs/` são a versão de referência dentro do projeto.
-
----
-
-## Começar em 2 minutos (no tablet) *(planejado)*
-
-1. No tablet, abra o link do Grão no **Chrome**.
-2. Menu ⋮ → **Adicionar à tela inicial**. O Grão passa a abrir em tela cheia, como um app, e funciona sem internet.
-3. Abra pelo ícone. Um loop de 8 frames já está rodando: encoste a caneta e desenhe.
 
 Aparelho-alvo: **XPPen Magic Drawing Pad (MDP1221)**, Android 15, caneta X3 Pro Slim.
 
-## Controles
+## O que dá para fazer
 
-A caneta só desenha. A outra mão cuida do tempo pela **zona do polegar**, na borda do canvas (do lado direito para canhotos).
+- **Desenhar no loop:** Pincel, Lápis, Marcador, Giz, Borracha, Balde (respeita linhas de outras camadas), Laço,
+  linha reta, suavização opcional, zoom até 400%.
+- **Tempo na mão livre:** roda de canto com prato (gira no tempo), velocidade, desfazer/refazer; arrastar 2 dedos
+  anda no tempo; tira de frames com miniaturas, exposição, inserir/duplicar/mover frame, papel-cebola.
+- **Riso de verdade:** 4 tintas (tambores) entre 9 cores riso, até 8 camadas, retícula estocástica ou reticulada
+  (ponto redondo, linha, elipse), sobreimpressão na ordem de impressão, desalinhamento até 3 mm, trapping, papéis,
+  grão que ferve, Prova de impressão.
+- **Guardar e levar:** galeria de projetos no aparelho, arquivo `.grao`, exportar GIF, vídeo (MP4/WebM), PNGs e
+  **separações por tinta a 300 dpi para a gráfica riso**.
+- **Pensado para o tablet:** a palma não vira gesto; nada de 3 dedos nem toque duplo; roda com alvos de 48 px;
+  abre sem internet; qualidade automática se o tablet engasgar.
 
-| Entrada | Ação |
-| --- | --- |
-| Caneta | Desenha na tinta ativa |
-| Tocar numa tinta | Troca a camada ativa |
-| Segurar **Laço** + caneta | Congela o loop e seleciona traços inteiros do frame atual |
-| Caneta arrastando dentro da seleção | Move |
-| 2 dedos pousados sobre a seleção (ou perto dela) | Giram e escalam |
-| Encostar na roda | Segura o disco: congela o loop e mostra o onion skin |
-| Girar a roda | Anda no tempo, frame a frame |
-| Centro da roda | Toca ou pausa |
-| **Fader** ao lado da roda | Velocidade (abaixo do meio toca ao contrário; toque duplo volta a 1×) |
-| Tocar em **Desfazer** | Desfaz; por 3 s a roda vira roda de histórico (girar desfaz e refaz) |
-| Toque rápido com 2 dedos no canvas | Desfaz |
-| Leituras na roda | Frame atual (3/8), velocidade (1,0×), avanço automático |
+## Para quem desenvolve
 
-Nada usa 3 dedos nem toque duplo no canvas: neste tablet, a palma dispara toques falsos.
+Sem build e sem npm. JavaScript em módulos, WebGL2 (GLSL ES 3.00), IndexedDB, service worker.
 
-## Desenvolvimento
-
-Sem build. Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-1. Abra esta pasta no VS Code e aceite as extensões recomendadas.
-2. Clique em **Go Live** (Live Server).
-3. No tablet, na mesma rede Wi-Fi, abra `http://IP-DO-COMPUTADOR:5500`.
-
-## Estrutura
+1. Abra a pasta no VS Code → **Go Live** (Live Server, porta 5500). No tablet: `http://IP-DO-PC:5500`.
+2. Teste de lógica (sem navegador, com o Node que vem no VS Code):
+   `ELECTRON_RUN_AS_NODE=1 "$LOCALAPPDATA/Programs/Microsoft VS Code/Code.exe" tests/logic_test.mjs`
+3. Regras do projeto, mapa do código e decisões: [CLAUDE.md](CLAUDE.md). Pedidos: [HANDOFF.md](HANDOFF.md).
+4. A cada publicação: `BUILD` em `src/config.js` e `VERSION` em `sw.js` (o teste confere).
 
 ```
-GRÃO/
-├── README.md            você está aqui
-├── CLAUDE.md            contexto e regras para sessões com IA (Claude Code)
-├── CONTRIBUTING.md      como desenvolver e testar
-├── CHANGELOG.md         histórico de versões
-├── docs/                conceito, decisões, design, referências
-│   └── adr/             registros de decisão de arquitetura
-└── src/                 código do app (planejado; ver src/README.md)
+index.html, styles.css, sw.js, manifest.webmanifest
+src/        main.js, actions.js, schedule.js, view.js, quality.js, config.js
+            doc/ (projeto, desfazer, boas-vindas)  input/ (caneta, gestos)  render/ (riso, máscaras, balde)
+            ui/ (roda, folhas)  io/ (salvar, arquivo, vídeo, GIF, ZIP)  clock/
+docs/       conceito, decisões, motor riso, textos, testes, relatórios, ADRs, docx de cada versão
+tests/      logic_test.mjs (265 verificações), smoke_test.py (Playwright, desatualizado)
+tools/      gerar_docx.py (documentação de cada versão, com pandoc)
 ```
+
+## Documentação
+
+Índice completo em [docs/README.md](docs/README.md). Para começar: [Conceito](docs/01-conceito.md) ·
+[Motor riso](docs/05-motor-riso.md) · [Textos da interface](docs/11-textos-da-interface.md) ·
+[Roteiro até a 1.0](docs/13-conselho-v0.3.md) · [Histórico de versões](CHANGELOG.md).
+
+Família de produtos: **Grão** (este caderno) · Palco (ao vivo/MIDI) · Prensa (impressão) · Motor KV. Só o Grão está
+em desenvolvimento.
 
 ## Créditos
 
-- Cores das tintas: [riso-colors](https://github.com/mattdesl/riso-colors), de Matt DesLauriers (MIT)
-- Contorno do traço com pressão: baseado no algoritmo do [perfect-freehand](https://github.com/steveruizok/perfect-freehand), de Steve Ruiz (MIT)
-- Referências de design: Graintouch e Looom (iorama), Diorame, Tagtool, Procreate Dreams, Concepts
+- Cores das tintas: valores da [Stencil Wiki](https://stencil.wiki/wiki/Category:Riso_inks) e do pacote
+  [riso-colors](https://github.com/mattdesl/riso-colors), de Matt DesLauriers (MIT). As cores são da Riso Kagaku;
+  hex é aproximação para tela.
+- Referências técnicas de riso: [Secret Riso Club](https://secretrisoclub.com/Riso-Basics) e
+  [Risotrip](https://risotrip.co/Impressao) (densidade, desalinhamento, trapping, separações).
+- Referências de design: Graintouch e Looom (iorama), Diorame (só estudado, CC BY-NC-SA), Tagtool, Procreate Dreams.
+- Todo o código é próprio; não há biblioteca de terceiros no app. Codificadores de GIF e ZIP escritos para o Grão.
+- Ferramenta de documentação (fora do app): [pandoc](https://pandoc.org).
 
 ## Licença
 

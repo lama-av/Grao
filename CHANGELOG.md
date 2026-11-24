@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+## [1.0.0-rc.1] — 2026-11-24
+
+Candidata a 1.0. Todos os recursos do roteiro até a 1.0 (doc 13) estão no app. Para virar 1.0.0 falta o que só o
+tablet e pessoas verificam: latência, desempenho, sessão de 1 hora, teste com 3 pessoas (pedido #064).
+
+### Adicionado
+- `docs/relatorio-v1.0.md`: relatório detalhado da rodada 0.3.2 → 1.0.0-rc.1 (versões, decisões do VS Code, riscos,
+  critérios da 1.0).
+- `docs/15-lista-de-testes.md`: lista completa de testes no tablet, por área, com o pedido de cada item.
+
+### Mudado
+- `README.md`, `INSTRUCOES.txt`, `docs/README.md` e `src/README.md` reescritos para a 1.0.
+- Créditos conferidos: o app não usa biblioteca de terceiros (o crédito ao perfect-freehand saiu, porque o traço não
+  usa esse algoritmo); cores pela Stencil Wiki e riso-colors; referências Secret Riso Club e Risotrip.
+
 ## [0.9.0] — 2026-11-24
 
 Beta: estabilidade. Pedidos #060–#063 (escritos pelo VS Code a partir do roteiro). Recursos congelados.

@@ -17,6 +17,8 @@ Família de produtos: **Grão** (caderno, este repositório), **Palco** (ao vivo
 
 ## Estado atual
 
+- **1.0.0-rc.1 (24/11/2026):** candidata a 1.0 — todos os recursos do roteiro; falta o teste no tablet.
+  Relatório: `docs/relatorio-v1.0.md`; lista de testes: `docs/15-lista-de-testes.md`.
 - **v0.9.0 (24/11/2026):** qualidade automática, salvar ao sair, correções de uma revisão de código.
 - **v0.8.0 (24/11/2026):** projeto de boas-vindas com dicas, roda com alvos de 48 px, leitor de tela, textos.
 - **v0.7.0 (24/11/2026):** sobreimpressão por passada, pontos linha/elipse, Prova de impressão, separações 300 dpi,

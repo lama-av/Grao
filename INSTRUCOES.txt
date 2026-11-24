@@ -1,177 +1,217 @@
 GRÃO — INSTRUÇÕES DE USO
 ========================
-Versão descrita: 0.9.0 (beta)
+Versão descrita: 1.0.0-rc.1 (candidata a 1.0)
 Atualizado em: 24/11/2026
 Este arquivo acompanha o projeto: cada versão nova atualiza o que mudou aqui.
 
+Grão é um caderno de animação em loop com cara de impressão risográfica, feito
+para desenhar com caneta no tablet XPPen Magic Drawing Pad.
 
-1. ABRIR
---------
+
+SUMÁRIO
+-------
+ 1. Abrir e instalar
+ 2. A ideia em uma frase
+ 3. Caneta e dedos
+ 4. A roda de canto
+ 5. Ferramentas
+ 6. Camadas e tintas
+ 7. Seleção, copiar e colar
+ 8. Tempo: frames, exposição, papel-cebola
+ 9. Menu
+10. Impressão: retícula, sobreimpressão, prova
+11. Salvar, projetos e arquivos
+12. Exportar
+13. Dicas rápidas
+14. Testes e problemas
+
+
+1. ABRIR E INSTALAR
+-------------------
 - No tablet (Chrome): https://lama-av.github.io/Grao/
-- Ao abrir, aparece um aviso com a versão (ex.: "Grão 0.9.0-b17"). Se o número for
-  antigo, o Chrome está usando a cópia guardada: espere 10 minutos ou limpe os dados
-  do site (Chrome > cadeado ao lado do endereço > Configurações do site > Limpar dados).
-- Para instalar como app: menu do Chrome > "Adicionar à tela inicial".
-- No PC: servir a pasta pelo Live Server (Go Live) e abrir http://localhost:5500.
-- Se algo der errado, uma caixa vermelha aparece embaixo com o erro. Mande um print.
+- Para instalar como app: menu do Chrome > "Adicionar à tela inicial". Depois de
+  aberto uma vez com internet, o Grão abre SEM INTERNET.
+- Ao abrir, aparece a versão (ex.: "Grão 1.0.0-rc.1-b18").
+- Versão nova publicada: com o loop parado, aparece no botão da roda
+  "Nova versão. Toque para atualizar." Tocar salva e atualiza. O app nunca
+  recarrega sozinho.
+- Na primeira vez no aparelho, o Grão abre com uma bola quicando e 3 dicas no
+  papel. Cada dica some quando você faz o que ela diz.
+- No PC: servir a pasta com o Live Server (Go Live) e abrir http://localhost:5500.
+- Se algo der errado, uma caixa vermelha aparece embaixo com o erro: mande print.
 
 
 2. A IDEIA EM UMA FRASE
 -----------------------
-Você desenha num papel de risografia que já está animando em loop. Cada CAMADA é
-uma TINTA riso (hoje são 4: Rosa flúor, Azul, Amarelo e Preto). As tintas se
-misturam como na impressão de verdade (multiplicando). O grão "ferve" a cada
-reimpressão.
+Você desenha num papel de risografia que já está animando em loop. O projeto tem
+4 TINTAS (como os 4 tambores de uma riso) e até 8 CAMADAS; cada camada imprime
+com uma das tintas. As tintas se misturam como na impressão de verdade, e o grão
+"ferve" a cada reimpressão.
 
 
 3. CANETA E DEDOS
 -----------------
 Caneta
 - Encostar e riscar: desenha com a ferramenta atual (pressão muda a espessura).
-- BOTÃO LATERAL 1: cada aperto ALTERNA entre a Borracha e o último pincel
-  (Pincel, Lápis, Marcador ou Giz), no ar ou encostada. Aparece o nome perto do
-  botão da roda.
-- BOTÃO LATERAL 2: SEGURE para fazer laço. Enquanto ele está apertado, o loop
-  para e a caneta contorna o desenho para selecionar. Soltou, volta ao normal.
-  (Se o botão 2 não fizer nada no seu tablet, rode o teste da caneta: seção 9.)
-- Com Laço: contorne o desenho para selecionar.
+- BOTÃO LATERAL 1: cada aperto ALTERNA entre a Borracha e o último pincel.
+- BOTÃO LATERAL 2: SEGURE para fazer laço (o loop para enquanto segura).
 - LINHA RETA: no fim do traço, segure a caneta parada meio segundo. A linha
-  endireita (aparece "Linha") e a ponta passa a seguir a caneta até você soltar.
-- BALDE: um toque dentro de uma forma fechada pinta o miolo com a tinta.
-  Falhas pequenas na linha não deixam vazar. As linhas das OUTRAS tintas
-  também seguram o balde: dá para fazer a linha em Preto e pintar em Rosa.
-  Tocar em cima de uma linha não faz nada ("Nada para pintar"). Tocar no
-  papel vazio pinta tudo (desfazer volta).
-- Com uma seleção ativa: encostar dentro da caixa e arrastar move a seleção.
+  endireita ("Linha") e a ponta segue a caneta até você soltar.
 
-Dedos (no papel)
-- 1 dedo NUNCA desenha (por causa da palma). Tocar o papel recolhe a roda.
+Dedos no papel
+- 1 dedo NUNCA desenha (proteção contra a palma). Tocar o papel recolhe a roda.
 - Toque rápido com 2 dedos: Desfazer.
-- ARRASTAR 2 DEDOS PARA OS LADOS (papel inteiro na tela): anda no tempo, frame
-  a frame (direita = para frente). Uma régua de frames aparece embaixo.
-- Abrir ou fechar 2 dedos: ZOOM (até 400%). Com zoom, arrastar 2 dedos move o
-  papel. Soltar perto de 100% encaixa o papel inteiro. Também: Menu > Encaixar
-  papel (100%).
-- A PALMA apoiada é ignorada enquanto a caneta está perto da tela (e até 0,3 s
+- Arrastar 2 dedos para os lados (papel inteiro na tela): anda no tempo, frame a
+  frame (direita = para frente). Uma régua de frames aparece embaixo.
+- Abrir ou fechar 2 dedos: zoom (até 400%). Com zoom, arrastar 2 dedos move o
+  papel. Soltar perto de 100% encaixa o papel inteiro.
+- 2 dedos sobre a seleção: movem, giram e mudam o tamanho dela.
+- A palma apoiada é ignorada enquanto a caneta está perto da tela (e até 0,3 s
   depois). A roda sempre responde.
-- Lista dos gestos: Menu > Gestos.
-- 2 dedos pousados sobre a seleção (ou até 80 px em volta): mover, girar e mudar
-  o tamanho da seleção (pinça e giro, como numa foto).
 - Não há gesto de 3 dedos nem toque duplo no papel (de propósito).
+- Lista dos gestos dentro do app: Menu > Gestos.
 
 
 4. A RODA DE CANTO
 ------------------
-Recolhida: um botão redondo no canto inferior esquerdo (direito no modo Canhoto).
-Mostra:
-- no miolo, a tinta ativa e a ferramenta: cheio = Pincel (com L = Lápis,
-  M = Marcador, G = Giz), vazado = Borracha, quadrado = Balde, tracejado em
-  volta = Laço;
-- um ponto vermelho enquanto grava um vídeo;
-- um anel de pontos com o frame atual aceso;
-- um contorno fino quando o loop está parado.
-
-- Tocar no botão: abre a roda.
-- Segurar 0,4 s e arrastar: leva o botão para outro canto. Fica salvo.
+Recolhida: um botão redondo no canto inferior esquerdo (direito no Canhoto).
+- Miolo: a cor da tinta da camada ativa e a ferramenta (cheio = Pincel, com L/M/G
+  para Lápis/Marcador/Giz; vazado = Borracha; quadrado = Balde; tracejado = Laço).
+- Anel de pontos: o frame atual aceso. Contorno fino: loop parado.
+- Ponto vermelho: gravando ou exportando.
+- Tocar: abre a roda. Segurar 0,4 s e arrastar: leva o botão para outro canto.
 
 Roda aberta, de dentro para fora:
-- CENTRO: toca / pausa. Leituras rápidas aparecem aqui ("3/8", "1,5×", "Desfeito").
-- 6 BOTÕES: Desfazer, Refazer, Ferramenta, Menu, Tempo, Tinta.
-- PRATO DO TEMPO (anel com os pontos dos frames): encostar congela o loop; girar
-  30° anda 1 frame. Soltar volta a tocar.
-- ARCO DE VELOCIDADE (por fora): de −2× a 2×. Encaixa em 1× e em 0×.
-  Toque duplo no arco volta para 1×.
+- CENTRO: toca / pausa. Leituras rápidas aparecem aqui ("3/8", "1,5×").
+- 6 BOTÕES: Desfazer, Refazer, Ferramenta, Menu, Tempo, Camadas.
+- PRATO DO TEMPO: encostar congela o loop; girar 30° anda 1 frame.
+- ARCO DE VELOCIDADE: de −2× a 2× (encaixa em 1× e 0×; toque duplo = 1×).
+- Desfazer abre o MODO HISTÓRICO por 3 s: girar o prato desfaz/refaz.
+- A roda recolhe sozinha quando você desenha, a não ser com "Fixar roda".
 
-Desfazer abre o MODO HISTÓRICO por 3 s: o prato fica rosa e girar o prato
-desfaz / refaz passo a passo.
-
-A roda recolhe sozinha quando você desenha ou toca o papel, a não ser que
-"Fixar roda" esteja ligado no Menu.
-
-PÉTALAS (aparecem em arco, fora da roda)
-- Tinta: mostra dois arcos.
-    · Perto da roda, as 4 TINTAS do projeto: toque numa para desenhar com ela.
-      (4 é o limite, como na riso impressa: cada tinta é um cilindro.)
-    · Mais longe, as 9 CORES possíveis para a tinta ativa: toque numa para
-      trocar a cor da tinta. A pétala fica aberta para você ver o resultado.
-      Um ponto escuro no meio = cor que outra tinta já usa.
-    · Atalho: toque longo (0,5 s) numa tinta abre as cores daquela tinta.
-- Ferramenta: dois arcos. Perto, RISCAR: Pincel, Lápis, Marcador, Giz. Mais
-  longe, MEXER: Borracha, Balde, Laço. Por fora, o arco de Tamanho (mostra o
-  tamanho num círculo no meio do papel). Cada ferramenta lembra o seu tamanho.
-    · Pincel: a pressão muda a espessura.
-    · Lápis: fino; o grão do riso falha o traço, como grafite.
-    · Marcador: espessura fixa, sem pressão.
-    · Giz: traço falhado, de carimbos.
-- Dá para escolher de dois jeitos:
-    · tocar no botão (Tinta ou Ferramenta) e depois tocar na pastilha; ou
-    · encostar no botão, arrastar até a pastilha e soltar em cima dela.
-    · Depois do toque longo numa tinta, também dá para arrastar até a cor nova
-      e soltar.
+Pétalas: escolha tocando duas vezes, ou encostando no botão, arrastando até a
+pastilha e soltando em cima dela.
 
 
-5. SELEÇÃO
-----------
-- Segure o botão lateral 2 da caneta (ou escolha Laço na pétala Ferramenta) e
-  contorne o desenho com a caneta. Traços e baldes dentro do contorno entram na
-  seleção (o balde entra pelo ponto onde você tocou).
-- Com algo selecionado, o loop fica parado e aparecem dois botões perto da caixa:
-    · "Duplicar →": copia a seleção para o próximo frame (bom para animar).
-    · "Apagar": apaga o que está selecionado.
-- Mover: caneta dentro da caixa. Girar e escalar: 2 dedos sobre a seleção
-  (nas primeiras vezes aparece uma dica junto dos botões).
+5. FERRAMENTAS (pétala Ferramenta)
+---------------------------------
+Arco de dentro, RISCAR:
+- Pincel: a pressão muda a espessura.
+- Lápis: fino; o grão do riso falha o traço, como grafite.
+- Marcador: espessura fixa, sem pressão.
+- Giz: traço falhado, de carimbos.
+Arco de fora, MEXER:
+- Borracha: apaga e mostra o papel.
+- Balde: um toque dentro de uma forma fechada pinta o miolo. Linhas de OUTRAS
+  camadas também seguram o balde (linha em Preto, miolo em Rosa). Falhas pequenas
+  na linha não vazam. Em cima da linha: "Nada para pintar".
+- Laço: contorne para selecionar (traços e baldes).
+Por fora, o arco de TAMANHO (cada ferramenta lembra o seu).
+
+
+6. CAMADAS E TINTAS (pétala Camadas)
+------------------------------------
+- Arco de dentro: uma pastilha por camada, de baixo para cima na ordem de
+  impressão, com a cor da tinta e o número. Apagada = escondida. Cadeado = travada.
+  "+" cria uma camada (até 8).
+- Arco de fora: as 9 cores da paleta, para trocar a cor da tinta da camada ativa
+  (a tinta é um tambor: muda para todas as camadas que usam ela).
+- TOQUE LONGO numa camada abre a FOLHA DA CAMADA:
+    · Tinta: qual dos 4 tambores ela usa, e a cor desse tambor.
+    · Retícula: Estocástica (o grão) ou Reticulada (pontos em grade, ângulo por
+      tinta); Densidade de 5% a 100%; na Reticulada, ponto Redondo, Linha ou Elipse.
+    · Visível, Travar (camada travada não aceita traço), Subir, Descer,
+      Duplicar camada, Apagar camada.
+- Paleta: Rosa flúor, Azul, Amarelo, Preto, Verde, Laranja, Teal, Azul federal,
+  Vermelho vivo. Menu > Impressão > Tintas prontas > "Falso CMYK" troca as 4 de uma
+  vez (Azul, Vermelho vivo, Amarelo, Preto); "Do projeto" volta.
+
+
+7. SELEÇÃO, COPIAR E COLAR
+--------------------------
+- Laço (botão 2 da caneta ou pétala) e contorne. O loop para.
+- Botões junto da seleção: "Duplicar →" (copia para o próximo frame), "Copiar",
+  "Apagar".
+- Mover: caneta dentro da caixa. Girar e escalar: 2 dedos sobre a seleção.
+- Com algo copiado e o loop parado, aparece "Colar" no alto: cola no frame atual
+  da camada ativa (pode ser outra camada ou outro frame), no mesmo lugar.
 - Tocar fora solta a seleção.
 
 
-6. MENU E TEMPO
----------------
-Menu (botão "Menu" da roda):
-- No topo, o PROJETO:
-    · Nome do projeto (vira o nome do arquivo).
-    · Linha de estado: "Salvo neste aparelho às 14:32" (ou "Salvando…").
-    · Salvar arquivo: baixa o projeto como arquivo .grao (vai para Downloads).
-    · Abrir arquivo: escolhe um .grao do tablet. Pergunta antes de trocar o
-      desenho atual.
-    · Novo projeto: pergunta antes ("Apagar e começar" ou "Cancelar").
-    · Exportar PNG: imagem do frame atual.
-    · Exportar vídeo do loop: grava o loop tocando desde o frame 1 (de 3 a
-      12 segundos, ciclos inteiros) em MP4 (ou WebM, se o Chrome não fizer
-      MP4). Vai para Downloads. Durante a gravação o papel e a roda ficam
-      parados (ponto vermelho no botão); espere o aviso "Vídeo exportado".
-- Impressão: Papel (Natural, Jornal, Kraft, Reciclado), Grão, Desalinhamento
-  (registro fora do lugar), Ferver (grão que muda a cada reimpressão).
-- Desenho e roda: Suavizar traço (0 = desligado; mais alto = traço mais liso,
-  com um pouco de atraso), Auto (com o loop parado, cada traço pula para o
-  próximo frame), Fixar roda, Canhoto, Teste da Fase 0 (painel de números),
-  Encaixar papel (100%).
-
-Tempo (botão "Tempo" da roda), sempre da tinta ativa:
-- FPS (6, 8, 12 ou 24) e quantidade de frames (até 12). Mostra a duração do
-  loop em segundos.
-- Cada tinta tem o próprio loop: dá para ter loops de tamanhos diferentes.
-- Camadas de verdade (criar, esconder, reordenar) estão planejadas para a v0.4.
+8. TEMPO (botão Tempo da roda)
+------------------------------
+- Tira de frames com miniaturas da camada ativa: tocar vai ao frame.
+- Inserir, Duplicar, Apagar, ← Mover, Mover →.
+- Exposição ×1 a ×4: o frame atual fica mais tempos na tela.
+- FPS (6, 8, 12, 24) e número de frames (até 12). Cada camada tem o seu loop.
+- Papel-cebola (Menu): até 2 frames antes e 2 depois, com intensidade.
+- Auto (Menu): com o loop parado, cada traço anda um frame; pode voltar e pode
+  parar no último frame.
 
 
-7. SALVAR
----------
-- Tudo é salvo sozinho no navegador (um projeto por vez). Recarregar não perde.
-- Para guardar de verdade ou levar para outro aparelho: Menu > Salvar arquivo.
-  O arquivo .grao fica em Downloads e abre de volta em Menu > Abrir arquivo.
-- Limpar os dados do site APAGA o projeto do navegador. Salve um arquivo antes.
-- Galeria de projetos e exportar GIF: planejados para a v0.6.
+9. MENU
+-------
+- Nome do projeto, estado do salvamento, Salvar arquivo, Abrir arquivo,
+  Projetos, Novo projeto, Exportar…
+- Impressão: Papel, Grão, Desalinhamento (até 3 mm), Ferver, Lineatura (40/60/85),
+  Trapping, Marcas de rolo, Transferência, Prova de impressão, Tintas prontas.
+- Desenho e roda: Suavizar traço, Auto, Cebola, Fixar roda, Canhoto, Qualidade
+  automática, Teste da Fase 0, Gestos, Encaixar papel (100%).
 
 
-8. DICA RÁPIDA PARA ANIMAR UM LOOP
-----------------------------------
-1. Abra a roda e toque no centro para parar o loop.
-2. Ligue "Auto" no Menu.
-3. Desenhe: a cada traço o frame avança. Os frames vizinhos aparecem
-   claros (papel-cebola) enquanto está parado.
-4. Toque no centro de novo para ver o loop tocando.
+10. IMPRESSÃO
+-------------
+- Sobreimpressão: as tintas imprimem na ordem das camadas (a de baixo primeiro);
+  cada uma cobre um pouco a de baixo. Subir ou descer uma camada muda a cor.
+- Desalinhamento: cresce a cada passada, até 3 mm, como na riso.
+- Trapping: o balde avança 0,5 mm por baixo da linha (sem filete branco).
+- Abaixo de 10% de densidade os pontos falham; áreas cheias imprimem irregulares.
+- PROVA DE IMPRESSÃO (Menu > Impressão): o frame atual vira uma folha riso parada
+  em alta resolução, com nome, data e tintas. "Salvar prova (PNG)".
 
 
-9. TESTES (FASE 0)
-------------------
+11. SALVAR, PROJETOS E ARQUIVOS
+-------------------------------
+- Tudo é salvo sozinho no navegador. O Menu mostra "Salvo neste aparelho às…".
+- Menu > Projetos: todos os projetos do aparelho (Abrir, Duplicar, Apagar).
+  "Novo projeto" não apaga nada: o atual fica em Projetos.
+- Para guardar fora do tablet: Menu > Salvar arquivo (.grao em Downloads).
+  Menu > Abrir arquivo traz de volta (vira um projeto novo na galeria).
+- Limpar os dados do site APAGA os projetos do navegador. Salve arquivos antes.
+
+
+12. EXPORTAR (Menu > Exportar…)
+-------------------------------
+- GIF: em laço, com o grão fervendo. Escala 50% (600 × 400) ou 100%.
+- Vídeo: grava o loop tocando, em MP4 (ou WebM).
+- PNGs (.zip): um PNG por quadro, 50% a 200%.
+- PNG do frame: uma imagem do que está na tela.
+- Separações (gráfica): um PNG cinza por tinta, 300 dpi, sem grão nem retícula,
+  pronto para mandar à gráfica riso. (Leva alguns segundos por tinta.)
+- Voltas: 1, 2 ou 3 voltas inteiras do loop (no máximo 12 s).
+- Durante a exportação o papel e a roda esperam (ponto vermelho). Arquivos vão
+  para Downloads.
+
+
+13. DICAS RÁPIDAS
+-----------------
+Animar quadro a quadro:
+  1. Toque no centro da roda para parar. 2. Ligue "Auto" no Menu.
+  3. Desenhe: a cada traço o frame avança (frames vizinhos aparecem claros).
+  4. Toque no centro de novo para ver o loop.
+Linha e cor em tintas diferentes:
+  1. Desenhe o contorno na camada Preto. 2. Ative a camada Rosa.
+  3. Balde dentro do contorno.
+Cara de gráfica:
+  Folha da camada > Reticulada; duas camadas reticuladas de tintas diferentes
+  mostram o moiré da riso.
+
+
+14. TESTES E PROBLEMAS
+----------------------
+- Lista completa de testes: docs/15-lista-de-testes.md
 - Teste da caneta: https://lama-av.github.io/Grao/teste-caneta.html
-  No fim, toque em "Copiar resultados" e cole o texto no chat.
+  ("Copiar resultados" e cole no chat).
 - Diagnóstico de GPU: https://lama-av.github.io/Grao/diag.html
+- Painel de números: Menu > Teste da Fase 0 (quadros/s, compositor, qualidade,
+  toques ignorados).
